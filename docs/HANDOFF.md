@@ -16,3 +16,10 @@ Updated at the end of the autonomous session. Nothing here contains secrets.
 
 ## Still unexecuted anywhere (do not assume they work)
 Full compose stack as containers (the image build + non-root liveness DID run in CI), `release.yml`, `pg_dump` backup/restore scripts, real TLS/HSTS behind a proxy, independent security test, manual screen-reader test.
+
+## Final state at shutdown (end of the autonomous session)
+* Repo: `main` pushed and in sync with `origin/main`; CI green (5/5 jobs) at `ac46440`; later commits are docs only.
+* Deployment: **not started**. Blocker unchanged: server IP/OS, SSH user (+ `ssh-add` a key), hostname + DNS provider, other apps/ports, permission to install Docker.
+* No migrations, deployments, backups, restores or other critical operations were running. The dev servers (Vite, Django runserver) and the dev PostgreSQL cluster were stopped cleanly before the shutdown request.
+* To resume locally: `~/.doedu-tools/pg/node_modules/@embedded-postgres/darwin-arm64/native/bin/pg_ctl -D ~/.doedu-tools/pg/data -o "-p 5432 -c listen_addresses=127.0.0.1" -l ~/.doedu-tools/pg/pg.log start`, then `cd backend && set -a && source ../.env && set +a && .venv/bin/python manage.py runserver 127.0.0.1:8000` and `cd frontend && npm run dev`.
+* A Mac shutdown was requested via `shutdown-after-claude.sh --schedule` (120 s delay, cancellable with `--cancel`).
