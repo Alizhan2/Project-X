@@ -1,0 +1,96 @@
+# Portable production-style stack (hosted demo). TLS is terminated by an ingress in front of `web` (managed load
+# balancer, Caddy/nginx, a PaaS router...): see docs/deployment.md. `web` only listens on 127.0.0.1.
+#
+#   docker compose --env-file .env.production -f docker-compose.prod.yml build
+#   docker compose --env-file .env.production -f docker-compose.prod.yml up -d        # db -> db-roles -> migrate -> web + worker
+#   docker compose ... --profile backup up -d backup                                  # optional scheduled backups
+#
+# NOT EXECUTED on the authoring machine (no Docker available): reviewed and syntax-checked only.
+x-app: &app
+  image: ${DOEDU_IMAGE:-doedu:local}
+  build:
+    context: .
+    args: { DOEDU_RELEASE: "${DOEDU_RELEASE:-local}" }
+  env_file: .env.production
+  restart: unless-stopped
+  networks: [internal]
+
+services:
+  db:
+    image: postgres:17.11-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-doedu}
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [internal]            # no published port: only the other services can reach the database
+
+  db-roles:                          # creates/refreshes the least-privilege roles (idempotent), as the admin role
+    <<: *app
+    restart: "no"
+    command: ["python", "manage.py", "setup_db_roles"]
+    depends_on: { db: { condition: service_healthy } }
+
+  migrate:                           # runs ONCE per release, as the migrator role, under an advisory lock
+    <<: *app
+    restart: "no"
+    command: ["python", "manage.py", "safe_migrate"]
+    environment:
+      POSTGRES_USER: ${MIGRATE_POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${MIGRATE_POSTGRES_PASSWORD:?}
+      APP_POSTGRES_USER: ${POSTGRES_USER:?}      # the runtime role whose privileges are restricted after migrating
+    depends_on: { db-roles: { condition: service_completed_successfully } }
+
+  web:
+    <<: *app
+    ports: ["127.0.0.1:8000:8000"]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    stop_grace_period: 40s           # > gunicorn graceful_timeout (30 s)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/ready/', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    depends_on: { migrate: { condition: service_completed_successfully } }
+
+  worker:
+    <<: *app
+    command: ["python", "manage.py", "run_worker"]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    stop_grace_period: 40s           # SIGTERM: finishes the current job batch, then exits
+    depends_on: { migrate: { condition: service_completed_successfully } }
+
+  backup:                            # optional: `--profile backup`; daily pg_dump with retention (ops/backup.sh)
+    image: postgres:17.11-bookworm
+    profiles: ["backup"]
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB:-doedu}
+      PGUSER: ${POSTGRES_ADMIN_USER:?}
+      PGPASSWORD: ${POSTGRES_ADMIN_PASSWORD:?}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+    entrypoint: ["sh", "-c", "while true; do /ops/backup.sh || echo 'BACKUP FAILED'; sleep $$((BACKUP_INTERVAL_HOURS*3600)); done"]
+    volumes: ["./ops:/ops:ro", "backups:/backups"]
+    depends_on: { db: { condition: service_healthy } }
+    networks: [internal]
+
+networks:
+  internal: {}
+volumes:
+  pgdata: {}
+  backups: {}          # replace with a bind mount / remote volume on storage that is NOT the database host (docs/backup-restore.md)

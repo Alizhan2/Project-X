@@ -1,0 +1,67 @@
+# Development stack. Requires a .env file (cp .env.example .env).
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-doedu}
+      POSTGRES_USER: ${POSTGRES_USER:-doedu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:   # healthy only after migrations ran and the API answers (worker/frontend wait for this)
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/')"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  worker:
+    build: ./backend
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    command: python manage.py run_worker
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      BACKEND_URL: http://backend:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5173:5173"
+
+volumes:
+  pgdata:

@@ -1,0 +1,1135 @@
+openapi: 3.0.3
+info:
+  title: Doedu API
+  version: dev
+  description: Multimodal transport booking MVP. All data, payments and confirmations
+    are SIMULATED.
+paths:
+  /api/auth/csrf/:
+    get:
+      operationId: auth_csrf_retrieve
+      description: Sets the `csrftoken` cookie. The SPA echoes it in the X-CSRFToken
+        header on unsafe requests.
+      tags:
+      - auth
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Csrf'
+          description: ''
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginIn'
+        required: true
+      security:
+      - sessionAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      tags:
+      - auth
+      security:
+      - sessionAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      description: '`{"user": {...}}`, or `{"user": null}` when anonymous (200 either
+        way so the SPA can bootstrap).'
+      tags:
+      - auth
+      security:
+      - sessionAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: |-
+        Create a passenger account (the only self-service role) and sign in. Can be closed with REGISTRATION_ENABLED=false.
+        NOTE: there is no e-mail verification or password reset yet (docs/security.md).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterIn'
+        required: true
+      security:
+      - sessionAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/:
+    get:
+      operationId: bookings_list
+      description: 'POST: revalidate the selected legs, hold capacity, create a pending
+        booking (idempotent). GET: my bookings.'
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingList'
+          description: ''
+    post:
+      operationId: bookings_create
+      description: 'POST: revalidate the selected legs, hold capacity, create a pending
+        booking (idempotent). GET: my bookings.'
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckoutIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckoutIn'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/{reference}/:
+    get:
+      operationId: bookings_detail
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/{reference}/abandon/:
+    post:
+      operationId: bookings_abandon_create
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/{reference}/cancel/:
+    post:
+      operationId: bookings_cancel_create
+      description: 'Cancel the whole journey and receive the simulated refund. Safe
+        to repeat: never refunds twice.'
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CancelIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CancelIn'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/{reference}/cancellation/:
+    get:
+      operationId: bookings_cancellation_retrieve
+      description: What cancelling now would refund, per leg, under the policy snapshotted
+        at purchase.
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/{reference}/pay/:
+    post:
+      operationId: bookings_pay_create
+      description: SIMULATED payment. Never accepts card details. Disabled when the
+        launch mode does not allow simulation.
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PayIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PayIn'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/{reference}/replacements/:
+    get:
+      operationId: bookings_replacements_retrieve
+      description: Replacement options for a disrupted booking (refreshes them first).
+        Offers do not reserve places.
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/{reference}/replacements/{offer_id}/accept/:
+    post:
+      operationId: bookings_replacements_accept_create
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: offer_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AcceptIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AcceptIn'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/{reference}/replacements/{offer_id}/decline/:
+    post:
+      operationId: bookings_replacements_decline_create
+      parameters:
+      - in: path
+        name: offer_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/config/:
+    get:
+      operationId: config_retrieve
+      description: 'Public runtime configuration for the SPA: what this deployment
+        is allowed to claim.'
+      tags:
+      - config
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/health/:
+    get:
+      operationId: health_retrieve
+      description: |-
+        Readiness: can this instance serve traffic? Database reachable and no pending migrations.
+        The worker state is informational (a stale worker must not take the web tier out of rotation).
+        The body contains no versions, hostnames or credentials.
+      tags:
+      - health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/health/live/:
+    get:
+      operationId: health_live_retrieve
+      description: 'Liveness: the process answers. Touches nothing else, so a database
+        outage never restarts healthy app servers.'
+      tags:
+      - health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/health/ready/:
+    get:
+      operationId: health_ready_retrieve
+      description: |-
+        Readiness: can this instance serve traffic? Database reachable and no pending migrations.
+        The worker state is informational (a stale worker must not take the web tier out of rotation).
+        The body contains no versions, hostnames or credentials.
+      tags:
+      - health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/itinerary/:
+    get:
+      operationId: itinerary_retrieve
+      description: Current, freshly computed details for a selected journey (what
+        checkout would use).
+      parameters:
+      - in: query
+        name: legs
+        schema:
+          type: string
+        description: departure_id:from_stop:to_stop, comma separated
+        required: true
+      - in: query
+        name: passengers
+        schema:
+          type: integer
+      tags:
+      - itinerary
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/notifications/:
+    get:
+      operationId: notifications_retrieve
+      description: Own notifications, newest first. The SPA polls this endpoint (no
+        websockets in the MVP).
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/notifications/{id}/read/:
+    post:
+      operationId: notifications_read_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/notifications/read-all/:
+    post:
+      operationId: notifications_read_all_create
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/operator/fares/{id}/:
+    patch:
+      operationId: operator_fares_partial_update
+      description: Changes the *current* fare only. Existing bookings keep the price
+        they paid (snapshots).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - operator
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFareIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFareIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFareIn'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/operator/routes/:
+    get:
+      operationId: operator_routes_retrieve
+      tags:
+      - operator
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/operator/services/:
+    get:
+      operationId: operator_services_list
+      tags:
+      - operator
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: operator_services_create
+      tags:
+      - operator
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ServiceIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ServiceIn'
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/operator/services/{id}/:
+    get:
+      operationId: operator_service_detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - operator
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    patch:
+      operationId: operator_service_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - operator
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceIn'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/operator/services/{id}/change/:
+    post:
+      operationId: operator_services_change_create
+      description: Apply a delay (minutes = new total delay, 0 clears it) or a cancellation.
+        Idempotent.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - operator
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangeIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangeIn'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/operator/services/{id}/impact/:
+    post:
+      operationId: operator_services_impact_create
+      description: Preview the consequences of a delay/cancellation. Changes nothing.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - operator
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangeIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangeIn'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/search/:
+    get:
+      operationId: search_retrieve
+      description: Search direct and multi-leg (up to 3) journeys. Results are offers,
+        not bookings; nothing is reserved.
+      parameters:
+      - in: query
+        name: depart_after
+        schema:
+          type: string
+        description: ISO 8601 datetime; naive values are read in the demo timezone
+        required: true
+      - in: query
+        name: destination
+        schema:
+          type: string
+        description: Stop code
+        required: true
+      - in: query
+        name: origin
+        schema:
+          type: string
+        description: Stop code
+        required: true
+      - in: query
+        name: passengers
+        schema:
+          type: integer
+        description: 1-9, default 1
+      - in: query
+        name: sort
+        schema:
+          type: string
+          enum:
+          - buffer
+          - departure
+          - duration
+          - price
+        description: departure (default), price, duration, buffer (largest minimum
+          transfer buffer)
+      tags:
+      - search
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+          description: ''
+  /api/stops/:
+    get:
+      operationId: stops_list
+      description: Controlled list of stops usable as origin/destination.
+      tags:
+      - stops
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Stop'
+          description: ''
+components:
+  schemas:
+    AcceptIn:
+      type: object
+      properties:
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/OutcomeEnum'
+          default: success
+          description: |-
+            Simulator only (top-up payment).
+
+            * `success` - success
+            * `failure` - failure
+    ActionEnum:
+      enum:
+      - delay
+      - cancel
+      type: string
+      description: |-
+        * `delay` - delay
+        * `cancel` - cancel
+    BookingList:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - results
+    CancelIn:
+      type: object
+      properties:
+        expected_refund:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+    ChangeIn:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        minutes:
+          type: integer
+          maximum: 720
+          minimum: 0
+          default: 0
+      required:
+      - action
+    CheckoutIn:
+      type: object
+      properties:
+        passengers:
+          type: integer
+          maximum: 9
+          minimum: 1
+        legs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegIn'
+        expected_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        contact_email:
+          type: string
+          format: email
+        travellers:
+          type: array
+          items:
+            type: string
+            maxLength: 150
+      required:
+      - contact_email
+      - legs
+      - passengers
+      - travellers
+    Csrf:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    KindEnum:
+      enum:
+      - bus
+      - rail
+      - taxi
+      type: string
+      description: |-
+        * `bus` - Bus stop
+        * `rail` - Railway station
+        * `taxi` - Taxi rank
+    LegIn:
+      type: object
+      description: A bus/train leg (`departure_id`) or a simulated taxi leg (`taxi_offer_id`
+        + `ready_at`).
+      properties:
+        departure_id:
+          type: integer
+        taxi_offer_id:
+          type: integer
+        ready_at:
+          type: string
+          format: date-time
+          description: 'Taxi as first leg: when the passenger is ready'
+        from_stop:
+          type: string
+          description: Stop code
+        to_stop:
+          type: string
+          description: Stop code
+      required:
+      - from_stop
+      - to_stop
+    LoginIn:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+      - email
+      - password
+    OutcomeEnum:
+      enum:
+      - success
+      - failure
+      type: string
+      description: |-
+        * `success` - success
+        * `failure` - failure
+    PatchedFareIn:
+      type: object
+      properties:
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+    PatchedServiceIn:
+      type: object
+      properties:
+        route_id:
+          type: integer
+        departs_at:
+          type: string
+          format: date-time
+        capacity:
+          type: integer
+          maximum: 500
+          minimum: 1
+        wheelchair_accessible:
+          type: boolean
+          nullable: true
+    PayIn:
+      type: object
+      properties:
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/OutcomeEnum'
+          description: |-
+            Simulator only: force success or failure.
+
+            * `success` - success
+            * `failure` - failure
+      required:
+      - outcome
+    RegisterIn:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+          maxLength: 150
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - full_name
+      - password
+    SearchResponse:
+      type: object
+      properties:
+        simulated:
+          type: boolean
+        window_hours:
+          type: integer
+        count:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - count
+      - results
+      - simulated
+      - window_hours
+    ServiceIn:
+      type: object
+      properties:
+        route_id:
+          type: integer
+        departs_at:
+          type: string
+          format: date-time
+        capacity:
+          type: integer
+          maximum: 500
+          minimum: 1
+        wheelchair_accessible:
+          type: boolean
+          nullable: true
+    Stop:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 16
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          maxLength: 100
+        kind:
+          $ref: '#/components/schemas/KindEnum'
+        hub:
+          type: string
+          readOnly: true
+        step_free:
+          type: boolean
+          nullable: true
+      required:
+      - code
+      - hub
+      - kind
+      - name
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+      description: Django session cookie. Unsafe methods also need the X-CSRFToken
+        header (cookie `csrftoken`).
