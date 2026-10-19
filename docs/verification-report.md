@@ -57,6 +57,12 @@ Proposed targets for discussion: read endpoints p95 < 300 ms at 20 concurrent us
 | Finding | search window query used a sequential scan: added `departs_at` index (non-blocking migration). No measurable change at this size: kept for headroom |
 Targets met on this hardware; **not evidence for hosted hardware or real traffic**: repeat on the chosen platform before announcing capacity.
 
-## 6. Not executed here (reviewed only)
-Docker build/compose (`Dockerfile`, `docker-compose.prod.yml`: syntax-checked, tags verified to exist on Docker Hub); non-root/read-only container runtime; GitHub Actions workflows (`ci.yml`, `release.yml`: syntax-checked; each step run by hand);
+## 5b. GitHub Actions, first real runner execution (commit `ac46440`, all 5 jobs green)
+First run (`5f8e023`) failed in 2 jobs and found real issues, fixed in `ac46440`: the secret-scan baseline was stale, and the e2e job lacked `DEMO_USER_PASSWORD` (the safeguard that a deployed environment must not use the well-known demo password worked as intended). Also masked the CI throw-away secret key in logs.
+**Passing on the runner:** backend (hash-locked install, `check`, deploy-check gate, migrations check, OpenAPI valid+committed, tests) · frontend (type-check build, lint) · security (pip-audit, npm audit, secret scan) ·
+**container** (compose file validates, **Docker image builds**, runs as uid 10001, liveness answers without a database) · **e2e** (`ops/run-staging.sh` bring-up on an empty PostgreSQL 17.11 service, then the 23 Playwright tests on Linux/Chromium, then `check_integrity`).
+Still not exercised by CI: the full `docker-compose.prod.yml` stack (db-roles → migrate → web → worker as containers), read-only root filesystem at runtime, `pg_dump` scripts, TLS/HSTS.
+
+## 6. Not executed (reviewed only)
+The full `docker-compose.prod.yml` stack and the read-only-filesystem runtime (the image build and a non-root liveness check DID run in CI, §5b); `release.yml` (never triggered);
 `pg_dump` scripts; real TLS/HSTS/proxy header behaviour; an independent penetration test; manual screen-reader testing.

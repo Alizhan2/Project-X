@@ -10,7 +10,7 @@ ids, health/readiness/metrics, integrity tooling · hash-locked dependencies · 
 | # | Blocker | Owner | Status |
 |---|---|---|---|
 | 1 | Hosting provider/region, domain + TLS ingress not chosen | you | **open decision** (docs/deployment.md options) |
-| 2 | Container image never built; compose stack never run | needs Docker | **NOT RUN**: first action on the chosen host/CI |
+| 2 | Container image build: **done in CI** (builds, non-root, liveness OK). The full compose stack as containers has not been run | needs Docker host | partly done; remaining: first `docker compose up` on the target host |
 | 3 | `pg_dump` backup scripts never executed; first real run + `verify-restore.sh` required | needs Postgres client tools | **NOT RUN** |
 | 4 | Public registration policy: no e-mail verification / password reset exists | you | **open decision** (docs/security.md): keep closed (`REGISTRATION_ENABLED=false`) or accept for a synthetic demo |
 | 5 | Alert recipient / on-call and backup owner named | you | open |
@@ -43,7 +43,7 @@ docs/deployment.md (single image: web + worker + one-shot db-roles/migrate jobs;
 | Privacy | inventory, minimisation; retention/deletion defined as requirements | documented; deletion **not built** |
 | Observability | JSON logs, request ids, metrics, audit, runbook | done; external monitoring **not connected** |
 | Backups | scripts + restore procedure + measured rehearsal | physical rehearsal run; pg_dump path **not run** |
-| CI/CD | pipeline (tests, deploy gate, e2e on prod-like stack, scans, container) + release procedure | written; **never executed on a runner** |
+| CI/CD | pipeline (tests, deploy gate, e2e on prod-like stack, scans, container) + release procedure | **executed on a GitHub runner: all 5 jobs green at `ac46440`** (release.yml never triggered) |
 | Commercial | backlog separate; commercial mode blocked | documented |
 
 ## Verdict
