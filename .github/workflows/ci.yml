@@ -84,6 +84,7 @@ jobs:
       MIGRATE_POSTGRES_PASSWORD: ci-only-migrator-password
       POSTGRES_ADMIN_USER: doedu_admin
       POSTGRES_ADMIN_PASSWORD: ci-only-admin
+      DEMO_USER_PASSWORD: ci-only-synthetic-demo-password   # deployed environments must set it explicitly (no well-known default)
       THROTTLE_LOGIN: 1000/min        # the suite signs in constantly from one IP
       THROTTLE_REGISTER: 1000/hour
       THROTTLE_SEARCH: 5000/min
@@ -97,7 +98,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: pip install --require-hashes -r backend/requirements.txt
-      - run: echo "DJANGO_SECRET_KEY=$(python -c 'import secrets;print(secrets.token_urlsafe(64))')" >> "$GITHUB_ENV"
+      - name: Throw-away secret key for this run (masked in logs)
+        run: |
+          key="$(python -c 'import secrets;print(secrets.token_urlsafe(64))')"
+          echo "::add-mask::$key"
+          echo "DJANGO_SECRET_KEY=$key" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v4
         with: { name: frontend-dist, path: frontend/dist }
       - run: ops/run-staging.sh
@@ -109,7 +114,7 @@ jobs:
         run: python manage.py check_integrity
         working-directory: backend
       - if: failure()
-        run: tail -50 /tmp/doedu-web.log /tmp/doedu-worker.log
+        run: for f in /tmp/doedu-web.log /tmp/doedu-worker.log; do echo "== $f"; tail -n 50 "$f" || true; done
 
   security:
     runs-on: ubuntu-latest
