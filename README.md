@@ -3,6 +3,8 @@
 Multimodal transport booking MVP (bus · train · taxi) with disruption recovery.
 **Everything is simulated**: transport data, payments, tickets. Not production software.
 
+Handoff / current blockers: [docs/HANDOFF.md](docs/HANDOFF.md)
+
 Status: **MVP complete (Stages 0–7) and prepared for a hosted demonstration.** Production-readiness assessment: [docs/production-readiness.md](docs/production-readiness.md) · evidence: [docs/verification-report.md](docs/verification-report.md). Commercial operation is **not** ready: [docs/commercial-readiness.md](docs/commercial-readiness.md).
 
 ## Layout
