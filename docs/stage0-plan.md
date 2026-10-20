@@ -22,7 +22,7 @@ seat selection, geocoding, ML, dynamic pricing.
 
 ## Open questions
 - Is a fictional region acceptable, or should it mimic a real one (naming only)?
-- Language: English-only UI for MVP?
+- Language: originally English-only; English, Russian and Kazakh implemented on 2026-10-20 (see localization.md).
 - Refund rule defaults (e.g. full refund until 24h before departure, 50% until 2h, none after) — proposed, confirm.
 
 ## Architecture [proposed, skeleton done]

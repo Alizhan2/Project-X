@@ -130,4 +130,29 @@ class EmailFlowTests(TestCase):
             self.assertEqual(len(files), 1)
             self.assertEqual(stat.S_IMODE(files[0].stat().st_mode), 0o600)
             self.assertEqual(stat.S_IMODE(Path(folder).stat().st_mode), 0o700)
-            self.assertIn('https://doedu.example/verify-email#', files[0].read_text())
+            self.assertIn('https://doedu.example/verify-email?lang=3Den#', files[0].read_text())
+
+    def test_queued_email_remembers_language_after_request_finishes(self):
+        for lang, subject in [('ru', 'Сбросить пароль'), ('kk', 'Құпиясөзді қалпына келтіру')]:
+            cache.clear()
+            response = self.c.post('/api/auth/password-reset/', {'email': self.user.email},
+                                   content_type='application/json', HTTP_ACCEPT_LANGUAGE=lang, **fresh(self.c))
+            self.assertEqual(response.status_code, 202)
+            self.assertEqual(response['Content-Language'], lang)
+            self.assertEqual(Job.objects.order_by('-pk').first().payload['lang'], lang)
+            # Run outside the HTTP request, as a worker does.
+            run_pending()
+            self.assertIn(subject, mail.outbox[-1].subject)
+            self.assertIn('?lang=' + lang + '#uid=', mail.outbox[-1].body)
+            self.assertNotIn('This link expires', mail.outbox[-1].body)
+
+    def test_localized_validation_preserves_fields_and_token_checks(self):
+        for lang, expected in [('ru', 'Неверный'), ('kk', 'қате')]:
+            response = self.c.post('/api/auth/login/', {'email': 'missing@example.com', 'password': 'invalid'},  # pragma: allowlist secret - deliberately invalid test credential
+                                   content_type='application/json', HTTP_ACCEPT_LANGUAGE=lang, **fresh(self.c))
+            self.assertEqual(response.status_code, 400)
+            self.assertIn(expected, str(response.json()['detail']))
+        data = self.token_data('verify')
+        response = self.c.post('/api/auth/email-verification/confirm/', data, content_type='application/json',
+                               HTTP_ACCEPT_LANGUAGE='kk', **fresh(self.c))
+        self.assertEqual(response.json()['detail'], 'Email расталды. Сапарларыңызға орала аласыз.')

@@ -1,3 +1,5 @@
+import { t } from './i18n'
+import { useLanguage } from './useLanguage'
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import RequireAuth from './components/RequireAuth'
@@ -13,14 +15,17 @@ import NewService from './pages/operator/NewService'
 import ServiceDetail from './pages/operator/ServiceDetail'
 import Services from './pages/operator/Services'
 import Search from './pages/Search'
+import Kazakhstan from './pages/Kazakhstan'
 import Status from './pages/Status'
 import EmailAccount from './pages/EmailAccount'
 
 export default function App() {
+  useLanguage()
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Search />} />
+        <Route path="kazakhstan" element={<Kazakhstan />} />
         <Route path="journey" element={<Journey />} />
         <Route path="forgot-password" element={<EmailAccount key="forgot" mode="forgot" />} />
         <Route path="reset-password" element={<EmailAccount key="reset" mode="reset" />} />
@@ -40,7 +45,7 @@ export default function App() {
           <Route path="operator/services/:id" element={<ServiceDetail />} />
         </Route>
         <Route path="status" element={<Status />} />
-        <Route path="*" element={<p>Page not found.</p>} />
+        <Route path="*" element={<p>{t("Page not found.")}</p>} />
       </Route>
     </Routes>
   )

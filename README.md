@@ -3,6 +3,8 @@
 Multimodal transport booking MVP (bus · train · taxi) with disruption recovery.
 **Everything is simulated**: transport data, payments, tickets. Not production software.
 
+Interface: **English · Русский · Қазақша**, including account emails and PDF/calendar downloads. [Localization behavior and maintenance](docs/localization.md).
+
 Handoff / current blockers: [docs/HANDOFF.md](docs/HANDOFF.md)
 
 Status: **MVP complete (Stages 0–7) and prepared for a hosted demonstration.** Production-readiness assessment: [docs/production-readiness.md](docs/production-readiness.md) · evidence: [docs/verification-report.md](docs/verification-report.md). Commercial operation is **not** ready: [docs/commercial-readiness.md](docs/commercial-readiness.md).
@@ -86,3 +88,7 @@ Choose **Arrive by** to find journeys that reach your destination by a chosen da
 ## Travel companion
 
 Signed-in passengers see their next confirmed journey on the search page. Confirmed booking pages offer calendar (.ics) and PDF downloads using current timetable estimates. Downloads are static, private, demonstrative copies, not valid tickets. See [travel companion](docs/travel-companion.md).
+
+### Kazakhstan preparation
+
+Open `/kazakhstan` for 20 Kazakhstan cities, three-language region names, KZT and local time (Asia/Almaty). Real supplier access and ticket sales are not enabled. See [Kazakhstan integration and 1TR.kz access](docs/kazakhstan.md).

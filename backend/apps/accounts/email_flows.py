@@ -20,6 +20,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.core.throttling import throttle
+from apps.core.i18n import language, tr
 from apps.core.jobs import enqueue, handler
 from .models import User
 from .views import StrictCsrfSessionAuth
@@ -35,16 +36,17 @@ class VerifyToken(PasswordResetTokenGenerator):
 TOKENS = {'reset': PasswordResetTokenGenerator(), 'verify': VerifyToken()}
 
 
-def deliver(user, purpose):
+def deliver(user, purpose, lang="en"):
+    lang = lang if lang in ("en", "ru", "kk") else "en"
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = TOKENS[purpose].make_token(user)
     page = 'reset-password' if purpose == 'reset' else 'verify-email'
-    url = f'{settings.PUBLIC_APP_URL}/{page}#uid={uid}&token={token}'
-    action = 'Reset your password' if purpose == 'reset' else 'Verify your email'
+    url = f'{settings.PUBLIC_APP_URL}/{page}?lang={lang}#uid={uid}&token={token}'
+    action = tr('Reset your password' if purpose == 'reset' else 'Verify your email', lang=lang)
+    explanation = tr('This link expires in one hour and works once. If you did not request it, ignore this message.', lang=lang)
     try:
         send_mail(f'Doedu: {action}',
-                  f'{action}:\n\n{url}\n\nThis link expires in one hour and works once. '
-                  'If you did not request it, ignore this message.\n',
+                  f'{action}:\n\n{url}\n\n{explanation}\n',
                   settings.DEFAULT_FROM_EMAIL, [user.email])
     except Exception:
         # The worker retries. Suppress SMTP details in logs and persisted job errors.
@@ -60,20 +62,20 @@ def queue_email(user, purpose, identifier):
     if cache.add(key, True, 60):
         try:
             enqueue('account_email', {'user_id': user.pk if user else None, 'purpose': purpose,
-                                     'version': credential_version(user) if user else ''})
+                                     'version': credential_version(user) if user else '', 'lang': language()})
         except Exception:
             cache.delete(key)
             raise
 
 
 @handler('account_email')
-def deliver_queued(user_id, purpose, version):
+def deliver_queued(user_id, purpose, version, lang="en"):
     user = User.objects.filter(pk=user_id, is_active=True).first() if user_id else None
     if not user or credential_version(user) != version or not user.has_usable_password():
         return
     if purpose == 'verify' and user.email_verified_at:
         return
-    deliver(user, purpose)
+    deliver(user, purpose, lang=lang)
 
 
 def require_delivery():

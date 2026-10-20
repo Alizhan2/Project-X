@@ -4,6 +4,8 @@ from django.http import FileResponse, HttpResponse
 from django.urls import include, path, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from apps.transport.kazakhstan import views as kazakhstan
+
 handler500 = "apps.core.errors.server_error"
 handler404 = "apps.core.errors.not_found"
 
@@ -19,6 +21,8 @@ def spa_index(request, *args, **kwargs):
 
 
 urlpatterns = [
+    path("api/kazakhstan/catalog/", kazakhstan.catalog),
+    path("api/kazakhstan/search/", kazakhstan.search),
     path("admin/", admin.site.urls),
     path("api/", include("apps.core.urls")),
     path("api/", include("apps.accounts.urls")),

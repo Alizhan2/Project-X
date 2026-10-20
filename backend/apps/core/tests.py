@@ -20,6 +20,7 @@ class SecuritySweepTests(TestCase):
     """Every API route must reject anonymous users unless it is deliberately public."""
 
     PUBLIC = {
+        "api/kazakhstan/catalog/", "api/kazakhstan/search/",  # public geography and journey search
         "api/health/", "api/stops/", "api/search/", "api/itinerary/", "api/schema/", "api/docs/",
         "api/auth/password-reset/", "api/auth/password-reset/confirm/", "api/auth/email-verification/confirm/",
         "api/auth/csrf/", "api/auth/register/", "api/auth/login/", "api/auth/me/",

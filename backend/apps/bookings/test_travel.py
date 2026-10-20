@@ -114,3 +114,23 @@ class TravelTests(BookingTestBase, TestCase):
         uid = next(line for line in content.split(b"\r\n") if line.startswith(b"UID:"))
         plan["generated_at"] += timedelta(minutes=5)
         self.assertIn(uid, calendar_bytes(plan))
+
+    def test_download_languages_preserve_event_identity_times_and_snapshot(self):
+        booking = self.confirmed()
+        snapshot = list(booking.legs.values())
+        originals = None
+        for lang, word in [('en', 'Simulated journey'), ('ru', 'Симулированная поездка'), ('kk', 'Үлгі сапар')]:
+            response = self.c.get(f'/api/bookings/{booking.reference}/calendar/', HTTP_ACCEPT_LANGUAGE=lang)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Language'], lang)
+            self.assertTrue(all(len(line) <= 75 for line in response.content.split(b'\r\n')))
+            unfolded = response.content.decode().replace('\r\n ', '')
+            self.assertIn(word, unfolded)
+            identity = [line for line in unfolded.splitlines() if line.startswith(('UID:', 'DTSTART:', 'DTEND:'))]
+            if originals is None:
+                originals = identity
+            self.assertEqual(identity, originals)
+            pdf = self.c.get(f'/api/bookings/{booking.reference}/pdf/', HTTP_ACCEPT_LANGUAGE=lang)
+            self.assertEqual(pdf['Content-Language'], lang)
+            self.assertTrue(pdf.content.startswith(b'%PDF-'))
+        self.assertEqual(list(booking.legs.values()), snapshot)

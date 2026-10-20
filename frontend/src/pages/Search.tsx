@@ -1,3 +1,5 @@
+import { t } from '../i18n'
+import { useLanguage } from '../useLanguage'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ApiError, fetchStops, searchJourneys, type SearchResponse, type Stop } from '../api'
@@ -17,6 +19,7 @@ type Results =
 const today = regionToday
 
 export default function Search() {
+  useLanguage()
   const [params, setParams] = useSearchParams()
   const [stops, setStops] = useState<Stop[] | null>(null)
   const [stopsError, setStopsError] = useState<string | null>(null)
@@ -66,7 +69,7 @@ export default function Search() {
       .catch((e: unknown) => {
         if (ctrl.signal.aborted) return
         if (e instanceof ApiError) setResponse({ key: scope, value: { kind: 'error', message: e.message, fields: e.fields } })
-        else setResponse({ key: scope, value: { kind: 'error', message: 'Could not reach the server.', fields: {} } })
+        else setResponse({ key: scope, value: { kind: 'error', message: t("Could not reach the server."), fields: {} } })
       })
     return () => ctrl.abort()
   }, [query, scope])
@@ -83,77 +86,75 @@ export default function Search() {
     setParams(next)
   }
 
-  const err = (name: string) => fieldErr[name] && <span id={`${name}-err`} className="field-error">{fieldErr[name]}</span>
+  const err = (name: string) => fieldErr[name] && <span id={`${name}-err`} className="field-error">{t(fieldErr[name])}</span>
   const aria = (name: string) => (fieldErr[name] ? { 'aria-invalid': true, 'aria-describedby': `${name}-err` } : {})
 
   return (
     <>
       <section className="journey-intro">
-        <div><h1>Plan your journey</h1><p>From your first stop to your final destination.<br />Find buses, trains and taxis that connect.</p></div>
-        <div className="route-ribbon" aria-label="Travel by bus, train and taxi"><span>Bus</span><i aria-hidden="true" /><span>Train</span><i aria-hidden="true" /><span>Taxi</span></div>
+        <div><h1>{t("Plan your journey")}</h1><p>{t("From your first stop to your final destination.")}<br />{t("Find buses, trains and taxis that connect.")}</p></div>
+        <div className="route-ribbon" aria-label={t("Travel by bus, train and taxi")}><span>{t("Bus")}</span><i aria-hidden="true" /><span>{t("Train")}</span><i aria-hidden="true" /><span>{t("Taxi")}</span></div>
       </section>
       <UpcomingJourney />
-      {params.get("repeat") === "1" && <p className="email-notice">A new search for this direction. Choose your travel date; prices and availability are current. No previous booking is changed.</p>}
-      {stopsError && <p className="status-bad" role="alert">Could not load stops: {stopsError}</p>}
+      {params.get("repeat") === "1" && <p className="email-notice">{t("A new search for this direction. Choose your travel date; prices and availability are current. No previous booking is changed.")}</p>}
+      {stopsError && <p className="status-bad" role="alert">{t("Could not load stops:")} {t(stopsError)}</p>}
       <SearchForm key={JSON.stringify(['origin', 'destination', 'date', 'time', 'passengers', 'time_mode'].map(k => params.get(k)))} params={params} setParams={setParams} stops={stops} fieldErr={fieldErr} />
 
-      <section className="search-filters" aria-label="Journey filters">
-        <fieldset><legend>Transport</legend><div className="mode-options">{['bus', 'train', 'taxi'].map(mode => <label key={mode}>
+      <section className="search-filters" aria-label={t("Journey filters")}>
+        <fieldset><legend>{t("Transport")}</legend><div className="mode-options">{['bus', 'train', 'taxi'].map(mode => <label key={mode}>
           <input type="checkbox" checked={modes.split(',').includes(mode)} disabled={modes === mode} onChange={e => {
             const next = e.target.checked ? [...modes.split(','), mode] : modes.split(',').filter(m => m !== mode)
             changeParam('modes', next.sort().join(','))
-          }} />{mode[0].toUpperCase() + mode.slice(1)}
+          }} />{t(mode[0].toUpperCase() + mode.slice(1))}
         </label>)}</div>{err('modes')}</fieldset>
-        <div className="field"><label htmlFor="max-transfers">Transfers</label>
+        <div className="field"><label htmlFor="max-transfers">{t("Transfers")}</label>
           <select id="max-transfers" value={maxTransfers} onChange={e => changeParam('max_transfers', e.target.value)} {...aria('max_transfers')}>
-            <option value="any">Any number (up to 2)</option><option value="0">Direct only</option><option value="1">At most 1</option><option value="2">At most 2</option>
+            <option value="any">{t("Any number (up to 2)")}</option><option value="0">{t("Direct only")}</option><option value="1">{t("At most 1")}</option><option value="2">{t("At most 2")}</option>
           </select>{err('max_transfers')}
         </div>
-        <div className="field"><label htmlFor="max-connection">Maximum connection time</label>
+        <div className="field"><label htmlFor="max-connection">{t("Maximum connection time")}</label>
           <select id="max-connection" value={maxConnection} onChange={e => changeParam('max_connection_minutes', e.target.value)} {...aria('max_connection_minutes')}>
-            <option value="">Any available</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option><option value="180">3 hours</option>
-          </select><span className="muted small">From arrival to next departure, including walking.</span>{err('max_connection_minutes')}
+            <option value="">{t("Any available")}</option><option value="15">{t("15 minutes")}</option><option value="30">{t("30 minutes")}</option><option value="60">{t("1 hour")}</option><option value="120">{t("2 hours")}</option><option value="180">{t("3 hours")}</option>
+          </select><span className="muted small">{t("From arrival to next departure, including walking.")}</span>{err('max_connection_minutes')}
         </div>
       </section>
       <FavoriteRoutes origin={params.get('origin') ?? ''} destination={params.get('destination') ?? ''} />
       <JourneyComparison arriveBy={arriveBy} options={compared.flatMap(key => shown.filter(it => it.legs_param === key))} remove={key => setCompared(old => old.filter(k => k !== key))} clear={() => setCompared(() => [])} />
       <section aria-labelledby="results-h" aria-live="polite" className="results">
         <div className="results-bar">
-          <h2 id="results-h">Results</h2>
+          <h2 id="results-h">{t("Results")}</h2>
           {query && <div className="field">
-            <label htmlFor="sort">Sort by</label>
+            <label htmlFor="sort">{t("Sort by")}</label>
             <select id="sort" value={sort} onChange={e => changeParam('sort', e.target.value)}>
-              <option value="departure">Earliest departure</option>
-              <option value="latest_departure">Latest departure</option>
-              <option value="price">Lowest price</option>
-              <option value="duration">Shortest duration</option>
-              <option value="buffer">Largest transfer buffer</option>
+              <option value="departure">{t("Earliest departure")}</option>
+              <option value="latest_departure">{t("Latest departure")}</option>
+              <option value="price">{t("Lowest price")}</option>
+              <option value="duration">{t("Shortest duration")}</option>
+              <option value="buffer">{t("Largest transfer buffer")}</option>
             </select>
           </div>}
         </div>
-        {results.kind === 'idle' && <p className="muted">Choose where you are travelling and search.</p>}
-        {results.kind === 'loading' && <p>Searching…</p>}
-        {results.kind === 'error' && <p className="status-bad" role="alert">{results.message}</p>}
+        {results.kind === 'idle' && <p className="muted">{t("Choose where you are travelling and search.")}</p>}
+        {results.kind === 'loading' && <p>{t("Searching…")}</p>}
+        {results.kind === 'error' && <p className="status-bad" role="alert">{t(results.message)}</p>}
         {results.kind === 'done' && (
           <>
             <div className="results-bar">
               <p>
-                {shown.length} matching journey(s). {arrivalMode ? `Arriving by ${params.get('date')} at ${params.get('time') ?? '06:00'} (Europe/Berlin); departures within the preceding ${results.data.window_hours} hours. Some journeys may start the previous day.` : `Departing in the next ${results.data.window_hours} hours.`}{' '}
-                <span className="badge">Simulated data</span>
+                {shown.length}  {t("matching journey(s).")} {arrivalMode ? t("Arriving by {0} at {1} (Europe/Berlin); departures within the preceding {2} hours. Some journeys may start the previous day.", {0: params.get('date'), 1: params.get('time') ?? '06:00', 2: results.data.window_hours}) : t("Departing in the next {0} hours.", {0: results.data.window_hours})}{' '}
+                <span className="badge">{t("Simulated data")}</span>
               </p>
             </div>
             {shown.length === 0 ? (
               <div className="card empty">
-                <p><strong>No journeys found.</strong></p>
+                <p><strong>{t("No journeys found.")}</strong></p>
                 <p className="muted">
-                  {arrivalMode ? 'Try a later arrival deadline, ' : 'Try another date or time, '}fewer passengers, relaxing the transfer filter, or a different stop. Cancelled
-                  services, services without enough free places, and impossible connections are not shown.
-                </p>
+                  {arrivalMode ? t("Try a later arrival deadline, ") : t("Try another date or time, ")}{t("fewer passengers, relaxing the transfer filter, or a different stop. Cancelled services, services without enough free places, and impossible connections are not shown.")} </p>
               </div>
             ) : (
               <ul className="result-list">
                 {shown.map((it, index) => <ResultCard key={it.legs_param} it={it} arriveBy={arriveBy} comparison={{
-                  label: `Compare journey ${index + 1}`, selected: compared.includes(it.legs_param), disabled: compared.length >= 3 && !compared.includes(it.legs_param),
+                  label: t("Compare journey {0}", {0: index + 1}), selected: compared.includes(it.legs_param), disabled: compared.length >= 3 && !compared.includes(it.legs_param),
                   toggle: () => setCompared(old => old.includes(it.legs_param) ? old.filter(k => k !== it.legs_param) : old.length < 3 ? [...old, it.legs_param] : old),
                 }} />)}
               </ul>

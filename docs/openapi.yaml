@@ -782,6 +782,182 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/kazakhstan/catalog/:
+    get:
+      operationId: kazakhstan_catalog_retrieve
+      tags:
+      - kazakhstan
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/kazakhstan/search/:
+    get:
+      operationId: kazakhstan_search_retrieve
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+        required: true
+      - in: query
+        name: destination
+        schema:
+          enum:
+          - kz-astana
+          - kz-almaty
+          - kz-shymkent
+          - kz-kokshetau
+          - kz-aktobe
+          - kz-atyrau
+          - kz-oral
+          - kz-aktau
+          - kz-kostanay
+          - kz-petropavl
+          - kz-pavlodar
+          - kz-karaganda
+          - kz-zhezkazgan
+          - kz-oskemen
+          - kz-semey
+          - kz-taldykorgan
+          - kz-konaev
+          - kz-taraz
+          - kz-kyzylorda
+          - kz-turkistan
+          type: string
+          minLength: 1
+        description: |-
+          * `kz-astana` - kz-astana
+          * `kz-almaty` - kz-almaty
+          * `kz-shymkent` - kz-shymkent
+          * `kz-kokshetau` - kz-kokshetau
+          * `kz-aktobe` - kz-aktobe
+          * `kz-atyrau` - kz-atyrau
+          * `kz-oral` - kz-oral
+          * `kz-aktau` - kz-aktau
+          * `kz-kostanay` - kz-kostanay
+          * `kz-petropavl` - kz-petropavl
+          * `kz-pavlodar` - kz-pavlodar
+          * `kz-karaganda` - kz-karaganda
+          * `kz-zhezkazgan` - kz-zhezkazgan
+          * `kz-oskemen` - kz-oskemen
+          * `kz-semey` - kz-semey
+          * `kz-taldykorgan` - kz-taldykorgan
+          * `kz-konaev` - kz-konaev
+          * `kz-taraz` - kz-taraz
+          * `kz-kyzylorda` - kz-kyzylorda
+          * `kz-turkistan` - kz-turkistan
+        required: true
+      - in: query
+        name: modes
+        schema:
+          enum:
+          - bus,train
+          - bus
+          - train
+          type: string
+          default: bus,train
+          minLength: 1
+        description: |-
+          * `bus,train` - bus,train
+          * `bus` - bus
+          * `train` - train
+      - in: query
+        name: origin
+        schema:
+          enum:
+          - kz-astana
+          - kz-almaty
+          - kz-shymkent
+          - kz-kokshetau
+          - kz-aktobe
+          - kz-atyrau
+          - kz-oral
+          - kz-aktau
+          - kz-kostanay
+          - kz-petropavl
+          - kz-pavlodar
+          - kz-karaganda
+          - kz-zhezkazgan
+          - kz-oskemen
+          - kz-semey
+          - kz-taldykorgan
+          - kz-konaev
+          - kz-taraz
+          - kz-kyzylorda
+          - kz-turkistan
+          type: string
+          minLength: 1
+        description: |-
+          * `kz-astana` - kz-astana
+          * `kz-almaty` - kz-almaty
+          * `kz-shymkent` - kz-shymkent
+          * `kz-kokshetau` - kz-kokshetau
+          * `kz-aktobe` - kz-aktobe
+          * `kz-atyrau` - kz-atyrau
+          * `kz-oral` - kz-oral
+          * `kz-aktau` - kz-aktau
+          * `kz-kostanay` - kz-kostanay
+          * `kz-petropavl` - kz-petropavl
+          * `kz-pavlodar` - kz-pavlodar
+          * `kz-karaganda` - kz-karaganda
+          * `kz-zhezkazgan` - kz-zhezkazgan
+          * `kz-oskemen` - kz-oskemen
+          * `kz-semey` - kz-semey
+          * `kz-taldykorgan` - kz-taldykorgan
+          * `kz-konaev` - kz-konaev
+          * `kz-taraz` - kz-taraz
+          * `kz-kyzylorda` - kz-kyzylorda
+          * `kz-turkistan` - kz-turkistan
+        required: true
+      - in: query
+        name: passengers
+        schema:
+          type: integer
+          maximum: 9
+          minimum: 1
+          default: 1
+      - in: query
+        name: time
+        schema:
+          type: string
+          format: time
+          default: 06:00:00
+      tags:
+      - kazakhstan
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/notifications/:
     get:
       operationId: notifications_retrieve

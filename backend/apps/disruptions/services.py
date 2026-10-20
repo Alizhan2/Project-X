@@ -173,7 +173,7 @@ def apply_change(*, actor, departure_id, action, minutes=0):
         if action == "delay" and minutes == dep.delay_minutes:
             return None, True
         status, delay = _override(dep, action, minutes)
-        label = f"{dep.route.code} {timezone.localtime(dep.departs_at):%d %b %H:%M}"
+        label = f"{dep.route.code} {timezone.localtime(dep.departs_at):%d.%m %H:%M}"
         # Assess *after* applying so connection checks see the new times.
         dep.status, dep.delay_minutes = status, delay
         dep.save(update_fields=["status", "delay_minutes"])

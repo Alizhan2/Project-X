@@ -1,3 +1,4 @@
+import { getLanguage, t } from './i18n'
 export interface Health {
   status: 'ok' | 'error'
   database: string
@@ -5,7 +6,7 @@ export interface Health {
 }
 
 export async function fetchHealth(signal?: AbortSignal): Promise<Health> {
-  const res = await fetch('/api/health/', { signal })
+  const res = await fetch('/api/health/', { signal, headers: { 'Accept-Language': getLanguage() } })
   // 503 still carries a JSON body describing the failure.
   return (await res.json()) as Health
 }
@@ -74,7 +75,7 @@ export class ApiError extends Error {
   code?: string
   data: Record<string, unknown>
   constructor(message: string, opts: { fields?: Record<string, string>; status?: number; code?: string; data?: Record<string, unknown> } = {}) {
-    super(message)
+    super(t(message))
     this.fields = opts.fields ?? {}
     this.status = opts.status ?? 0
     this.code = opts.code
@@ -91,7 +92,7 @@ export async function ensureCsrf() {
 export async function request<T>(
   method: string, url: string, body?: unknown, opts: { signal?: AbortSignal; idempotencyKey?: string } = {},
 ): Promise<T> {
-  const headers: Record<string, string> = {}
+  const headers: Record<string, string> = { 'Accept-Language': getLanguage() }
   if (method !== 'GET') {
     await ensureCsrf()
     headers['X-CSRFToken'] = csrfToken() // re-read every time: login/register rotate the token
@@ -122,7 +123,7 @@ export async function request<T>(
     throw new ApiError(String(data.message ?? 'This action conflicts with the current state.'), { status: 409, code: String(data.code ?? ''), data })
   }
   if (res.status === 404) throw new ApiError('Not found.', { status: 404 })
-  throw new ApiError(`The server returned an error (${res.status}). Please try again.`, { status: res.status })
+  throw new ApiError(`The server returned an error (${res.status}). Please try again.`, { status: res.status, code: typeof data.code === 'string' ? data.code : undefined, data })
 }
 
 const getJson = <T,>(url: string, signal?: AbortSignal) => request<T>('GET', url, undefined, { signal })
@@ -190,7 +191,7 @@ export interface TravelPlan {
 export const fetchUpcoming = (signal?: AbortSignal) => getJson<{ journey: TravelPlan | null }>('/api/bookings/upcoming/', signal)
 
 export async function downloadJourney(reference: string, kind: 'calendar' | 'pdf') {
-  const response = await fetch(`/api/bookings/${encodeURIComponent(reference)}/${kind}/`, { cache: 'no-store' })
+  const response = await fetch(`/api/bookings/${encodeURIComponent(reference)}/${kind}/`, { cache: 'no-store', headers: { 'Accept-Language': getLanguage() } })
   if (!response.ok) {
     const data = await response.json().catch(() => ({}))
     throw new Error(data.message || data.detail || 'Could not download this journey. Refresh your booking and try again.')
