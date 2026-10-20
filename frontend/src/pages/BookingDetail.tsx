@@ -7,6 +7,7 @@ import RecoveryPanel from '../components/RecoveryPanel'
 import Timeline from '../components/Timeline'
 import JourneyDownloads from '../components/JourneyDownloads'
 import { clock, money } from '../format'
+import { netPaid } from '../bookingAmounts'
 
 const REASONS: Record<string, string> = {
   service_cancelled: 'one of your services was cancelled by the operator',
@@ -63,11 +64,11 @@ export default function BookingDetail() {
           <p>{t("Reference")} <strong data-testid="reference">{b.reference}</strong>. {t(b.simulated_notice)}</p>
         </div>
       )}
-      {(b.status !== 'confirmed' || b.disruption?.reason) && <h1>{t("Booking")} <span data-testid="reference">{b.reference}</span></h1>}
+      {b.disruption?.status === 'broken' ? <><h1>{t('Your journey has changed.')}<br />{t('Choose a new plan.')}</h1><p className="muted small">{t('Reference')} <span data-testid="reference">{b.reference}</span></p></> : (b.status !== 'confirmed' || b.disruption?.reason) && <h1>{t("Booking")} <span data-testid="reference">{b.reference}</span></h1>}
 
       {recovered && <p className="card success" role="status">{t(recovered)}</p>}
       {b.disruption?.status === 'broken' && (
-        <div className="card danger-card" role="alert">
+        <div className="card disruption-banner" role="alert">
           <h2>{t("Your journey is disrupted")}</h2>
           <p>{t("Leg")} {(b.disruption.problem_sequence ?? 0) + 1}  {t("cannot be used:")} {t(REASONS[b.disruption.reason] ?? "a service changed")}.</p>
           <p>{t("You can cancel below for a full refund of every unused leg.")}</p>
@@ -98,7 +99,7 @@ export default function BookingDetail() {
           </details>
         )}
         <p>{t("Passengers:")} {b.travellers.join(', ')}</p>
-        <p>{t("Net paid:")} <strong>{money(b.total_amount, b.currency)}</strong>  {t("(prices fixed at purchase)")}</p>
+        <p>{t("Net paid:")} <strong data-testid="net-paid">{money(netPaid(b), b.currency)}</strong>  {t("(prices fixed at purchase)")}</p>
         <ul className="muted small">{b.legs.map((l) => <li key={l.sequence}>{l.route_code}: {t(l.cancellation_policy)}</li>)}</ul>
 
         {b.refunds.map((r, i) => (

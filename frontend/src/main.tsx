@@ -6,6 +6,7 @@ import { AuthProvider } from './auth'
 import { ConfigProvider } from './config'
 import { NotificationsProvider } from './notifications'
 import './index.css'
+import './design.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

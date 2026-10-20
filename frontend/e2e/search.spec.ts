@@ -1,5 +1,6 @@
 import { demoDayIso } from './demo-day'
 import { expect, test } from '@playwright/test'
+import type { SearchResponse } from '../src/api'
 
 // Requires seeded demo data: `python manage.py seed_demo` (demo day = reference date + 1).
 
@@ -9,13 +10,20 @@ test('search shows database-backed direct bus journeys with prices and simulated
   await page.getByLabel('To', { exact: true }).selectOption({ label: 'Riverton Bus Station' })
   await page.getByLabel('Date').fill(demoDayIso())
   await page.getByLabel('Earliest departure').fill('06:00')
+  const searchResponse = page.waitForResponse(r => new URL(r.url()).pathname === '/api/search/' && r.ok())
   await page.getByRole('button', { name: 'Search journeys' }).click()
+  const data: SearchResponse = await (await searchResponse).json()
 
   await expect(page.getByText('Simulated data')).toBeVisible()
   const cards = page.locator('.result')
   await expect(cards.first()).toBeVisible()
   await expect(cards.first()).toContainText('EUR')
-  await expect(page.getByText('Delayed by 45 min').first()).toBeVisible()
+  await expect(cards).toHaveCount(data.results.length)
+  // Additive demo schedules may have no disruption on tomorrow's date.
+  // Check actual API delays rather than requiring an unrelated, consumed scenario.
+  for (const leg of data.results.flatMap(it => it.legs).filter(l => l.status === 'delayed')) {
+    await expect(page.getByText(`${leg.route_code}: Delayed by ${leg.delay_minutes} min`).first()).toBeVisible()
+  }
 
   await page.getByLabel('Sort by').selectOption('price')
   await expect(page).toHaveURL(/sort=price/)

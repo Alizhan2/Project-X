@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { placeName, t } from '../i18n'
 import { useLanguage } from '../useLanguage'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -8,6 +8,7 @@ import SearchForm from '../components/SearchForm'
 import FavoriteRoutes from '../components/FavoriteRoutes'
 import JourneyComparison from '../components/JourneyComparison'
 import UpcomingJourney from '../components/UpcomingJourney'
+import JourneyHero, { JourneyBenefits } from '../components/JourneyHero'
 import { regionToday } from '../format'
 
 type Results =
@@ -21,6 +22,8 @@ const today = regionToday
 export default function Search() {
   useLanguage()
   const [params, setParams] = useSearchParams()
+  const [editing, setEditing] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [stops, setStops] = useState<Stop[] | null>(null)
   const [stopsError, setStopsError] = useState<string | null>(null)
   const scope = params.toString()
@@ -91,16 +94,22 @@ export default function Search() {
 
   return (
     <>
-      <section className="journey-intro">
-        <div><h1>{t("Plan your journey")}</h1><p>{t("From your first stop to your final destination.")}<br />{t("Find buses, trains and taxis that connect.")}</p></div>
-        <div className="route-ribbon" aria-label={t("Travel by bus, train and taxi")}><span>{t("Bus")}</span><i aria-hidden="true" /><span>{t("Train")}</span><i aria-hidden="true" /><span>{t("Taxi")}</span></div>
-      </section>
+      {!query ? <JourneyHero /> : <header className="search-results-heading"><h1>{t('Choose your journey')}</h1>{results.kind === 'done' && <span className="badge">{t('{0} journeys', {0: shown.length})}</span>}</header>}
       <UpcomingJourney />
       {params.get("repeat") === "1" && <p className="email-notice">{t("A new search for this direction. Choose your travel date; prices and availability are current. No previous booking is changed.")}</p>}
       {stopsError && <p className="status-bad" role="alert">{t("Could not load stops:")} {t(stopsError)}</p>}
+      {query && <div className="search-summary"><div><strong>{placeName(stops?.find(s => s.code === params.get('origin'))?.name ?? params.get('origin') ?? '')} → {placeName(stops?.find(s => s.code === params.get('destination'))?.name ?? params.get('destination') ?? '')}</strong><p>{params.get('date')} · {arrivalMode ? t('Arrive by') : t('Depart after')} {params.get('time') ?? '06:00'} · {t('For {0} passenger(s)', {0: params.get('passengers') ?? '1'})}</p></div><button type="button" className="secondary" aria-expanded={editing} aria-controls="journey-search" onClick={() => setEditing(!editing)}>{t('Change search')}</button></div>}
+      <div id="journey-search" hidden={!!query && !editing && results.kind !== 'error'}>
       <SearchForm key={JSON.stringify(['origin', 'destination', 'date', 'time', 'passengers', 'time_mode'].map(k => params.get(k)))} params={params} setParams={setParams} stops={stops} fieldErr={fieldErr} />
+      </div>
+      {!query && <JourneyBenefits />}
 
-      <section className="search-filters" aria-label={t("Journey filters")}>
+      {query && <>
+      <JourneyComparison arriveBy={arriveBy} options={compared.flatMap(key => shown.filter(it => it.legs_param === key))} remove={key => setCompared(old => old.filter(k => k !== key))} clear={() => setCompared(() => [])} />
+
+      <div className="search-workspace">
+      <section id="journey-filters" data-open={filtersOpen} className="search-filters" aria-label={t("Journey filters")}>
+        <h2>{t('Filters')}</h2>
         <fieldset><legend>{t("Transport")}</legend><div className="mode-options">{['bus', 'train', 'taxi'].map(mode => <label key={mode}>
           <input type="checkbox" checked={modes.split(',').includes(mode)} disabled={modes === mode} onChange={e => {
             const next = e.target.checked ? [...modes.split(','), mode] : modes.split(',').filter(m => m !== mode)
@@ -118,11 +127,11 @@ export default function Search() {
           </select><span className="muted small">{t("From arrival to next departure, including walking.")}</span>{err('max_connection_minutes')}
         </div>
       </section>
-      <FavoriteRoutes origin={params.get('origin') ?? ''} destination={params.get('destination') ?? ''} />
-      <JourneyComparison arriveBy={arriveBy} options={compared.flatMap(key => shown.filter(it => it.legs_param === key))} remove={key => setCompared(old => old.filter(k => k !== key))} clear={() => setCompared(() => [])} />
       <section aria-labelledby="results-h" aria-live="polite" className="results">
         <div className="results-bar">
-          <h2 id="results-h">{t("Results")}</h2>
+          <button type="button" className="secondary mobile-filter-toggle" aria-expanded={filtersOpen} aria-controls="journey-filters" onClick={() => setFiltersOpen(!filtersOpen)}>{t('Filters')}</button>
+          <h2 id="results-h" className="sr-only">{t("Results")}</h2>
+          <div className="sort-tabs" aria-label={t('Sort results')}>{[['departure', 'Earliest departure'], ['price', 'Lowest price'], ['duration', 'Shortest duration'], ['buffer', 'Largest transfer buffer']].map(([value, label]) => <button type="button" key={value} aria-pressed={sort === value} onClick={() => changeParam('sort', value)}>{t(label)}</button>)}</div>
           {query && <div className="field">
             <label htmlFor="sort">{t("Sort by")}</label>
             <select id="sort" value={sort} onChange={e => changeParam('sort', e.target.value)}>
@@ -162,6 +171,10 @@ export default function Search() {
           </>
         )}
       </section>
+      </div>
+      <p className="results-explanation muted small">{t('Connection buffer is spare time beyond the minimum transfer, including walking. It is not a punctuality prediction. Taxi prices are per vehicle.')}</p>
+      <FavoriteRoutes origin={params.get('origin') ?? ''} destination={params.get('destination') ?? ''} />
+      </>}
     </>
   )
 }

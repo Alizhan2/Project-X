@@ -2750,5 +2750,129 @@
   "Cancel": {
     "ru": "Отмена",
     "kk": "Бас тарту"
+  },
+  "The whole journey.": {
+    "ru": "Весь путь.",
+    "kk": "Бүкіл жол."
+  },
+  "One connected plan.": {
+    "ru": "В одном плане.",
+    "kk": "Бір жоспарда."
+  },
+  "Connect buses, trains and taxis for a clear journey all the way to your destination.": {
+    "ru": "Автобус, поезд и такси — соберите поездку до конечной точки с понятными пересадками.",
+    "kk": "Автобус, пойыз және таксимен соңғы нүктеге дейінгі сапарды жоспарлаңыз."
+  },
+  "A connected journey from Northgate to Portmouth Marina": {
+    "ru": "Поездка из Northgate в Portmouth Marina с пересадками",
+    "kk": "Northgate қаласынан Portmouth Marina нүктесіне сапар"
+  },
+  "From your first step to arrival": {
+    "ru": "От первого шага до прибытия",
+    "kk": "Алғашқы қадамнан келгенге дейін"
+  },
+  "3 legs": {
+    "ru": "3 этапа",
+    "kk": "3 кезең"
+  },
+  "Connections, times and the full price. All up front.": {
+    "ru": "Стыковки, время и полная стоимость — заранее.",
+    "kk": "Ауысулар, уақыт пен толық баға — алдын ала."
+  },
+  "Planning with Doedu": {
+    "ru": "Планирование с Doedu",
+    "kk": "Doedu арқылы жоспарлау"
+  },
+  "Every leg in one place": {
+    "ru": "Всё путешествие целиком",
+    "kk": "Бүкіл сапар бір жерде"
+  },
+  "See your complete journey, including the way to the station and the final taxi.": {
+    "ru": "Видно каждый этап, включая дорогу до вокзала и такси в конце.",
+    "kk": "Вокзалға дейінгі жол мен соңғы таксиді қоса, әр кезеңді көріңіз."
+  },
+  "Understand your connections": {
+    "ru": "Пересадки без догадок",
+    "kk": "Түсінікті ауысулар"
+  },
+  "Compare time, price and spare minutes between departures.": {
+    "ru": "Сравните время, цену и запас минут между отправлениями.",
+    "kk": "Уақытты, бағаны және ауысуға қалған минуттарды салыстырыңыз."
+  },
+  "A new plan when things change": {
+    "ru": "План на случай задержки",
+    "kk": "Кідіріс кезіндегі жаңа жоспар"
+  },
+  "If a connection breaks, choose a replacement and review the price difference.": {
+    "ru": "Если стыковка сорвалась, выберите замену и проверьте разницу в цене.",
+    "kk": "Ауысу мүмкін болмаса, баламаны таңдап, баға айырмасын тексеріңіз."
+  },
+  "Choose your journey": {
+    "ru": "Выберите свой маршрут",
+    "kk": "Бағытыңызды таңдаңыз"
+  },
+  "{0} journeys": {
+    "ru": "{0} маршрутов",
+    "kk": "{0} бағыт"
+  },
+  "Change search": {
+    "ru": "Изменить поиск",
+    "kk": "Іздеуді өзгерту"
+  },
+  "Filters": {
+    "ru": "Фильтры",
+    "kk": "Сүзгілер"
+  },
+  "Sort results": {
+    "ru": "Сортировка результатов",
+    "kk": "Нәтижелерді сұрыптау"
+  },
+  "Connection buffer is spare time beyond the minimum transfer, including walking. It is not a punctuality prediction. Taxi prices are per vehicle.": {
+    "ru": "Запас — минуты сверх минимума для пересадки, включая переход. Это не прогноз пунктуальности. Цена такси рассчитана за машину.",
+    "kk": "Қосымша уақыт — жаяу жүруді қоса, ауысуға қажетті минимумнан артық минуттар. Бұл дәлдік болжамы емес. Такси бағасы көлік үшін есептеледі."
+  },
+  "Connection buffer: {0} min": {
+    "ru": "Запас на пересадку: {0} мин",
+    "kk": "Ауысуға қосымша уақыт: {0} мин"
+  },
+  "Delayed by {0} min": {
+    "ru": "Задержка на {0} мин",
+    "kk": "{0} мин кідіріс"
+  },
+  "Journey information": {
+    "ru": "Детали маршрута",
+    "kk": "Бағыт мәліметтері"
+  },
+  "Selected": {
+    "ru": "Выбран",
+    "kk": "Таңдалды"
+  },
+  "What changes": {
+    "ru": "Что меняется",
+    "kk": "Не өзгереді"
+  },
+  "Your new plan": {
+    "ru": "Новый план",
+    "kk": "Жаңа жоспар"
+  },
+  "Choose a replacement to review its arrival time and price before confirming.": {
+    "ru": "Выберите замену, чтобы проверить время прибытия и стоимость перед подтверждением.",
+    "kk": "Растамас бұрын келу уақыты мен бағасын тексеру үшін баламаны таңдаңыз."
+  },
+  "Your original booking changes only after successful confirmation.": {
+    "ru": "Маршрут изменится только после успешного подтверждения.",
+    "kk": "Бастапқы брондау сәтті расталғаннан кейін ғана өзгереді."
+  },
+  "Menu": {
+    "ru": "Меню",
+    "kk": "Мәзір"
+  },
+  "Your journey has changed.": {
+    "ru": "Поездка изменилась.",
+    "kk": "Сапар өзгерді."
+  },
+  "Choose a new plan.": {
+    "ru": "Выберите новый план.",
+    "kk": "Жаңа жоспарды таңдаңыз."
   }
 }

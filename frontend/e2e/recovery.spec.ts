@@ -9,7 +9,7 @@ async function signIn(page: Page, email: string) {
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Password').fill(PASSWORD)
   await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page.getByRole('link', { name: 'My journeys' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Sign out/ })).toBeVisible()
 }
 
 /** The operator changes a service through the real operator UI. */

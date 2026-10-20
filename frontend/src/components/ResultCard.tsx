@@ -29,7 +29,21 @@ export default function ResultCard({ it, comparison, arriveBy }: { it: Itinerary
           {dayLabel(it.departs_at)} · {duration(it.duration_minutes)} ·{' '}
           {it.transfers === 0 ? t("Direct") : t("{0} transfer{1}", {0: it.transfers, 1: it.transfers > 1 ? 's' : ''})}
         </p>
-        <ol className="chips" aria-label={t("Legs")}>
+      </div>
+      <div className="result-price">
+        <p className="price">{money(it.total_price, it.currency)}</p>
+        <p className="muted small">{t("For {0} passenger(s)", {0: it.passengers})}</p>
+      </div>
+      <ol className="route-segments" aria-label={t('Legs')}>{it.legs.map((l, i) => <li className={`route-segment route-segment-${l.mode}`} key={i}><span>{l.mode === 'taxi' ? t(MODE.taxi) : `${t(MODE[l.mode])} ${l.route_code}`}</span></li>)}</ol>
+      <div className="result-bottom"><div className="connection-buffer">{it.min_transfer_buffer_minutes !== null && <p>{t('Connection buffer: {0} min', {0: it.min_transfer_buffer_minutes})}</p>}
+        {scarce && <p className="warn small">{t('Only {0} place(s) left on {1}. ', {0: scarce.places_left, 1: scarce.route_code})}</p>}
+        {delayed.map(l => <p className="warn small" role="status" key={l.route_code + l.departs_at}>{l.route_code}: {t('Delayed by {0} min', {0: l.delay_minutes})}</p>)}
+      </div><div className="result-actions">        <Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price, ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>
+           {t("Select")}<span className="sr-only"> {clock(it.departs_at)}  {t("departure")}</span>
+        </Link>
+        {comparison && <label className="compare-choice"><input type="checkbox" aria-label={comparison.label} checked={comparison.selected} disabled={comparison.disabled} onChange={comparison.toggle} />{t("Compare")}{comparison.disabled && <span className="sr-only">  {t("(maximum three selected)")}</span>}</label>}
+</div></div>
+      <details className="result-details"><summary>{t('Journey information')}</summary>        <ol className="chips" aria-label={t("Legs")}>
           {it.legs.map((l, i) => (
             <li key={i} className={`chip chip-${l.mode}`}>
               {l.mode === 'taxi' ? t(MODE.taxi) : `${t(MODE[l.mode])} ${l.route_code}`}: {placeName(l.from.name)} → {placeName(l.to.name)}
@@ -49,15 +63,7 @@ export default function ResultCard({ it, comparison, arriveBy }: { it: Itinerary
           {scarce ? t("Only {0} place(s) left on {1}. ", {0: scarce.places_left, 1: scarce.route_code}) : ''}
           {accessSummary(it.legs)}
         </p>
-      </div>
-      <div className="result-price">
-        <p className="price">{money(it.total_price, it.currency)}</p>
-        <p className="muted small">{t("For {0} passenger(s)", {0: it.passengers})}</p>
-        <Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price, ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>
-           {t("Select")}<span className="sr-only"> {clock(it.departs_at)}  {t("departure")}</span>
-        </Link>
-        {comparison && <label className="compare-choice"><input type="checkbox" aria-label={comparison.label} checked={comparison.selected} disabled={comparison.disabled} onChange={comparison.toggle} />{t("Compare")}{comparison.disabled && <span className="sr-only">  {t("(maximum three selected)")}</span>}</label>}
-      </div>
+</details>
     </li>
   )
 }

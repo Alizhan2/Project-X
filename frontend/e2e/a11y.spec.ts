@@ -18,7 +18,10 @@ async function signIn(page: Page, email: string) {
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Password').fill(PASSWORD)
   await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page.getByRole('link', { name: 'My journeys' })).toBeVisible()
+  // On narrow screens the account controls live in the collapsed menu: open it before looking for them.
+  const menu = page.getByRole('button', { name: 'Menu' })
+  if (await menu.isVisible()) await menu.click()
+  await expect(page.getByRole('button', { name: /Sign out/ })).toBeVisible()
 }
 
 for (const [name, size] of Object.entries(VIEWPORTS)) {

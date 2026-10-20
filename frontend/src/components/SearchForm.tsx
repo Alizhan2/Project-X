@@ -27,7 +27,7 @@ export default function SearchForm({ params, setParams, stops, fieldErr }: { par
   const aria = (name: string) => fieldErr[name] ? { 'aria-invalid': true, 'aria-describedby': `${name}-err` } : {}
   return (
       <form className="card search-form" onSubmit={submit} noValidate>
-        <div className="field">
+        <div className="field time-mode-field">
           <label htmlFor="time-mode">{t("Journey time")}</label>
           <select id="time-mode" value={timeMode} onChange={e => setTimeMode(e.target.value)}>
             <option value="departure">{t("Depart after")}</option>
@@ -35,7 +35,7 @@ export default function SearchForm({ params, setParams, stops, fieldErr }: { par
           </select>
           <span className="muted small">{t("All times use Europe/Berlin.")}</span>
         </div>
-        <div className="field">
+        <div className="field search-origin">
           <label htmlFor="origin">{t("From")}</label>
           <select id="origin" required value={origin} onChange={(e) => setOrigin(e.target.value)} {...aria('origin')}>
             <option value="">{t("Choose a stop…")}</option>
@@ -43,7 +43,7 @@ export default function SearchForm({ params, setParams, stops, fieldErr }: { par
           </select>
           {err('origin')}
         </div>
-        <div className="field">
+        <div className="field search-destination">
           <label htmlFor="destination">{t("To")}</label>
           <select id="destination" required value={destination} onChange={(e) => setDestination(e.target.value)} {...aria('destination')}>
             <option value="">{t("Choose a stop…")}</option>

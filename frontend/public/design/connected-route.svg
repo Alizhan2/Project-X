@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="508" height="178" viewBox="0 0 508 178" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Editable multimodal route illustration">
+<path id="Vector" d="M36 42H158C179.333 42 190 53 190 75V105C190 126.333 201.333 137 224 137H336C356.667 137 367 125.333 367 102V76C367 53.3333 378 42 400 42H472" stroke-width="22" stroke-linecap="round" stroke="#D2E0CE"/>
+<path id="Vector_2" d="M36 42H158C179.333 42 190 53 190 75V105C190 126.333 201.333 137 224 137H270" stroke-width="9" stroke-linecap="round" stroke="#183C32"/>
+<path id="Vector_3" d="M270 137H336C356.667 137 367 125.333 367 102V76C367 53.3333 378 42 400 42H472" stroke-width="9" stroke-linecap="round" stroke="#4D6DD9"/>
+<path id="Vector_4" d="M36 56C43.732 56 50 49.732 50 42C50 34.268 43.732 28 36 28C28.268 28 22 34.268 22 42C22 49.732 28.268 56 36 56Z" fill="#C9F36B" stroke-width="4" stroke="#183C32"/>
+<path id="Vector_5" d="M270 148C276.075 148 281 143.075 281 137C281 130.925 276.075 126 270 126C263.925 126 259 130.925 259 137C259 143.075 263.925 148 270 148Z" fill="white" stroke-width="4" stroke="#183C32"/>
+<path id="Vector_6" d="M472 56C479.732 56 486 49.732 486 42C486 34.268 479.732 28 472 28C464.268 28 458 34.268 458 42C458 49.732 464.268 56 472 56Z" fill="#183C32"/>
+<path id="Vector_7" d="M472 47C474.761 47 477 44.7614 477 42C477 39.2386 474.761 37 472 37C469.239 37 467 39.2386 467 42C467 44.7614 469.239 47 472 47Z" fill="#C9F36B"/>
+</g>
+</svg>
