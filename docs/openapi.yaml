@@ -748,6 +748,11 @@ paths:
         checkout would use).
       parameters:
       - in: query
+        name: arrive_by
+        schema:
+          type: string
+        description: Optional arrival deadline to revalidate against current times.
+      - in: query
         name: legs
         schema:
           type: string
@@ -1047,11 +1052,17 @@ paths:
         not bookings; nothing is reserved.
       parameters:
       - in: query
+        name: arrive_by
+        schema:
+          type: string
+        description: Arrival deadline (inclusive); searches departures in the preceding
+          24 hours. Defaults to latest_departure sorting.
+      - in: query
         name: depart_after
         schema:
           type: string
-        description: ISO 8601 datetime; naive values are read in the demo timezone
-        required: true
+        description: ISO datetime. Provide exactly one of depart_after or arrive_by;
+          naive values use Europe/Berlin.
       - in: query
         name: destination
         schema:
@@ -1099,9 +1110,10 @@ paths:
           - buffer
           - departure
           - duration
+          - latest_departure
           - price
-        description: departure (default), price, duration, buffer (largest minimum
-          transfer buffer)
+        description: Default departure for depart_after, latest_departure for arrive_by.
+          Also price, duration and buffer.
       tags:
       - search
       security:
@@ -1186,6 +1198,9 @@ components:
     CheckoutIn:
       type: object
       properties:
+        arrive_by:
+          type: string
+          format: date-time
         passengers:
           type: integer
           maximum: 9

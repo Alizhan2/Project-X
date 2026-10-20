@@ -11,7 +11,7 @@ function accessSummary(legs: Leg[]) {
   return triText(legs.length > 1 ? 'Wheelchair-accessible vehicles (all legs)' : 'Wheelchair-accessible vehicle', v)
 }
 
-export default function ResultCard({ it, comparison }: { it: Itinerary; comparison?: { label: string; selected: boolean; disabled: boolean; toggle: () => void } }) {
+export default function ResultCard({ it, comparison, arriveBy }: { it: Itinerary; arriveBy?: string; comparison?: { label: string; selected: boolean; disabled: boolean; toggle: () => void } }) {
   const nextDay = !sameDay(it.departs_at, it.arrives_at)
   const delayed = it.legs.filter((l) => l.status === 'delayed')
   const scarce = it.legs.find((l) => l.places_left !== null && l.places_left <= it.passengers + 2)
@@ -52,7 +52,7 @@ export default function ResultCard({ it, comparison }: { it: Itinerary; comparis
       <div className="result-price">
         <p className="price">{money(it.total_price, it.currency)}</p>
         <p className="muted small">for {it.passengers} passenger(s)</p>
-        <Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price })}`}>
+        <Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price, ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>
           Select<span className="sr-only"> {clock(it.departs_at)} departure</span>
         </Link>
         {comparison && <label className="compare-choice"><input type="checkbox" aria-label={comparison.label} checked={comparison.selected} disabled={comparison.disabled} onChange={comparison.toggle} />Compare{comparison.disabled && <span className="sr-only"> (maximum three selected)</span>}</label>}

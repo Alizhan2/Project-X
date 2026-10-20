@@ -9,11 +9,14 @@ export default function SearchForm({ params, setParams, stops, fieldErr }: { par
   const [date, setDate] = useState(params.get('date') ?? today())
   const [time, setTime] = useState(params.get('time') ?? '06:00')
   const [passengers, setPassengers] = useState(params.get('passengers') ?? '1')
+  const [timeMode, setTimeMode] = useState(params.get('time_mode') === 'arrival' ? 'arrival' : 'departure')
+  const timeField = timeMode === 'arrival' ? 'arrive_by' : 'depart_after'
 
   function submit(e: FormEvent) {
     e.preventDefault()
     const next = new URLSearchParams(params)
-    for (const [key, value] of Object.entries({ origin, destination, date, time, passengers })) next.set(key, value)
+    for (const [key, value] of Object.entries({ origin, destination, date, time, passengers, time_mode: timeMode })) next.set(key, value)
+    if ((params.get('time_mode') ?? 'departure') !== timeMode) next.delete('sort')
     next.delete('repeat')
     setParams(next)
   }
@@ -21,6 +24,14 @@ export default function SearchForm({ params, setParams, stops, fieldErr }: { par
   const aria = (name: string) => fieldErr[name] ? { 'aria-invalid': true, 'aria-describedby': `${name}-err` } : {}
   return (
       <form className="card search-form" onSubmit={submit} noValidate>
+        <div className="field">
+          <label htmlFor="time-mode">Journey time</label>
+          <select id="time-mode" value={timeMode} onChange={e => setTimeMode(e.target.value)}>
+            <option value="departure">Depart after</option>
+            <option value="arrival">Arrive by</option>
+          </select>
+          <span className="muted small">All times use Europe/Berlin.</span>
+        </div>
         <div className="field">
           <label htmlFor="origin">From</label>
           <select id="origin" required value={origin} onChange={(e) => setOrigin(e.target.value)} {...aria('origin')}>
@@ -38,13 +49,13 @@ export default function SearchForm({ params, setParams, stops, fieldErr }: { par
           {err('destination')}
         </div>
         <div className="field">
-          <label htmlFor="date">Date</label>
-          <input id="date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} {...aria('depart_after')} />
-          {err('depart_after')}
+          <label htmlFor="date">{timeMode === 'arrival' ? 'Arrival date' : 'Date'}</label>
+          <input id="date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} {...aria(timeField)} />
+          {err(timeField)}
         </div>
         <div className="field">
-          <label htmlFor="time">Earliest departure</label>
-          <input id="time" type="time" required value={time} onChange={(e) => setTime(e.target.value)} />
+          <label htmlFor="time">{timeMode === 'arrival' ? 'Arrive no later than' : 'Earliest departure'}</label>
+          <input id="time" type="time" required value={time} onChange={(e) => setTime(e.target.value)} {...aria(timeField)} />
         </div>
         <div className="field">
           <label htmlFor="passengers">Passengers</label>

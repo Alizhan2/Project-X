@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone as datetime_timezone
 
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
@@ -33,12 +33,13 @@ def stops(request):
     parameters=[
         OpenApiParameter("origin", str, required=True, description="Stop code"),
         OpenApiParameter("destination", str, required=True, description="Stop code"),
-        OpenApiParameter("depart_after", str, required=True, description="ISO 8601 datetime; naive values are read in the demo timezone"),
+        OpenApiParameter("depart_after", str, description="ISO datetime. Provide exactly one of depart_after or arrive_by; naive values use Europe/Berlin."),
+        OpenApiParameter("arrive_by", str, description="Arrival deadline (inclusive); searches departures in the preceding 24 hours. Defaults to latest_departure sorting."),
         OpenApiParameter("passengers", int, description="1-9, default 1"),
         OpenApiParameter("modes", str, description="Comma-separated allowed modes: bus,train,taxi. Default all; every leg must match."),
         OpenApiParameter("max_transfers", str, enum=["any", "0", "1", "2"], description="Maximum changes; any defaults to 2."),
         OpenApiParameter("max_connection_minutes", int, description="Optional 5-180 minute cap from arrival to the next departure, including walking."),
-        OpenApiParameter("sort", str, enum=list(services.SORTS), description="departure (default), price, duration, buffer (largest minimum transfer buffer)"),
+        OpenApiParameter("sort", str, enum=list(services.SORTS), description="Default departure for depart_after, latest_departure for arrive_by. Also price, duration and buffer."),
     ]
 )
 @throttle("search")
@@ -54,13 +55,22 @@ def search(request):
             raise ValueError
     except ValueError:
         errors["passengers"] = f"Must be a whole number from 1 to {services.MAX_PASSENGERS}."
+    time_field = "arrive_by" if "arrive_by" in q else "depart_after"
+    if "arrive_by" in q and "depart_after" in q:
+        errors["arrive_by"] = "Choose either depart_after or arrive_by, not both."
     try:
-        depart_after = datetime.fromisoformat(q.get("depart_after", ""))
-        if timezone.is_naive(depart_after):
-            depart_after = timezone.make_aware(depart_after)
+        search_time = datetime.fromisoformat(q.get(time_field, ""))
+        if timezone.is_naive(search_time):
+            search_time = timezone.make_aware(search_time)
+            if time_field == "arrive_by" and search_time.astimezone(datetime_timezone.utc).astimezone(timezone.get_current_timezone()).replace(tzinfo=None) != search_time.replace(tzinfo=None):
+                errors[time_field] = "This local time does not exist because the clocks change. Choose another time."
+            elif time_field == "arrive_by" and search_time.utcoffset() != search_time.replace(fold=1).utcoffset():
+                errors[time_field] = "This local time occurs twice because the clocks change. Choose another time or supply an explicit UTC offset."
+        if time_field == "arrive_by" and search_time <= timezone.now():
+            errors[time_field] = "Choose an arrival deadline in the future."
     except ValueError:
-        errors["depart_after"] = "Required ISO 8601 date and time."
-    sort = q.get("sort", "departure")
+        errors[time_field] = "Required ISO 8601 date and time."
+    sort = q.get("sort", "latest_departure" if time_field == "arrive_by" else "departure")
     if sort not in services.SORTS:
         errors["sort"] = f"Must be one of: {', '.join(services.SORTS)}."
     modes = frozenset(q.get("modes", "bus,train,taxi").split(","))
@@ -87,7 +97,8 @@ def search(request):
         errors["destination"] = "Destination must differ from origin."
     if errors:
         raise ValidationError(errors)
-    results = services.search(found["origin"], found["destination"], depart_after, passengers, sort,
+    planner = services.search_arrive_by if time_field == "arrive_by" else services.search
+    results = planner(found["origin"], found["destination"], search_time, passengers, sort,
                               max_legs=3 if transfers == "any" else int(transfers) + 1,
                               modes=modes, max_connection_minutes=connection)
     return Response({
@@ -127,6 +138,7 @@ def parse_legs(raw):
     parameters=[
         OpenApiParameter("legs", str, required=True, description="departure_id:from_stop:to_stop, comma separated"),
         OpenApiParameter("passengers", int),
+        OpenApiParameter("arrive_by", str, description="Optional arrival deadline to revalidate against current times."),
     ],
     responses={200: dict, 409: dict},
 )
@@ -147,4 +159,12 @@ def itinerary(request):
         return Response({"code": e.code, "message": e.message}, status=409)
     if it.min_places_left is not None and it.min_places_left < passengers:
         return Response({"code": "no_capacity", "message": "Not enough places are left on this service."}, status=409)
+    if "arrive_by" in request.query_params:
+        field = serializers.DateTimeField()
+        try:
+            deadline = field.run_validation(request.query_params["arrive_by"])
+        except serializers.ValidationError as e:
+            raise ValidationError({"arrive_by": e.detail}) from e
+        if it.arrives_at > deadline:
+            return Response({"code": "arrival_deadline_missed", "message": "This journey no longer arrives by your chosen time. Search again."}, status=409)
     return Response({"simulated": True, **serialize_itinerary(it)})

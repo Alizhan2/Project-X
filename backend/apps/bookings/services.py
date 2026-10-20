@@ -39,7 +39,7 @@ def _lock_departures(ids):
     return {d.pk: d for d in Departure.objects.select_for_update().filter(pk__in=ids).order_by("pk")}
 
 
-def create_booking(*, user, selection, passengers, traveller_names, contact_email, idempotency_key, expected_total):
+def create_booking(*, user, selection, passengers, traveller_names, contact_email, idempotency_key, expected_total, arrive_by=None):
     """Revalidate every leg, hold capacity for all legs atomically, create a pending booking.
 
     Idempotent per (user, idempotency_key): a replay returns the original booking with created=False.
@@ -55,6 +55,8 @@ def create_booking(*, user, selection, passengers, traveller_names, contact_emai
                 it = build_itinerary(selection, passengers, now)
             except OfferError as e:
                 raise BookingError(e.code, e.message) from e
+            if arrive_by is not None and it.arrives_at > arrive_by:
+                raise BookingError("arrival_deadline_missed", "This journey no longer arrives by your chosen time. Search again.")
             if expected_total is not None and Decimal(expected_total) != it.total_price:
                 raise BookingError(
                     "offer_changed", "The price changed since you searched.",

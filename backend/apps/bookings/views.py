@@ -44,6 +44,7 @@ class LegIn(serializers.Serializer):
 
 
 class CheckoutIn(serializers.Serializer):
+    arrive_by = serializers.DateTimeField(required=False)
     passengers = serializers.IntegerField(min_value=1, max_value=9)
     legs = LegIn(many=True, allow_empty=False, max_length=3)
     expected_total = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
@@ -141,6 +142,7 @@ def bookings(request):
             user=request.user, selection=[_selection(l) for l in v["legs"]], passengers=v["passengers"],
             traveller_names=v["travellers"], contact_email=v["contact_email"], idempotency_key=key,
             expected_total=v.get("expected_total"),
+            arrive_by=v.get("arrive_by"),
         )
     except services.BookingError as e:
         raise Conflict(e.code, e.message, **e.extra) from e

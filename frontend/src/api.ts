@@ -132,7 +132,8 @@ export const fetchStops = (signal?: AbortSignal) => getJson<Stop[]>('/api/stops/
 export interface SearchParams {
   origin: string
   destination: string
-  depart_after: string
+  depart_after?: string
+  arrive_by?: string
   passengers: string
   sort: string
   modes?: string
@@ -150,8 +151,8 @@ export const register = (email: string, full_name: string, password: string) =>
   request<User>('POST', '/api/auth/register/', { email, full_name, password })
 export const logout = () => request<void>('POST', '/api/auth/logout/')
 
-export const fetchItinerary = (legs: string, passengers: string, signal?: AbortSignal) =>
-  getJson<Itinerary & { simulated: boolean }>(`/api/itinerary/?${new URLSearchParams({ legs, passengers })}`, signal)
+export const fetchItinerary = (legs: string, passengers: string, signal?: AbortSignal, arriveBy?: string) =>
+  getJson<Itinerary & { simulated: boolean }>(`/api/itinerary/?${new URLSearchParams({ legs, passengers, ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`, signal)
 
 export interface BookingLeg {
   sequence: number; status: string; mode: string; operator: string; route_code: string; route_name: string
@@ -168,6 +169,7 @@ export interface Booking {
   payments: { status: string; purpose: string; amount: string; failure_reason: string; created_at: string }[]
 }
 export interface CheckoutBody {
+  arrive_by?: string
   passengers: number; legs: SelectionItem[]
   expected_total?: string; contact_email: string; travellers: string[]
 }

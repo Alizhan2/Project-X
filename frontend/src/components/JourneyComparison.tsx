@@ -3,7 +3,7 @@ import type { Itinerary } from '../api'
 import { explainDifference } from '../comparison'
 import { clock, dayLabel, duration, money } from '../format'
 
-export default function JourneyComparison({ options, remove, clear }: { options: Itinerary[]; remove: (key: string) => void; clear: () => void }) {
+export default function JourneyComparison({ options, remove, clear, arriveBy }: { options: Itinerary[]; remove: (key: string) => void; clear: () => void; arriveBy?: string }) {
   if (!options.length) return null
   return <section className="comparison card" aria-labelledby="comparison-heading">
     <div className="saved-heading"><h2 id="comparison-heading">Compare journeys ({options.length}/3)</h2><button className="link" onClick={clear}>Clear comparison</button></div>
@@ -21,7 +21,7 @@ export default function JourneyComparison({ options, remove, clear }: { options:
         <dt>Cancellation policies</dt><dd>{[...new Set(it.legs.map(l => l.cancellation_policy))].join('; ')}</dd>
       </dl>
       {index > 0 && <ul className="comparison-facts" aria-label={`Option ${index + 1} differences`}>{explainDifference(it, options[0]).map(fact => <li key={fact}>{fact}</li>)}</ul>}
-      <div className="actions"><Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price })}`}>View option {index + 1}</Link><button className="link" onClick={() => remove(it.legs_param)}>Remove option {index + 1}</button></div>
+      <div className="actions"><Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price, ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>View option {index + 1}</Link><button className="link" onClick={() => remove(it.legs_param)}>Remove option {index + 1}</button></div>
     </article>)}</div>
     <p className="small muted">Connection buffers are timetable margins, not predictions of punctuality. Prices and availability are checked again before booking. Changing the search clears this comparison.</p>
   </section>

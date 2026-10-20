@@ -2,7 +2,7 @@
 **Product/model**
 - Everything is simulated: data, payments, refunds, taxis, confirmations. Not production software; no legal tickets.
 - Capacity is per whole service run: a passenger blocks a place from first to last stop (conservative; documented simplification). Seeded "places taken" are plain counters.
-- Planner is bounded and not exhaustive (≤3 legs, 24 h window, waits ≤180 min, max 40 results; replacements: 6 h window, ≤6 h later arrival, ≤3 offers). No walking before the first leg except during recovery.
+- Planner is bounded and not exhaustive (≤3 legs, 24 h departure window forward from depart-after or backward from arrive-by, waits ≤180 min, max 40 results; replacements: 6 h window, ≤6 h later arrival, ≤3 offers). Arrival deadlines are checked before reservation, not guaranteed or stored as contractual promises. No walking before the first leg except during recovery.
 - Taxis: per-vehicle price, ≤4 passengers, pickups 05:00–23:59, no real dispatch. One currency, one timezone.
 - Completed legs are *derived* from live times (no stored flag); retained legs are never modified. A leg already travelled is not refunded.
 - Replacement offers are non-reserving by design: a place can disappear between offer and acceptance (revalidated, passenger is told).

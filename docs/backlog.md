@@ -34,3 +34,8 @@
 - [x] Private calendar download with one event per active leg.
 - [x] PDF journey plan with current times and clear simulation/disruption labels.
 - Details: travel-companion.md.
+
+## Arrival deadline
+- [x] Arrive-by search with latest departure ranking, multimodal connections and taxi opening hours.
+- [x] Deadline retained through selection/comparison and checked again before reserving seats.
+- Details: arrive-by.md.

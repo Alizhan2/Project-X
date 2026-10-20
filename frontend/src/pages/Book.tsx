@@ -12,7 +12,8 @@ export default function Book() {
   const [expected, setExpected] = useState(p.get('total') ?? '')
   const { user } = useAuth()
   const nav = useNavigate()
-  const st = useItinerary(legs, passengers)
+  const arriveBy = p.get('arrive_by') || undefined
+  const st = useItinerary(legs, passengers, arriveBy)
   const n = Number(passengers)
   const [names, setNames] = useState<string[]>(() => Array.from({ length: n }, (_, i) => (i === 0 ? (user?.name ?? '') : '')))
   const [email, setEmail] = useState(user?.email ?? '')
@@ -28,7 +29,7 @@ export default function Book() {
     try {
       const booking = await createBooking({
         passengers: n, contact_email: email, travellers: names, expected_total: expected || undefined,
-        legs: st.data.selection,
+        legs: st.data.selection, arrive_by: arriveBy,
       }, key.current)
       nav(`/booking/${booking.reference}/pay`, { replace: true })
     } catch (x) {
@@ -40,6 +41,7 @@ export default function Book() {
   return (
     <>
       <h1>Traveller details</h1>
+      {arriveBy && <p>Arrive by {arriveBy.replace('T', ' ')} (Europe/Berlin). The deadline is checked again when reserving.</p>}
       {st.kind === 'loading' && <p>Loading journey…</p>}
       {st.kind === 'error' && <div className="card" role="alert"><p className="status-bad">{st.error.message}</p><Link to="/">Search again</Link></div>}
       {st.kind === 'ready' && (
@@ -48,7 +50,7 @@ export default function Book() {
             {err && !changedTotal && (
               <div role="alert" className="status-bad">
                 <p>{err.message}</p>
-                {['unavailable', 'no_capacity', 'invalid_leg'].includes(err.code ?? '') && <p><Link to="/">Search again</Link></p>}
+                {['unavailable', 'no_capacity', 'invalid_leg', 'arrival_deadline_missed'].includes(err.code ?? '') && <p><Link to="/">Search again</Link></p>}
               </div>
             )}
             {changedTotal && (

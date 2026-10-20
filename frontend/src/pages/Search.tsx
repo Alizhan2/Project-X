@@ -23,7 +23,9 @@ export default function Search() {
   const scope = params.toString()
   const [response, setResponse] = useState<{ key: string; value: Results } | null>(null)
 
-  const sort = params.get('sort') ?? 'departure'
+  const arrivalMode = params.get('time_mode') === 'arrival'
+  const arriveBy = arrivalMode ? `${params.get('date') ?? today()}T${params.get('time') ?? '06:00'}` : undefined
+  const sort = params.get('sort') ?? (arrivalMode ? 'latest_departure' : 'departure')
   const maxTransfers = params.get('max_transfers') ?? 'any'
   const modes = params.get('modes') ?? 'bus,train,taxi'
   const maxConnection = params.get('max_connection_minutes') ?? ''
@@ -47,9 +49,9 @@ export default function Search() {
     if (!o || !d) return null
     return {
       origin: o, destination: d,
-      depart_after: `${params.get('date') ?? today()}T${params.get('time') ?? '06:00'}`,
+      ...(params.get('time_mode') === 'arrival' ? { arrive_by: `${params.get('date') ?? today()}T${params.get('time') ?? '06:00'}` } : { depart_after: `${params.get('date') ?? today()}T${params.get('time') ?? '06:00'}` }),
       passengers: params.get('passengers') ?? '1',
-      sort: params.get('sort') ?? 'departure',
+      sort: params.get('sort') ?? (params.get('time_mode') === 'arrival' ? 'latest_departure' : 'departure'),
       modes: params.get('modes') ?? 'bus,train,taxi',
       max_transfers: params.get('max_transfers') ?? 'any',
       max_connection_minutes: params.get('max_connection_minutes') ?? '',
@@ -93,7 +95,7 @@ export default function Search() {
       <UpcomingJourney />
       {params.get("repeat") === "1" && <p className="email-notice">A new search for this direction. Choose your travel date; prices and availability are current. No previous booking is changed.</p>}
       {stopsError && <p className="status-bad" role="alert">Could not load stops: {stopsError}</p>}
-      <SearchForm key={JSON.stringify(['origin', 'destination', 'date', 'time', 'passengers'].map(k => params.get(k)))} params={params} setParams={setParams} stops={stops} fieldErr={fieldErr} />
+      <SearchForm key={JSON.stringify(['origin', 'destination', 'date', 'time', 'passengers', 'time_mode'].map(k => params.get(k)))} params={params} setParams={setParams} stops={stops} fieldErr={fieldErr} />
 
       <section className="search-filters" aria-label="Journey filters">
         <fieldset><legend>Transport</legend><div className="mode-options">{['bus', 'train', 'taxi'].map(mode => <label key={mode}>
@@ -114,9 +116,21 @@ export default function Search() {
         </div>
       </section>
       <FavoriteRoutes origin={params.get('origin') ?? ''} destination={params.get('destination') ?? ''} />
-      <JourneyComparison options={compared.flatMap(key => shown.filter(it => it.legs_param === key))} remove={key => setCompared(old => old.filter(k => k !== key))} clear={() => setCompared(() => [])} />
+      <JourneyComparison arriveBy={arriveBy} options={compared.flatMap(key => shown.filter(it => it.legs_param === key))} remove={key => setCompared(old => old.filter(k => k !== key))} clear={() => setCompared(() => [])} />
       <section aria-labelledby="results-h" aria-live="polite" className="results">
-        <h2 id="results-h">Results</h2>
+        <div className="results-bar">
+          <h2 id="results-h">Results</h2>
+          {query && <div className="field">
+            <label htmlFor="sort">Sort by</label>
+            <select id="sort" value={sort} onChange={e => changeParam('sort', e.target.value)}>
+              <option value="departure">Earliest departure</option>
+              <option value="latest_departure">Latest departure</option>
+              <option value="price">Lowest price</option>
+              <option value="duration">Shortest duration</option>
+              <option value="buffer">Largest transfer buffer</option>
+            </select>
+          </div>}
+        </div>
         {results.kind === 'idle' && <p className="muted">Choose where you are travelling and search.</p>}
         {results.kind === 'loading' && <p>Searching…</p>}
         {results.kind === 'error' && <p className="status-bad" role="alert">{results.message}</p>}
@@ -124,30 +138,21 @@ export default function Search() {
           <>
             <div className="results-bar">
               <p>
-                {shown.length} matching journey(s), departing in the next {results.data.window_hours} hours{' '}
+                {shown.length} matching journey(s). {arrivalMode ? `Arriving by ${params.get('date')} at ${params.get('time') ?? '06:00'} (Europe/Berlin); departures within the preceding ${results.data.window_hours} hours. Some journeys may start the previous day.` : `Departing in the next ${results.data.window_hours} hours.`}{' '}
                 <span className="badge">Simulated data</span>
               </p>
-              <div className="field">
-                <label htmlFor="sort">Sort by</label>
-                <select id="sort" value={sort} onChange={(e) => changeParam('sort', e.target.value)}>
-                  <option value="departure">Earliest departure</option>
-                  <option value="price">Lowest price</option>
-                  <option value="duration">Shortest duration</option>
-                  <option value="buffer">Largest transfer buffer</option>
-                </select>
-              </div>
             </div>
             {shown.length === 0 ? (
               <div className="card empty">
                 <p><strong>No journeys found.</strong></p>
                 <p className="muted">
-                  Try another date or time, fewer passengers, relaxing the transfer filter, or a different stop. Cancelled
+                  {arrivalMode ? 'Try a later arrival deadline, ' : 'Try another date or time, '}fewer passengers, relaxing the transfer filter, or a different stop. Cancelled
                   services, services without enough free places, and impossible connections are not shown.
                 </p>
               </div>
             ) : (
               <ul className="result-list">
-                {shown.map((it, index) => <ResultCard key={it.legs_param} it={it} comparison={{
+                {shown.map((it, index) => <ResultCard key={it.legs_param} it={it} arriveBy={arriveBy} comparison={{
                   label: `Compare journey ${index + 1}`, selected: compared.includes(it.legs_param), disabled: compared.length >= 3 && !compared.includes(it.legs_param),
                   toggle: () => setCompared(old => old.includes(it.legs_param) ? old.filter(k => k !== it.legs_param) : old.length < 3 ? [...old, it.legs_param] : old),
                 }} />)}

@@ -14,7 +14,7 @@ whole-service (a passenger blocks a place for the entire run); taxis are simulat
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as datetime_timezone
 from decimal import Decimal
 
 from django.conf import settings
@@ -315,11 +315,125 @@ def _buffer_key(i: Itinerary):
 
 
 SORTS = {
+    "latest_departure": lambda i: (-i.departs_at.timestamp(), i.total_price, i.duration_minutes),
     "price": lambda i: (i.total_price, i.departs_at),
     "duration": lambda i: (i.duration_minutes, i.departs_at),
     "departure": lambda i: (i.departs_at, i.total_price),
     "buffer": lambda i: (_buffer_key(i), i.duration_minutes, i.total_price),
 }
+
+
+def search_arrive_by(origin, destination, arrive_by, passengers, sort="latest_departure",
+                     now=None, *, max_legs=MAX_LEGS, modes=None, max_connection_minutes=None):
+    """Bounded reverse search, then forward replay using the existing on-demand taxi rules.
+
+    First departure is within the 24 hours before the deadline and still in the future.
+    At connections we explore at most two latest services per directed route/stop edge.
+    """
+    if origin.pk == destination.pk:
+        raise ValueError("Origin and destination must differ.")
+    now = (now or timezone.now()).astimezone(datetime_timezone.utc)
+    arrive_by = arrive_by.astimezone(datetime_timezone.utc)
+    start = max(now, arrive_by - SEARCH_WINDOW)
+    if start >= arrive_by:
+        return []
+    modes = frozenset({"bus", "train", "taxi"}) if modes is None else modes
+    net = Network(start, arrive_by)
+    found = {}
+    incoming_taxis = {}
+    for offers in net.taxis.values():
+        for offer in offers:
+            incoming_taxis.setdefault(offer.to_stop_id, []).append(offer)
+
+    def record(reverse_legs):
+        # Reverse taxi candidates are latest feasible pickups. After a preceding
+        # service, checkout dispatches the taxi immediately: replay that same rule.
+        legs = []
+        for candidate in reversed(reverse_legs):
+            previous = legs[-1] if legs else None
+            need = transfer_minutes(net.transfers, previous.to_stop, candidate.from_stop) if previous else 0
+            if need is None:
+                return
+            ready = previous.arrives_at + timedelta(minutes=need) if previous else None
+            leg = candidate
+            if candidate.taxi:
+                ready = ready if previous else candidate.departs_at - timedelta(minutes=candidate.taxi.pickup_wait_min)
+                if not previous and ready < now:
+                    return
+                leg = _taxi_leg(candidate.taxi, candidate.from_stop, candidate.to_stop, ready, passengers)
+                if leg is None:
+                    return
+            if leg.departs_at <= now:
+                return
+            if previous:
+                gap = (leg.departs_at - previous.arrives_at).total_seconds() / 60
+                if leg.departs_at < ready or gap - need > settings.MAX_TRANSFER_WAIT_MIN:
+                    return
+                if max_connection_minutes is not None and gap > max_connection_minutes:
+                    return
+            legs.append(leg)
+        if legs[0].departs_at < start or legs[-1].arrives_at > arrive_by:
+            return
+        if legs[-1].arrives_at - legs[0].departs_at > timedelta(hours=settings.MAX_JOURNEY_HOURS):
+            return
+        found.setdefault(tuple(l.key for l in legs), make_itinerary(legs, passengers, net.transfers))
+
+    def incoming(stop, deadline, terminal):
+        for rid, idx in net.stops_at.get(stop.pk, []):
+            route_stops = net.route_stops[rid]
+            end_rs = route_stops[idx]
+            departures = sorted(net.departures.get(rid, []), key=lambda d: net.arrives(d, end_rs), reverse=True)
+            counts = {}
+            for dep in departures:
+                arrival = net.arrives(dep, end_rs)
+                if arrival > deadline or arrival <= start or dep.places_left < passengers or dep.route.mode not in modes:
+                    continue
+                for begin_rs in route_stops[:idx]:
+                    fare = net.fares.get((rid, begin_rs.stop_id, stop.pk))
+                    leaves = net.leaves(dep, begin_rs)
+                    if fare is None or leaves < start or leaves <= now:
+                        continue
+                    if not terminal and counts.get(begin_rs.stop_id, 0) >= PER_EDGE_DEPARTURES:
+                        continue
+                    counts[begin_rs.stop_id] = counts.get(begin_rs.stop_id, 0) + 1
+                    yield Leg(net.stops[begin_rs.stop_id], stop, leaves, arrival, fare.price, fare.currency, departure=dep)
+        if "taxi" not in modes:
+            return
+        for offer in incoming_taxis.get(stop.pk, []):
+            latest_pickup = deadline - timedelta(minutes=offer.ride_min)
+            # A deadline may be outside operating hours, or just after midnight.
+            # Offer the latest pickup on each local date in the bounded window.
+            day = timezone.localtime(latest_pickup).date()
+            first_day = timezone.localtime(start).date()
+            while day >= first_day:
+                closing = timezone.make_aware(datetime.combine(day, offer.service_end))
+                pickup = min(latest_pickup, closing)
+                ready = pickup - timedelta(minutes=offer.pickup_wait_min)
+                leg = _taxi_leg(offer, net.stops[offer.from_stop_id], stop, ready, passengers)
+                if leg and leg.departs_at >= start and leg.departs_at > now:
+                    yield leg
+                day -= timedelta(days=1)
+
+    def extend(stop, deadline, legs, visited):
+        for leg in incoming(stop, deadline, not legs):
+            if leg.from_stop.pk in visited:
+                continue
+            reverse_legs = legs + [leg]
+            if leg.from_stop.pk == origin.pk:
+                record(reverse_legs)
+                continue
+            if len(reverse_legs) >= max_legs:
+                continue
+            seen = visited | {leg.from_stop.pk}
+            # The next taxi's pickup wait is part of the required connection.
+            taxi_wait = leg.taxi.pickup_wait_min if leg.taxi else 0
+            extend(leg.from_stop, leg.departs_at - timedelta(minutes=settings.MIN_SAME_STOP_TRANSFER_MIN + taxi_wait), reverse_legs, seen)
+            for (a, b), minutes in net.transfers.items():
+                if b == leg.from_stop.pk and a not in seen:
+                    extend(net.stops[a], leg.departs_at - timedelta(minutes=minutes + taxi_wait), reverse_legs, seen | {a})
+
+    extend(destination, arrive_by, [], frozenset({destination.pk}))
+    return sorted(found.values(), key=SORTS[sort])[:MAX_RESULTS]
 
 
 # ---------------------------------------------------------------------------------------- validation
