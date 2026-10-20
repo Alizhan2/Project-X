@@ -5,6 +5,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { useConfig } from '../config'
 import { useNotifications } from '../notifications'
+import { useOnline } from '../hooks'
 import ThemeToggle from './ThemeToggle'
 
 export default function Layout() {
@@ -32,9 +33,11 @@ export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const isKazakhstan = useLocation().pathname === '/kazakhstan'
   const { unread } = useNotifications()
+  const online = useOnline()
   return (
     <>
       <a className="skip-link" href="#main">{t("Skip to content")}</a>
+      {!online && <div className="offline-banner" role="status">{t('You are offline. Some features need a connection.')}</div>}
       <header className="site-header">
         <NavLink to="/" className="brand" aria-label="Doedu"><img src="/design/doedu-mark.svg" width="28" height="28" alt="" />doedu</NavLink>
         <button className="mobile-menu-toggle" aria-expanded={menuOpen} aria-controls="main-navigation" onClick={() => setMenuOpen(!menuOpen)}>{t('Menu')}</button>

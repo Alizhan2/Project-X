@@ -212,3 +212,9 @@ class IntegrityToolsTests(TestCase):
         self.assertEqual(before, json.loads(self.run_cmd("state_fingerprint")[1])["sha256"])  # stable
         Booking.objects.filter(status="confirmed").update(status="cancelled")
         self.assertNotEqual(before, json.loads(self.run_cmd("state_fingerprint")[1])["sha256"])
+
+
+class PwaServingTests(TestCase):
+    def test_web_app_manifest_gets_its_proper_media_type(self):
+        from django.conf import settings
+        self.assertEqual(settings.WHITENOISE_MIMETYPES[".webmanifest"], "application/manifest+json")

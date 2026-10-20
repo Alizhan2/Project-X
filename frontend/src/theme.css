@@ -81,3 +81,24 @@
 :root[data-theme=dark] .rl-bus, :root[data-theme=dark] .rl-train { color: #0b1410; }
 :root[data-theme=dark] .rl-taxi { color: #1c1203; }
 :root[data-theme=dark] .rl-change .rl-bar span { background: var(--surface); }
+
+/* ---------- Saved travellers, connection protection, trip activity ---------- */
+.saved-travellers ul, .saved-manage ul { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 6px 0 0; }
+.saved-travellers .secondary { min-height: 40px; padding: 6px 14px; font-size: 14px; border-radius: 999px; }
+.saved-manage li { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 999px; padding: 4px 6px 4px 14px; }
+label.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; font-size: 14px; }
+label.check input { width: 18px; height: 18px; min-height: 0; margin-top: 2px; accent-color: var(--ink); flex-shrink: 0; }
+.protection { border-left: 4px solid var(--brand); padding: 4px 0 4px 16px; margin: 20px 0; }
+.protection h2 { font-size: 18px; margin: 0 0 8px; }
+.protection ul { padding-left: 18px; margin: 0 0 8px; }
+.protection li { margin: 4px 0; }
+.activity-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.activity-list li { display: flex; gap: 14px; padding-bottom: 16px; position: relative; }
+.activity-list li:not(:last-child)::before { content: ''; position: absolute; left: 5px; top: 16px; bottom: 0; width: 2px; background: var(--border); }
+.activity-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); margin-top: 6px; flex-shrink: 0; }
+.activity-journey_disrupted .activity-dot, .activity-no_replacement .activity-dot, .activity-payment_failed .activity-dot { background: var(--bad); }
+.activity-journey_delayed .activity-dot { background: var(--warn-line); }
+.activity-replacement_confirmed .activity-dot, .activity-refund .activity-dot { background: var(--ok); }
+.activity-list p { margin: 0; }
+
+.offline-banner { background: var(--sim); color: var(--sim-ink); text-align: center; font-size: 13px; padding: 8px 16px; }

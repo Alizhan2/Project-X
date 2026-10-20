@@ -34,6 +34,21 @@ class FavoriteRoute(models.Model):
         ]
 
 
+class SavedTraveller(models.Model):
+    """A passenger name the account owner chose to keep for faster checkout. Name only (data minimisation):
+    no documents, birth dates or contact details. Created only on explicit opt-in; deletable at any time."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_travellers")
+    full_name = models.CharField(max_length=150)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.UniqueConstraint(models.functions.Lower("full_name"), "user", name="savedtraveller_unique_name_per_user"),
+            models.CheckConstraint(condition=~models.Q(full_name=""), name="savedtraveller_name_not_blank"),
+        ]
+
+
 class JourneyPlan(models.Model):
     """Private Kazakhstan travel intent; never a booking or supplier inventory."""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='journey_plans')

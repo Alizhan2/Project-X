@@ -200,6 +200,7 @@ STORAGES = {
 # content-hashed files under /assets/, which are safe to cache "forever".
 WHITENOISE_ROOT = FRONTEND_DIST if FRONTEND_DIST.exists() and IS_DEPLOYED else None
 WHITENOISE_IMMUTABLE_FILE_TEST = lambda path, url: url.startswith("/assets/")  # noqa: E731
+WHITENOISE_MIMETYPES = {".webmanifest": "application/manifest+json"}
 WHITENOISE_AUTOREFRESH = DEBUG
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # No user uploads exist in this application (no MEDIA_ROOT, no FileField). Adding any needs a storage review.

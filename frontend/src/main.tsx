@@ -23,3 +23,8 @@ createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+// Installable app + offline app shell. Production builds only: a service worker would get in the way of the dev server.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => undefined) })
+}

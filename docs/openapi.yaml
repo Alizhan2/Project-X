@@ -1466,6 +1466,69 @@ paths:
                 items:
                   $ref: '#/components/schemas/Stop'
           description: ''
+  /api/travellers/:
+    get:
+      operationId: travellers_list
+      tags:
+      - travellers
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TravellerOut'
+          description: ''
+    post:
+      operationId: travellers_create
+      tags:
+      - travellers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TravellerIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TravellerIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TravellerIn'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TravellerOut'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TravellerOut'
+          description: ''
+  /api/travellers/{id}/:
+    delete:
+      operationId: travellers_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - travellers
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
 components:
   schemas:
     AcceptIn:
@@ -1904,6 +1967,26 @@ components:
       required:
       - token
       - uid
+    TravellerIn:
+      type: object
+      properties:
+        full_name:
+          type: string
+          maxLength: 150
+      required:
+      - full_name
+    TravellerOut:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+          maxLength: 150
+      required:
+      - full_name
+      - id
   securitySchemes:
     cookieAuth:
       type: apiKey

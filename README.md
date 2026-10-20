@@ -92,3 +92,8 @@ Signed-in passengers see their next confirmed journey on the search page. Confir
 ### Kazakhstan preparation
 
 Open `/kazakhstan` for 20 Kazakhstan cities, three-language region names, KZT and local time (Asia/Almaty). Real supplier access and ticket sales are not enabled. See [Kazakhstan integration and 1TR.kz access](docs/kazakhstan.md).
+
+## Installable app (PWA)
+Production builds register a service worker (`frontend/public/sw.js`): it caches only static, content-hashed files and the last good `index.html`, never `/api/` or `/admin/`.
+Confirmed upcoming bookings are also kept as an on-device copy (see docs/privacy.md) so My journeys works offline. Service worker tests need a production build:
+`cd frontend && npm run build && BACKEND_URL=http://127.0.0.1:8000 npx vite preview --host 127.0.0.1 --port 5302` then `PWA_PREVIEW=1 BASE_URL=http://127.0.0.1:5302 npx playwright test pwa` (skipped on the dev server). Also verified against gunicorn + WhiteNoise + the production CSP.

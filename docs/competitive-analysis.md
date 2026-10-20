@@ -41,3 +41,8 @@ Keep every simulated element labelled; no fabricated schedules or prices for Kaz
 ## Status (2026-10-20)
 Delivered locally, verified in the browser suite: **(1) route overview** on results, journey details, booking and replacement offers (no map service; widths scale with duration, delayed legs outlined, one summary sentence for screen readers); **(2) nearby-days strip** backed by `GET /api/search/days/` (same planner as `/search/`, so numbers match; hidden for arrive-by searches; "Lowest price" badge only when prices differ); **(5) design polish**: dark theme (system preference, saved choice, toggle in the header, contrast-checked in both themes), loading skeletons, reduced-motion respected.
 Not started: saved travellers, repeat-trip shortcut, PWA/offline screen, connection-protection wording (items 3, 4, 6).
+
+## Status update: items 3, 4, 6 (2026-10-20)
+- **3. Saved travellers**: opt-in, names only, max 10, one-tap reuse on the booking form, removable in My journeys (`/api/travellers/`). "Repeat journey" already existed (a fresh search at current prices).
+- **4. Connection protection**: journey details and bookings explain, per change, the spare minutes ("breaks if the earlier service is more than N min late"), that a taxi leaves when you are ready, and what happens after booking if a connection breaks (notification, replacement offers with exact price difference, no places held until accepted, full refund of unused legs). Bookings also show a **trip activity** timeline built from existing records.
+- **6. PWA**: manifest, icons, offline app shell, offline copies of confirmed journeys, offline banner. Verified in the browser (dev: offline flow; production-like server: service worker control, no API data cached).

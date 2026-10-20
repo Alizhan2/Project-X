@@ -70,8 +70,11 @@ def booking_payload(b):
     from apps.disruptions.services import assess  # local import: disruptions depends on bookings
     from .travel import travel_plan
 
+    from .activity import booking_activity
+
     live = assess(b) if b.status == Booking.Status.CONFIRMED else None
     return {
+        "activity": booking_activity(b),
         "travel_plan": travel_plan(b, live) if live is not None else None,
         "disruption": None if live is None else {
             "status": live.status, "reason": live.reason, "problem_sequence": live.problem_sequence,
@@ -115,7 +118,7 @@ def booking_payload(b):
 
 def _own_booking(request, reference):
     """Object-level ownership: other users' bookings behave exactly like nonexistent ones (404)."""
-    qs = Booking.objects.filter(user=request.user).prefetch_related("legs__from_stop", "legs__to_stop", "travellers", "payment_attempts", "refunds")
+    qs = Booking.objects.filter(user=request.user).prefetch_related("legs__from_stop", "legs__to_stop", "travellers", "payment_attempts", "refunds", "notifications")
     return get_object_or_404(qs, reference=reference)
 
 
@@ -131,7 +134,7 @@ def bookings(request):
     """POST: revalidate the selected legs, hold capacity, create a pending booking (idempotent). GET: my bookings."""
     if request.method == "GET":
         services.expire_due_bookings()
-        qs = Booking.objects.filter(user=request.user).prefetch_related("legs__from_stop", "legs__to_stop", "travellers", "payment_attempts", "refunds")
+        qs = Booking.objects.filter(user=request.user).prefetch_related("legs__from_stop", "legs__to_stop", "travellers", "payment_attempts", "refunds", "notifications")
         return Response({"results": [booking_payload(b) for b in qs]})
     key = idempotency_key(request)
     data = CheckoutIn(data=request.data)

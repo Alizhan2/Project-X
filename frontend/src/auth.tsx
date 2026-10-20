@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { clearOfflineCopies, pruneOfflineCopies } from './offline'
 import { fetchMe, login as apiLogin, logout as apiLogout, register as apiRegister, type User } from './api'
 
 interface AuthState {
@@ -25,10 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => ctrl.abort()
   }, [])
 
-  const login = useCallback(async (e: string, p: string) => setUser(await apiLogin(e, p)), [])
-  const register = useCallback(async (e: string, n: string, p: string) => setUser(await apiRegister(e, n, p)), [])
+  const login = useCallback(async (e: string, p: string) => { const u = await apiLogin(e, p); pruneOfflineCopies(u.id); setUser(u) }, [])
+  const register = useCallback(async (e: string, n: string, p: string) => { const u = await apiRegister(e, n, p); pruneOfflineCopies(u.id); setUser(u) }, [])
   const refresh = useCallback(async () => setUser((await fetchMe()).user), [])
-  const logout = useCallback(async () => { await apiLogout(); setUser(null) }, [])
+  const logout = useCallback(async () => { clearOfflineCopies(); await apiLogout(); setUser(null) }, [])
   const value = useMemo(() => ({ user, loading, login, register, logout, refresh }), [user, loading, login, register, logout, refresh])
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

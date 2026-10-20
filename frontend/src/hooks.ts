@@ -29,3 +29,14 @@ export function useNow(intervalMs = 1000) {
   }, [intervalMs])
   return now
 }
+
+/** Browser connectivity (navigator.onLine is a hint: "online" does not prove the server is reachable). */
+export function useOnline() {
+  const [online, setOnline] = useState(() => navigator.onLine)
+  useEffect(() => {
+    const on = () => setOnline(true), off = () => setOnline(false)
+    window.addEventListener('online', on); window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
+  return online
+}

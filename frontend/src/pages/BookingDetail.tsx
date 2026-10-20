@@ -4,9 +4,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, cancelBooking, fetchBooking, fetchQuote, type Booking, type CancellationQuote } from '../api'
 import RecoveryPanel from '../components/RecoveryPanel'
+import ActivityTimeline from '../components/ActivityTimeline'
+import ConnectionProtection from '../components/ConnectionProtection'
 import Timeline from '../components/Timeline'
 import JourneyDownloads from '../components/JourneyDownloads'
-import { clock, money } from '../format'
+import { clock, dayLabel, money } from '../format'
+import { useAuth } from '../auth'
+import { getOfflineCopy, saveOfflineCopy } from '../offline'
 import { netPaid } from '../bookingAmounts'
 
 const REASONS: Record<string, string> = {
@@ -24,18 +28,30 @@ export default function BookingDetail() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [recovered, setRecovered] = useState<string | null>(null)
+  const { user } = useAuth()
+  const [offlineAt, setOfflineAt] = useState<string | null>(null)
+  const userId = user?.id
 
+  const show = useCallback((data: Booking) => {
+    setB(data); setOfflineAt(null)
+    if (userId !== undefined) saveOfflineCopy(userId, data)       // keeps an on-device copy of confirmed, upcoming journeys
+  }, [userId])
   const load = useCallback((signal?: AbortSignal) =>
-    fetchBooking(ref, signal).then(setB).catch((e: unknown) => { if (!signal?.aborted) setErr(e instanceof ApiError ? e : new ApiError(t("Unexpected error."))) }), [ref])
+    fetchBooking(ref, signal).then(show).catch((e: unknown) => {
+      if (signal?.aborted) return
+      const copy = e instanceof ApiError && e.status === 0 ? getOfflineCopy(ref) : undefined   // status 0 = server unreachable
+      if (copy) { setB(copy.booking); setOfflineAt(copy.savedAt); return }
+      setErr(e instanceof ApiError ? e : new ApiError(t("Unexpected error.")))
+    }), [ref, show])
   useEffect(() => {
     const ctrl = new AbortController()
     load(ctrl.signal)
     const timer = setInterval(() => {
       // Refresh quietly; transient network failures do not hide an already loaded booking.
-      fetchBooking(ref, ctrl.signal).then(data => { if (!ctrl.signal.aborted) setB(data) }).catch(() => undefined)
+      fetchBooking(ref, ctrl.signal).then(data => { if (!ctrl.signal.aborted) show(data) }).catch(() => undefined)
     }, 15000)
     return () => { ctrl.abort(); clearInterval(timer) }
-  }, [load, ref])
+  }, [load, ref, show])
 
   async function startCancel() {
     setMsg(null)
@@ -58,6 +74,7 @@ export default function BookingDetail() {
   if (!b) return <p>{t("Loading…")}</p>
   return (
     <>
+      {offlineAt && <p className="card warn-card" role="status" data-testid="offline-copy">{t('Offline copy saved {0}. It may be out of date. This is a simulated booking, not a valid travel ticket.', { 0: `${dayLabel(offlineAt)} ${clock(offlineAt)}` })}</p>}
       {b.status === 'confirmed' && !b.disruption?.reason && (
         <div className="card success" role="status">
           <h1>{t("Booking confirmed (simulated)")}</h1>
@@ -81,17 +98,17 @@ export default function BookingDetail() {
         </div>
       )}
 
-      {b.status === 'confirmed' && b.disruption?.status === 'broken' && (
+      {!offlineAt && b.status === 'confirmed' && b.disruption?.status === 'broken' && (
         <RecoveryPanel booking={b} onChanged={(nb, m) => { setB(nb); setQuote(null); setRecovered(m) }} onCancel={startCancel} />
       )}
 
       <section className="card">
         <p>{t("Status:")} <span className="badge" data-testid="status">{t(b.status_label)}</span></p>
-        {b.status === 'pending_payment' && <p><Link to={`/booking/${b.reference}/pay`}>{t("Continue to payment")}</Link></p>}
+        {!offlineAt && b.status === 'pending_payment' && <p><Link to={`/booking/${b.reference}/pay`}>{t("Continue to payment")}</Link></p>}
         {b.status === 'expired' && <p className="warn">{t("The reservation expired and the places were released. Nothing was charged.")}</p>}
         {b.travel_plan && <p className="muted small">{t("Current timetable · checked at")} {clock(b.travel_plan.generated_at)}  {t("(Europe/Berlin). Progress is estimated, not GPS tracking.")}</p>}
         <Timeline legs={b.travel_plan ? b.travel_plan.legs.map(l => ({ ...l, note: l.state === 'unavailable' ? t("Service unavailable") : l.departs_at !== l.scheduled_departs_at ? t("Originally booked departure: {0}", {0: clock(l.scheduled_departs_at)}) : undefined })) : b.legs.filter((l) => l.status === 'booked')} />
-        {b.status === 'confirmed' && <JourneyDownloads reference={b.reference} disrupted={b.disruption?.status === 'broken'} />}
+        {!offlineAt && b.status === 'confirmed' && <JourneyDownloads reference={b.reference} disrupted={b.disruption?.status === 'broken'} />}
         {b.legs.some((l) => l.status === 'replaced') && (
           <details>
             <summary>{t("Original legs that were replaced (history)")}</summary>
@@ -107,7 +124,7 @@ export default function BookingDetail() {
              {t("Refund:")} <strong>{money(r.amount, b.currency)}</strong> — {t(r.reason)} ({t(r.status)}{t(", simulated).")} </p>
         ))}
 
-        {b.cancellable && b.status === 'confirmed' && !quote && (
+        {!offlineAt && b.cancellable && b.status === 'confirmed' && !quote && (
           <p><button className="secondary" onClick={startCancel}>{t("Cancel this journey…")}</button></p>
         )}
         {msg && <p className="status-bad" role="alert">{t(msg)}</p>}
@@ -138,6 +155,8 @@ export default function BookingDetail() {
           </>
         )}
       </section>
+      {b.status === 'confirmed' && b.legs.filter(l => l.status === 'booked').length > 1 && <section className="card"><ConnectionProtection legs={b.legs.filter(l => l.status === 'booked').map(l => ({ mode: l.mode, from: l.from, to: l.to }))} /></section>}
+      {b.activity && <section className="card"><ActivityTimeline events={b.activity} /></section>}
     </>
   )
 }

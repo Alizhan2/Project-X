@@ -166,6 +166,7 @@ export interface Booking {
   expires_at: string; created_at: string; confirmed_at: string | null; simulated_notice: string
   travellers: string[]; legs: BookingLeg[]
   disruption: Disruption | null; cancellable: boolean
+  activity?: ActivityEvent[]
   refunds: { status: string; amount: string; reason: string; created_at: string }[]
   payments: { status: string; purpose: string; amount: string; failure_reason: string; created_at: string }[]
 }
@@ -281,3 +282,9 @@ export const deleteFavorite = (id: number) => request<void>('DELETE', `/api/favo
 export interface SearchDay { date: string; count: number; cheapest_price: string | null; fastest_minutes: number | null; currency: string | null }
 export const fetchSearchDays = (p: { origin: string; destination: string; date: string; time: string; passengers: string; modes: string }, signal?: AbortSignal) =>
   getJson<{ days: SearchDay[] }>(`/api/search/days/?${new URLSearchParams(p)}`, signal)
+
+export interface ActivityEvent { kind: string; title: string; at: string; amount?: string; currency?: string }
+export interface SavedTraveller { id: number; full_name: string }
+export const fetchSavedTravellers = (signal?: AbortSignal) => getJson<SavedTraveller[]>('/api/travellers/', signal)
+export const saveTraveller = (full_name: string) => request<SavedTraveller>('POST', '/api/travellers/', { full_name })
+export const removeTraveller = (id: number) => request<void>('DELETE', `/api/travellers/${id}/`)

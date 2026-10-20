@@ -10,11 +10,13 @@ retention periods and data-subject procedures with qualified advisers before any
 | Traveller names | `bookings_traveller` | who travels (one name per passenger) | no documents, birth dates, phone numbers |
 | Password hash | `accounts_user.password` | authentication | PBKDF2; never exposed |
 | Bookings, legs, payments, refunds | bookings/payments tables | the service itself; purchase history | **simulated** payments: no card data is ever collected or stored |
+| Saved travellers (optional) | `accounts_savedtraveller` | one-tap checkout | **Names only**, created only when the passenger ticks the opt-in box; max 10 per account; removable in My journeys; deleted with the account |
+| Offline copies (optional, on the device) | browser `localStorage` | view a confirmed, upcoming journey without a connection | Booking plan and traveller names; **no** e-mail, payment attempts, refunds or activity log; max 5; kept until 24 h after arrival; cleared on sign-out and replaced when another account signs in; never sent anywhere |
 | Notifications | `notifications_notification` | tell passengers about disruptions | contain booking references |
 | Audit records | `core_auditrecord` | accountability (who changed what) | actor id + object ids, no free-text personal data |
 | Session cookie | browser | login | `HttpOnly` |
 | Operational logs | stdout | operations | user id and request id only; no e-mail, IP, bodies (tested) |
-The frontend stores no tokens or personal data in the browser (no localStorage/sessionStorage). No analytics, trackers, or third-party scripts are included (CSP forbids them).
+The frontend stores no tokens in the browser. The only personal data kept in the browser is the optional offline copy above (traveller names and journey plan). The service worker caches only static files, never `/api/` responses. No analytics, trackers, or third-party scripts are included (CSP forbids them).
 
 ## Minimisation already applied
 Names + one contact e-mail only · no card/bank data · operators see booking reference, passenger count and effect, **never** e-mail or traveller names · other passengers' data is not retrievable (404) ·
