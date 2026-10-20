@@ -80,3 +80,7 @@ Native backup/restore works without Docker. Put PostgreSQL 17 client tools on PA
 
 ## Faster journey planning
 Save directions to your account, repeat a previous journey as a fresh search, filter allowed transport and transfers, and compare up to three current offers with factual explanations. See [docs/search-convenience.md](docs/search-convenience.md) for behaviour, API parameters and verification.
+
+## Travel companion
+
+Signed-in passengers see their next confirmed journey on the search page. Confirmed booking pages offer calendar (.ics) and PDF downloads using current timetable estimates. Downloads are static, private, demonstrative copies, not valid tickets. See [travel companion](docs/travel-companion.md).

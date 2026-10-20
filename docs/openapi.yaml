@@ -320,6 +320,34 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/bookings/{reference}/calendar/:
+    get:
+      operationId: bookings_calendar_retrieve
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            text/calendar:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/bookings/{reference}/cancel/:
     post:
       operationId: bookings_cancel_create
@@ -431,6 +459,34 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/bookings/{reference}/pdf/:
+    get:
+      operationId: bookings_pdf_retrieve
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/bookings/{reference}/replacements/:
     get:
       operationId: bookings_replacements_retrieve
@@ -517,6 +573,21 @@ paths:
         schema:
           type: string
         required: true
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/upcoming/:
+    get:
+      operationId: bookings_upcoming_retrieve
       tags:
       - bookings
       security:

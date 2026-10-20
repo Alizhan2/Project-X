@@ -11,7 +11,7 @@
 - [ ] Post-MVP: commercial discovery (separate phase)
 
 ## Known gaps / to polish
-- Search page lint warning (setState in effect)
+- [x] Search page setState-in-effect warning removed during search-convenience work.
 - [x] Booking cancellation and refunds implemented in Stage 5.
 - [x] Password recovery, optional email verification and refreshed responsive UI.
 - [ ] Configure hosted SMTP and verify actual inbox delivery.
@@ -28,3 +28,9 @@
 - [x] Planner-level transport, transfer-count and connection-time filters.
 - [x] Compare up to three journeys with factual price/time/transfer differences.
 - Details and test evidence: search-convenience.md.
+
+## Travel companion
+- [x] Next confirmed/in-progress journey with current timetable and disruption state.
+- [x] Private calendar download with one event per active leg.
+- [x] PDF journey plan with current times and clear simulation/disruption labels.
+- Details: travel-companion.md.

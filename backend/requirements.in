@@ -4,3 +4,4 @@ drf-spectacular==0.30.0
 psycopg[binary]==3.3.6
 gunicorn==26.2.0
 whitenoise==6.12.0
+reportlab==5.0.1

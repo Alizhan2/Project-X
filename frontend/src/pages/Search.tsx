@@ -5,6 +5,7 @@ import ResultCard from '../components/ResultCard'
 import SearchForm from '../components/SearchForm'
 import FavoriteRoutes from '../components/FavoriteRoutes'
 import JourneyComparison from '../components/JourneyComparison'
+import UpcomingJourney from '../components/UpcomingJourney'
 import { regionToday } from '../format'
 
 type Results =
@@ -89,6 +90,7 @@ export default function Search() {
         <div><h1>Plan your journey</h1><p>From your first stop to your final destination.<br />Find buses, trains and taxis that connect.</p></div>
         <div className="route-ribbon" aria-label="Travel by bus, train and taxi"><span>Bus</span><i aria-hidden="true" /><span>Train</span><i aria-hidden="true" /><span>Taxi</span></div>
       </section>
+      <UpcomingJourney />
       {params.get("repeat") === "1" && <p className="email-notice">A new search for this direction. Choose your travel date; prices and availability are current. No previous booking is changed.</p>}
       {stopsError && <p className="status-bad" role="alert">Could not load stops: {stopsError}</p>}
       <SearchForm key={JSON.stringify(['origin', 'destination', 'date', 'time', 'passengers'].map(k => params.get(k)))} params={params} setParams={setParams} stops={stops} fieldErr={fieldErr} />

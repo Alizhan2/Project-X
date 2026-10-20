@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ApiError, cancelBooking, fetchBooking, fetchQuote, type Booking, type CancellationQuote } from '../api'
 import RecoveryPanel from '../components/RecoveryPanel'
 import Timeline from '../components/Timeline'
+import JourneyDownloads from '../components/JourneyDownloads'
 import { clock, money } from '../format'
 
 const REASONS: Record<string, string> = {
@@ -22,7 +23,15 @@ export default function BookingDetail() {
 
   const load = useCallback((signal?: AbortSignal) =>
     fetchBooking(ref, signal).then(setB).catch((e: unknown) => { if (!signal?.aborted) setErr(e instanceof ApiError ? e : new ApiError('Unexpected error.')) }), [ref])
-  useEffect(() => { const ctrl = new AbortController(); load(ctrl.signal); return () => ctrl.abort() }, [load])
+  useEffect(() => {
+    const ctrl = new AbortController()
+    load(ctrl.signal)
+    const timer = setInterval(() => {
+      // Refresh quietly; transient network failures do not hide an already loaded booking.
+      fetchBooking(ref, ctrl.signal).then(data => { if (!ctrl.signal.aborted) setB(data) }).catch(() => undefined)
+    }, 15000)
+    return () => { ctrl.abort(); clearInterval(timer) }
+  }, [load, ref])
 
   async function startCancel() {
     setMsg(null)
@@ -77,7 +86,9 @@ export default function BookingDetail() {
         <p>Status: <span className="badge" data-testid="status">{b.status_label}</span></p>
         {b.status === 'pending_payment' && <p><Link to={`/booking/${b.reference}/pay`}>Continue to payment</Link></p>}
         {b.status === 'expired' && <p className="warn">The reservation expired and the places were released. Nothing was charged.</p>}
-        <Timeline legs={b.legs.filter((l) => l.status === 'booked').map((l) => ({ departs_at: l.departs_at, arrives_at: l.arrives_at, from: l.from, to: l.to, mode: l.mode, operator: l.operator, route_code: l.route_code }))} />
+        {b.travel_plan && <p className="muted small">Current timetable · checked at {clock(b.travel_plan.generated_at)} (Europe/Berlin). Progress is estimated, not GPS tracking.</p>}
+        <Timeline legs={b.travel_plan ? b.travel_plan.legs.map(l => ({ ...l, note: l.state === 'unavailable' ? 'Service unavailable' : l.departs_at !== l.scheduled_departs_at ? `Originally booked departure: ${clock(l.scheduled_departs_at)}` : undefined })) : b.legs.filter((l) => l.status === 'booked')} />
+        {b.status === 'confirmed' && <JourneyDownloads reference={b.reference} disrupted={b.disruption?.status === 'broken'} />}
         {b.legs.some((l) => l.status === 'replaced') && (
           <details>
             <summary>Original legs that were replaced (history)</summary>

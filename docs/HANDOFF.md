@@ -1,7 +1,8 @@
 # Handoff
-Updated 2026-10-20. Current evidence: [search-convenience.md](search-convenience.md) and [local-improvements.md](local-improvements.md).
+Updated 2026-10-20. Current evidence: [travel-companion.md](travel-companion.md), [search-convenience.md](search-convenience.md) and [local-improvements.md](local-improvements.md).
 
 ## Current state
+- Latest update: next-journey card, current booking timeline, private calendar/PDF downloads. Local verification: 205 backend tests, five frontend tests and 23 browser scenarios passed. Install the updated hash-locked requirements (ReportLab); no migration is required. Consult GitHub Actions for this revision's CI result; the preceding feature commit fa843f8 passed all five jobs.
 - Latest feature update: saved directions/repeat search, server-side filters and three-journey comparison. Additive accounts migration 0003 applied locally. Local checks passed: 197 backend tests, 5 comparison tests and 23 browser scenarios. Consult GitHub Actions for this revision's CI result; the prior account-email/UI commit 82829f7 passed all five jobs.
 - Repository: https://github.com/Alizhan2/Project-X (public). This update contains the account-email, UI and backup changes. Earlier CI at `ac46440` passed all five jobs; consult the GitHub Actions run for the current commit before deploying.
 - MVP stages 0–7 plus production preparation already existed. Added password recovery, optional email verification, UI improvements, native logical backup verification and documentation corrections.

@@ -67,9 +67,11 @@ def _selection(leg):
 
 def booking_payload(b):
     from apps.disruptions.services import assess  # local import: disruptions depends on bookings
+    from .travel import travel_plan
 
     live = assess(b) if b.status == Booking.Status.CONFIRMED else None
     return {
+        "travel_plan": travel_plan(b, live) if live is not None else None,
         "disruption": None if live is None else {
             "status": live.status, "reason": live.reason, "problem_sequence": live.problem_sequence,
             "arrival_delay_minutes": live.arrival_delay_minutes,

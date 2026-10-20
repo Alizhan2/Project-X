@@ -158,6 +158,7 @@ export interface BookingLeg {
   from: string; to: string; from_code: string; to_code: string; departs_at: string; arrives_at: string; unit_price: string; price_basis: string; cancellation_policy: string
 }
 export interface Booking {
+  travel_plan: TravelPlan | null
   reference: string; status: 'pending_payment' | 'confirmed' | 'cancelled' | 'expired'; status_label: string
   passengers: number; total_amount: string; currency: string; contact_email: string
   expires_at: string; created_at: string; confirmed_at: string | null; simulated_notice: string
@@ -174,6 +175,33 @@ export const createBooking = (body: CheckoutBody, key: string) =>
   request<Booking>('POST', '/api/bookings/', body, { idempotencyKey: key })
 export const fetchBooking = (ref: string, signal?: AbortSignal) => getJson<Booking>(`/api/bookings/${ref}/`, signal)
 export const fetchBookings = (signal?: AbortSignal) => getJson<{ results: Booking[] }>('/api/bookings/', signal)
+
+export interface TravelPlan {
+  reference: string; generated_at: string; status: 'ok' | 'delayed' | 'broken'; reason: string
+  progress: 'upcoming' | 'in_progress' | 'needs_attention' | 'finished'; next_sequence: number | null; notice: string
+  legs: {
+    sequence: number; from: string; to: string; mode: string; route_code: string; operator: string
+    departs_at: string; arrives_at: string; scheduled_departs_at: string; scheduled_arrives_at: string
+    state: 'completed' | 'travelling' | 'upcoming' | 'unavailable'
+  }[]
+}
+export const fetchUpcoming = (signal?: AbortSignal) => getJson<{ journey: TravelPlan | null }>('/api/bookings/upcoming/', signal)
+
+export async function downloadJourney(reference: string, kind: 'calendar' | 'pdf') {
+  const response = await fetch(`/api/bookings/${encodeURIComponent(reference)}/${kind}/`, { cache: 'no-store' })
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error(data.message || data.detail || 'Could not download this journey. Refresh your booking and try again.')
+  }
+  const url = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `doedu-${reference}.${kind === 'calendar' ? 'ics' : 'pdf'}`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
 export const payBooking = (ref: string, outcome: 'success' | 'failure', key: string) =>
   request<{ replayed: boolean; payment: { status: string; failure_reason: string }; booking: Booking }>(
     'POST', `/api/bookings/${ref}/pay/`, { outcome }, { idempotencyKey: key })
