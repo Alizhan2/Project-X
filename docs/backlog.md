@@ -22,3 +22,9 @@
 - [x] Run pg_dump backup + `verify-restore.sh` locally without Docker; CI already ran at ac46440
 - [ ] Decide registration policy; assign alert/backup owners; approve any external monitoring account
 - Commercial backlog: docs/commercial-readiness.md
+
+## Search convenience
+- [x] Account-owned saved directions and repeat search from previous bookings.
+- [x] Planner-level transport, transfer-count and connection-time filters.
+- [x] Compare up to three journeys with factual price/time/transfer differences.
+- Details and test evidence: search-convenience.md.

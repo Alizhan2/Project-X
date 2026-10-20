@@ -54,6 +54,7 @@ jobs:
       - run: npm ci
       - run: npm run build            # includes the TypeScript type check (tsc -b)
       - run: npm run lint
+      - run: npm test
       - uses: actions/upload-artifact@v4
         with: { name: frontend-dist, path: frontend/dist, retention-days: 3 }
 

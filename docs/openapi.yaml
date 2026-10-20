@@ -544,6 +544,69 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/favorites/:
+    get:
+      operationId: favorites_list
+      tags:
+      - favorites
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FavoriteOut'
+          description: ''
+    post:
+      operationId: favorites_create
+      tags:
+      - favorites
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FavoriteIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FavoriteIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FavoriteIn'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteOut'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteOut'
+          description: ''
+  /api/favorites/{id}/:
+    delete:
+      operationId: favorites_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - favorites
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/health/:
     get:
       operationId: health_retrieve
@@ -925,6 +988,28 @@ paths:
         description: Stop code
         required: true
       - in: query
+        name: max_connection_minutes
+        schema:
+          type: integer
+        description: Optional 5-180 minute cap from arrival to the next departure,
+          including walking.
+      - in: query
+        name: max_transfers
+        schema:
+          type: string
+          enum:
+          - '0'
+          - '1'
+          - '2'
+          - any
+        description: Maximum changes; any defaults to 2.
+      - in: query
+        name: modes
+        schema:
+          type: string
+        description: 'Comma-separated allowed modes: bus,train,taxi. Default all;
+          every leg must match.'
+      - in: query
         name: origin
         schema:
           type: string
@@ -1070,6 +1155,36 @@ components:
           format: email
       required:
       - email
+    FavoriteIn:
+      type: object
+      properties:
+        origin:
+          type: string
+        destination:
+          type: string
+      required:
+      - destination
+      - origin
+    FavoriteOut:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        origin:
+          type: string
+        origin_name:
+          type: string
+        destination:
+          type: string
+        destination_name:
+          type: string
+      required:
+      - destination
+      - destination_name
+      - id
+      - origin
+      - origin_name
     KindEnum:
       enum:
       - bus

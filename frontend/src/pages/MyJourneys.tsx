@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, fetchBookings, type Booking } from '../api'
-import { clock, dayLabel, money } from '../format'
+import { clock, dayLabel, money, repeatSearchUrl } from '../format'
 
 export default function MyJourneys() {
   const [list, setList] = useState<Booking[] | null>(null)
@@ -26,7 +26,9 @@ export default function MyJourneys() {
                 <p>{b.legs[0].from} → {b.legs[b.legs.length - 1].to}</p>
                 <p className="muted">{dayLabel(b.legs[0].departs_at)} · {clock(b.legs[0].departs_at)} · {b.passengers} passenger(s)</p>
               </div>
-              <p className="price">{money(b.total_amount, b.currency)}</p>
+              <div className="result-price"><p className="price">{money(b.total_amount, b.currency)}</p>
+                <Link to={repeatSearchUrl(b.legs[0].from_code, b.legs[b.legs.length - 1].to_code, b.passengers)}>Repeat journey</Link>
+                <span className="muted small">New search at current prices</span></div>
             </li>
           ))}
         </ul>

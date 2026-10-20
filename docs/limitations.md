@@ -16,6 +16,6 @@
 - CI ran successfully at `ac46440` (5 jobs, including image build/non-root liveness). Full Docker Compose and read-only container runtime remain unverified. Check the GitHub Actions run for the current commit; the historical run does not verify later changes. Logical backup/restore scripts were exercised on PostgreSQL 17.11 without Docker on 2026-10-20.
 - Accessibility: automated axe-core WCAG 2.1 A/AA scan + a keyboard test; no manual screen-reader or user testing.
 - Browser tests run serially against a freshly seeded database and depend on it. Tested on Chromium only, macOS.
-- 6 `oxlint` warnings (React fast-refresh export style and "setState in effect" pattern) are unresolved; 0 lint errors.
+- 5 `oxlint` warnings (React fast-refresh export style and "setState in effect" pattern) are unresolved; 0 lint errors.
 - Production preparation: see docs/production-readiness.md (blockers/decisions), docs/security.md (known gaps: hosted SMTP not connected, verification optional, no MFA), docs/privacy.md (retention/deletion not built).
 - Django 6.1 is a non-LTS release (support ends 2027-04-30): plan the upgrade.

@@ -124,3 +124,26 @@ button.primary:not(:disabled):hover, a.button.primary:hover { background: #103c6
 }
 
 .brand-symbol::before { content: ""; width: .7rem; height: .7rem; border: 2px solid white; border-radius: 50%; box-shadow: .4rem -.4rem 0 -2px var(--brand), .4rem -.4rem 0 0 white; }
+
+.search-filters { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 1.5rem; margin: 1.5rem 0; align-items: start; }
+.search-filters fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.search-filters legend { font-size: .9rem; font-weight: 600; margin-bottom: .7rem; }
+.mode-options { display: flex; flex-wrap: wrap; gap: 1rem; }
+.mode-options label, .compare-choice { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; min-height: 2.75rem; }
+.mode-options input, .compare-choice input { width: 1.15rem; min-height: 0; height: 1.15rem; accent-color: var(--brand); }
+.saved-directions { padding: 1rem 0; border-top: 1px solid var(--border); margin-bottom: 1rem; }
+.saved-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+.saved-heading h2 { margin: .5rem 0; }
+.saved-list { display: flex; flex-wrap: wrap; gap: .6rem; padding: 0; list-style: none; }
+.saved-list li { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; border: 1px solid var(--border); background: var(--surface); border-radius: .5rem; padding: .5rem .8rem; }
+.saved-list a { overflow-wrap: anywhere; }
+.comparison { border-top: 4px solid var(--brand); margin: 1.5rem 0; }
+.comparison-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1.5rem; }
+.comparison-option { min-width: 0; padding-top: .5rem; border-top: 1px solid var(--border); }
+.comparison-option h3 { font-size: 1.05rem; }
+.comparison-price { font-size: 1.7rem; font-weight: 700; margin: .6rem 0; }
+.comparison-option dt { color: var(--muted); font-size: .85rem; margin-top: .6rem; }
+.comparison-option dd { margin-left: 0; }
+.comparison-facts { padding-left: 1.2rem; font-size: .9rem; }
+.comparison-facts li { margin: .4rem 0; }
+@media (max-width: 45rem) { .search-filters { grid-template-columns: 1fr; gap: 1rem; } }

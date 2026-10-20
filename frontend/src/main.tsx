@@ -9,7 +9,8 @@ import './index.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
+    {/* URL-backed controls must commit synchronously; API requests have their own loading states. */}
+    <BrowserRouter useTransitions={false}>
       <ConfigProvider>
         <AuthProvider>
           <NotificationsProvider>

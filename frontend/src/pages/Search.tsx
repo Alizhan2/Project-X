@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ApiError, fetchStops, searchJourneys, type SearchResponse, type Stop } from '../api'
 import ResultCard from '../components/ResultCard'
+import SearchForm from '../components/SearchForm'
+import FavoriteRoutes from '../components/FavoriteRoutes'
+import JourneyComparison from '../components/JourneyComparison'
+import { regionToday } from '../format'
 
 type Results =
   | { kind: 'idle' }
@@ -9,21 +13,24 @@ type Results =
   | { kind: 'done'; data: SearchResponse }
   | { kind: 'error'; message: string; fields: Record<string, string> }
 
-const today = () => new Date().toLocaleDateString('en-CA')
+const today = regionToday
 
 export default function Search() {
   const [params, setParams] = useSearchParams()
   const [stops, setStops] = useState<Stop[] | null>(null)
   const [stopsError, setStopsError] = useState<string | null>(null)
-  const [results, setResults] = useState<Results>({ kind: 'idle' })
+  const scope = params.toString()
+  const [response, setResponse] = useState<{ key: string; value: Results } | null>(null)
 
-  const [origin, setOrigin] = useState(params.get('origin') ?? '')
-  const [destination, setDestination] = useState(params.get('destination') ?? '')
-  const [date, setDate] = useState(params.get('date') ?? today())
-  const [time, setTime] = useState(params.get('time') ?? '06:00')
-  const [passengers, setPassengers] = useState(params.get('passengers') ?? '1')
   const sort = params.get('sort') ?? 'departure'
   const maxTransfers = params.get('max_transfers') ?? 'any'
+  const modes = params.get('modes') ?? 'bus,train,taxi'
+  const maxConnection = params.get('max_connection_minutes') ?? ''
+  const [selection, setSelection] = useState<{ key: string; ids: string[] }>({ key: scope, ids: [] })
+  // Reset on a new search, including history navigation; never restore a stale comparison.
+  if (selection.key !== scope) setSelection({ key: scope, ids: [] })
+  const compared = selection.key === scope ? selection.ids : []
+  const setCompared = (update: (old: string[]) => string[]) => setSelection(old => ({ key: scope, ids: update(old.key === scope ? old.ids : []) }))
 
   useEffect(() => {
     const ctrl = new AbortController()
@@ -42,32 +49,30 @@ export default function Search() {
       depart_after: `${params.get('date') ?? today()}T${params.get('time') ?? '06:00'}`,
       passengers: params.get('passengers') ?? '1',
       sort: params.get('sort') ?? 'departure',
+      modes: params.get('modes') ?? 'bus,train,taxi',
+      max_transfers: params.get('max_transfers') ?? 'any',
+      max_connection_minutes: params.get('max_connection_minutes') ?? '',
     }
   }, [params])
 
   useEffect(() => {
     if (!query) return
     const ctrl = new AbortController()
-    setResults({ kind: 'loading' })
     searchJourneys(query, ctrl.signal)
-      .then((data) => setResults({ kind: 'done', data }))
+      .then((data) => { if (!ctrl.signal.aborted) setResponse({ key: scope, value: { kind: 'done', data } }) })
       .catch((e: unknown) => {
         if (ctrl.signal.aborted) return
-        if (e instanceof ApiError) setResults({ kind: 'error', message: e.message, fields: e.fields })
-        else setResults({ kind: 'error', message: 'Could not reach the server.', fields: {} })
+        if (e instanceof ApiError) setResponse({ key: scope, value: { kind: 'error', message: e.message, fields: e.fields } })
+        else setResponse({ key: scope, value: { kind: 'error', message: 'Could not reach the server.', fields: {} } })
       })
     return () => ctrl.abort()
-  }, [query])
+  }, [query, scope])
 
+  const results: Results = response?.key === scope ? response.value : { kind: query ? 'loading' : 'idle' }
   const shown = results.kind === 'done'
-    ? results.data.results.filter((it) => maxTransfers === 'any' || it.transfers <= Number(maxTransfers))
+    ? results.data.results
     : []
   const fieldErr = results.kind === 'error' ? results.fields : {}
-
-  function submit(e: FormEvent) {
-    e.preventDefault()
-    setParams({ origin, destination, date, time, passengers, sort })
-  }
 
   function changeParam(name: string, value: string) {
     const next = new URLSearchParams(params)
@@ -84,41 +89,30 @@ export default function Search() {
         <div><h1>Plan your journey</h1><p>From your first stop to your final destination.<br />Find buses, trains and taxis that connect.</p></div>
         <div className="route-ribbon" aria-label="Travel by bus, train and taxi"><span>Bus</span><i aria-hidden="true" /><span>Train</span><i aria-hidden="true" /><span>Taxi</span></div>
       </section>
+      {params.get("repeat") === "1" && <p className="email-notice">A new search for this direction. Choose your travel date; prices and availability are current. No previous booking is changed.</p>}
       {stopsError && <p className="status-bad" role="alert">Could not load stops: {stopsError}</p>}
-      <form className="card search-form" onSubmit={submit} noValidate>
-        <div className="field">
-          <label htmlFor="origin">From</label>
-          <select id="origin" required value={origin} onChange={(e) => setOrigin(e.target.value)} {...aria('origin')}>
-            <option value="">Choose a stop…</option>
-            {stops?.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}
-          </select>
-          {err('origin')}
-        </div>
-        <div className="field">
-          <label htmlFor="destination">To</label>
-          <select id="destination" required value={destination} onChange={(e) => setDestination(e.target.value)} {...aria('destination')}>
-            <option value="">Choose a stop…</option>
-            {stops?.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}
-          </select>
-          {err('destination')}
-        </div>
-        <div className="field">
-          <label htmlFor="date">Date</label>
-          <input id="date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} {...aria('depart_after')} />
-          {err('depart_after')}
-        </div>
-        <div className="field">
-          <label htmlFor="time">Earliest departure</label>
-          <input id="time" type="time" required value={time} onChange={(e) => setTime(e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="passengers">Passengers</label>
-          <input id="passengers" type="number" min={1} max={9} required value={passengers} onChange={(e) => setPassengers(e.target.value)} {...aria('passengers')} />
-          {err('passengers')}
-        </div>
-        <button type="submit" className="primary" disabled={!origin || !destination}>Search journeys</button>
-      </form>
+      <SearchForm key={JSON.stringify(['origin', 'destination', 'date', 'time', 'passengers'].map(k => params.get(k)))} params={params} setParams={setParams} stops={stops} fieldErr={fieldErr} />
 
+      <section className="search-filters" aria-label="Journey filters">
+        <fieldset><legend>Transport</legend><div className="mode-options">{['bus', 'train', 'taxi'].map(mode => <label key={mode}>
+          <input type="checkbox" checked={modes.split(',').includes(mode)} disabled={modes === mode} onChange={e => {
+            const next = e.target.checked ? [...modes.split(','), mode] : modes.split(',').filter(m => m !== mode)
+            changeParam('modes', next.sort().join(','))
+          }} />{mode[0].toUpperCase() + mode.slice(1)}
+        </label>)}</div>{err('modes')}</fieldset>
+        <div className="field"><label htmlFor="max-transfers">Transfers</label>
+          <select id="max-transfers" value={maxTransfers} onChange={e => changeParam('max_transfers', e.target.value)} {...aria('max_transfers')}>
+            <option value="any">Any number (up to 2)</option><option value="0">Direct only</option><option value="1">At most 1</option><option value="2">At most 2</option>
+          </select>{err('max_transfers')}
+        </div>
+        <div className="field"><label htmlFor="max-connection">Maximum connection time</label>
+          <select id="max-connection" value={maxConnection} onChange={e => changeParam('max_connection_minutes', e.target.value)} {...aria('max_connection_minutes')}>
+            <option value="">Any available</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option><option value="180">3 hours</option>
+          </select><span className="muted small">From arrival to next departure, including walking.</span>{err('max_connection_minutes')}
+        </div>
+      </section>
+      <FavoriteRoutes origin={params.get('origin') ?? ''} destination={params.get('destination') ?? ''} />
+      <JourneyComparison options={compared.flatMap(key => shown.filter(it => it.legs_param === key))} remove={key => setCompared(old => old.filter(k => k !== key))} clear={() => setCompared(() => [])} />
       <section aria-labelledby="results-h" aria-live="polite" className="results">
         <h2 id="results-h">Results</h2>
         {results.kind === 'idle' && <p className="muted">Choose where you are travelling and search.</p>}
@@ -128,17 +122,9 @@ export default function Search() {
           <>
             <div className="results-bar">
               <p>
-                {shown.length} of {results.data.count} journey(s) shown, departing in the next {results.data.window_hours} hours{' '}
+                {shown.length} matching journey(s), departing in the next {results.data.window_hours} hours{' '}
                 <span className="badge">Simulated data</span>
               </p>
-              <div className="field">
-                <label htmlFor="max-transfers">Transfers</label>
-                <select id="max-transfers" value={maxTransfers} onChange={(e) => changeParam('max_transfers', e.target.value)}>
-                  <option value="any">Any number</option>
-                  <option value="0">Direct only</option>
-                  <option value="1">At most 1</option>
-                </select>
-              </div>
               <div className="field">
                 <label htmlFor="sort">Sort by</label>
                 <select id="sort" value={sort} onChange={(e) => changeParam('sort', e.target.value)}>
@@ -159,7 +145,10 @@ export default function Search() {
               </div>
             ) : (
               <ul className="result-list">
-                {shown.map((it) => <ResultCard key={it.legs_param} it={it} />)}
+                {shown.map((it, index) => <ResultCard key={it.legs_param} it={it} comparison={{
+                  label: `Compare journey ${index + 1}`, selected: compared.includes(it.legs_param), disabled: compared.length >= 3 && !compared.includes(it.legs_param),
+                  toggle: () => setCompared(old => old.includes(it.legs_param) ? old.filter(k => k !== it.legs_param) : old.length < 3 ? [...old, it.legs_param] : old),
+                }} />)}
               </ul>
             )}
           </>

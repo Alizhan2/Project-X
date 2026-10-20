@@ -27,8 +27,11 @@ export default function RecoveryPanel({ booking, onChanged, onCancel }: { bookin
   const now = useNow()
   const ref = booking.reference
 
-  const load = useCallback(async () => {
-    try { setData(await fetchReplacements(ref)); setError(null) }
+  const load = useCallback(async (preserveError = false) => {
+    try {
+      setData(await fetchReplacements(ref))
+      if (!preserveError) setError(null)
+    }
     catch (e) { setError(e instanceof ApiError ? e.message : 'Could not load replacement options.') }
   }, [ref])
   useEffect(() => { load() }, [load])
@@ -45,7 +48,7 @@ export default function RecoveryPanel({ booking, onChanged, onCancel }: { bookin
         setError('The simulated payment failed. Nothing was changed; your original booking and places are intact. You can try again.')
       } else {
         setError(`${WHY[err.code ?? ''] ?? err.message} Options were refreshed.`)
-        setChoice(null); await load()
+        setChoice(null); await load(true)
       }
     } finally { setBusy(false) }
   }
@@ -120,7 +123,7 @@ export default function RecoveryPanel({ booking, onChanged, onCancel }: { bookin
           </article>
         )
       })}
-      <p><button className="secondary" disabled={busy} onClick={load}>Refresh options</button></p>
+      <p><button className="secondary" disabled={busy} onClick={() => load()}>Refresh options</button></p>
     </section>
   )
 }

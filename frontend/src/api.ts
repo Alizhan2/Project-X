@@ -135,6 +135,9 @@ export interface SearchParams {
   depart_after: string
   passengers: string
   sort: string
+  modes?: string
+  max_transfers?: string
+  max_connection_minutes?: string
 }
 
 export const searchJourneys = (p: SearchParams, signal?: AbortSignal) =>
@@ -152,7 +155,7 @@ export const fetchItinerary = (legs: string, passengers: string, signal?: AbortS
 
 export interface BookingLeg {
   sequence: number; status: string; mode: string; operator: string; route_code: string; route_name: string
-  from: string; to: string; departs_at: string; arrives_at: string; unit_price: string; price_basis: string; cancellation_policy: string
+  from: string; to: string; from_code: string; to_code: string; departs_at: string; arrives_at: string; unit_price: string; price_basis: string; cancellation_policy: string
 }
 export interface Booking {
   reference: string; status: 'pending_payment' | 'confirmed' | 'cancelled' | 'expired'; status_label: string
@@ -228,7 +231,7 @@ export interface ReplacementOffer {
   replacement_price: string; replaced_value: string; currency: string; difference: string
   settlement: 'pay' | 'refund' | 'none'; reserves_capacity: boolean; availability_warning: string
 }
-export interface LegRow { sequence: number; mode: string; route_code: string; from: string; to: string; departs_at: string; arrives_at: string }
+export interface LegRow { sequence: number; mode: string; route_code: string; from: string; to: string; from_code: string; to_code: string; departs_at: string; arrives_at: string }
 export interface Replacements {
   state: 'not_disrupted' | 'options' | 'none'; offers: ReplacementOffer[]; retained_legs: LegRow[]; affected_legs: LegRow[]
   original_arrival: string | null; reason?: string; cancellation?: CancellationQuote
@@ -237,3 +240,9 @@ export const fetchReplacements = (ref: string, signal?: AbortSignal) => getJson<
 export const acceptReplacement = (ref: string, id: number, outcome: 'success' | 'failure', key: string) =>
   request<{ replayed: boolean; booking: Booking }>('POST', `/api/bookings/${ref}/replacements/${id}/accept/`, { outcome }, { idempotencyKey: key })
 export const declineReplacement = (ref: string, id: number) => request<ReplacementOffer>('POST', `/api/bookings/${ref}/replacements/${id}/decline/`)
+
+
+export interface FavoriteRoute { id: number; origin: string; origin_name: string; destination: string; destination_name: string }
+export const fetchFavorites = (signal?: AbortSignal) => getJson<FavoriteRoute[]>('/api/favorites/', signal)
+export const saveFavorite = (origin: string, destination: string) => request<FavoriteRoute>('POST', '/api/favorites/', { origin, destination })
+export const deleteFavorite = (id: number) => request<void>('DELETE', `/api/favorites/${id}/`)

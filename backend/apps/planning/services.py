@@ -228,11 +228,13 @@ def _taxi_leg(offer: TaxiOffer, from_stop: Stop, to_stop: Stop, ready: datetime,
 
 def search(origin: Stop, destination: Stop, depart_after: datetime, passengers: int, sort: str = "departure",
            now: datetime | None = None, *, max_legs: int = MAX_LEGS, window: timedelta = SEARCH_WINDOW,
-           walk_from_start: bool = False, latest_arrival: datetime | None = None) -> list[Itinerary]:
+           walk_from_start: bool = False, latest_arrival: datetime | None = None,
+           modes: frozenset[str] | None = None, max_connection_minutes: int | None = None) -> list[Itinerary]:
     """`max_legs`, `window`, `walk_from_start` and `latest_arrival` serve disruption recovery: the passenger is
     already at `origin` (and may first walk via a TransferLink), has fewer legs left, and wants to arrive by a deadline."""
     if origin.pk == destination.pk:
         raise ValueError("Origin and destination must differ.")
+    modes = frozenset({"bus", "train", "taxi"}) if modes is None else modes
     now = now or timezone.now()
     window_end = depart_after + window
     net = Network(depart_after, window_end)
@@ -279,6 +281,10 @@ def search(origin: Stop, destination: Stop, depart_after: datetime, passengers: 
 
     def extend(stop: Stop, ready: datetime, legs: list[Leg], visited: frozenset, first: bool):
         for leg in options_from(stop, ready, first):
+            if legs and max_connection_minutes is not None and leg.departs_at - legs[-1].arrives_at > timedelta(minutes=max_connection_minutes):
+                continue
+            if leg.mode not in modes:
+                continue
             if leg.to_stop.pk in visited:
                 continue
             new_legs = legs + [leg]

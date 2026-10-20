@@ -96,6 +96,7 @@ def booking_payload(b):
                 "sequence": l.sequence, "status": l.status, "mode": l.mode, "operator": l.operator_name,
                 "route_code": l.route_code, "route_name": l.route_name,
                 "from": l.from_name, "to": l.to_name,
+                "from_code": l.from_stop.code, "to_code": l.to_stop.code,
                 "departs_at": timezone.localtime(l.departs_at), "arrives_at": timezone.localtime(l.arrives_at),
                 "unit_price": f"{l.unit_price:.2f}", "price_basis": l.price_basis, "cancellation_policy": l.policy_name,
             }
@@ -111,7 +112,7 @@ def booking_payload(b):
 
 def _own_booking(request, reference):
     """Object-level ownership: other users' bookings behave exactly like nonexistent ones (404)."""
-    qs = Booking.objects.filter(user=request.user).prefetch_related("legs", "travellers", "payment_attempts", "refunds")
+    qs = Booking.objects.filter(user=request.user).prefetch_related("legs__from_stop", "legs__to_stop", "travellers", "payment_attempts", "refunds")
     return get_object_or_404(qs, reference=reference)
 
 
@@ -127,7 +128,7 @@ def bookings(request):
     """POST: revalidate the selected legs, hold capacity, create a pending booking (idempotent). GET: my bookings."""
     if request.method == "GET":
         services.expire_due_bookings()
-        qs = Booking.objects.filter(user=request.user).prefetch_related("legs", "travellers", "payment_attempts", "refunds")
+        qs = Booking.objects.filter(user=request.user).prefetch_related("legs__from_stop", "legs__to_stop", "travellers", "payment_attempts", "refunds")
         return Response({"results": [booking_payload(b) for b in qs]})
     key = idempotency_key(request)
     data = CheckoutIn(data=request.data)

@@ -342,3 +342,54 @@ class SyncDemoScheduleTests(TestCase):
         demo_data.reset_transport_data(REF)
         self.assertEqual(Route.objects.count(), 8)
         self.assertEqual(Departure.objects.count(), 7 * sum(len(t) for t in demo_data.TIMETABLE.values()))
+
+
+class SearchFilterTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        demo_data.reset_transport_data(REF)
+
+    def test_train_only_and_forbidden_taxi_leg(self):
+        trains = get(self.client, origin='NG-RAIL', destination='PM-RAIL', modes='train').json()['results']
+        self.assertTrue(trains)
+        self.assertTrue(all(leg['mode'] == 'train' for it in trains for leg in it['legs']))
+        mixed = get(self.client, destination='PM-MARINA', modes='bus,train,taxi').json()['results']
+        self.assertTrue(mixed)
+        excluded = get(self.client, destination='PM-MARINA', modes='bus,train').json()['results']
+        self.assertEqual(excluded, [])
+
+    def test_transfer_limits_and_connection_duration(self):
+        from datetime import datetime
+        direct = get(self.client, max_transfers='0').json()['results']
+        self.assertTrue(direct)
+        self.assertTrue(all(it['transfers'] == 0 for it in direct))
+        self.assertEqual(get(self.client, destination='PM-MARINA', max_transfers='0').json()['results'], [])
+        bounded = get(self.client, destination='PM-MARINA', max_connection_minutes=30).json()['results']
+        self.assertTrue(bounded)
+        for it in bounded:
+            for a, b in zip(it['legs'], it['legs'][1:]):
+                self.assertLessEqual(datetime.fromisoformat(b['departs_at']) - datetime.fromisoformat(a['arrives_at']), timedelta(minutes=30))
+
+    def test_invalid_filters_are_rejected(self):
+        for query in [{'modes': ''}, {'modes': 'plane'}, {'max_transfers': '-1'}, {'max_transfers': '3'}, {'max_connection_minutes': 'four'}, {'max_connection_minutes': '181'}]:
+            response = get(self.client, **query)
+            self.assertEqual(response.status_code, 400, query)
+            self.assertIn(next(iter(query)), response.json())
+
+    def test_filtering_precedes_result_cap(self):
+        from unittest.mock import patch
+        from decimal import Decimal
+        from apps.transport.models import Departure, Fare, Route, RouteStop, Stop
+        rail = Route.objects.filter(mode='train').first()
+        origin, destination = Stop.objects.get(code='NG-RAIL'), Stop.objects.get(code='PM-RAIL')
+        bus = Route.objects.create(code='FILTERBUS', name='Cheaper bus', mode='bus', operator=rail.operator, policy=rail.policy)
+        RouteStop.objects.create(route=bus, stop=origin, sequence=0, arrival_offset_min=0, departure_offset_min=0)
+        RouteStop.objects.create(route=bus, stop=destination, sequence=1, arrival_offset_min=60, departure_offset_min=60)
+        Fare.objects.create(route=bus, from_stop=origin, to_stop=destination, price=Decimal('0.01'))
+        Departure.objects.create(route=bus, departs_at=demo_data._local(DAY, '08:00'), capacity=10)
+        with patch('apps.planning.services.MAX_RESULTS', 1):
+            unfiltered = get(self.client, origin='NG-RAIL', destination='PM-RAIL', sort='price').json()['results']
+            filtered = get(self.client, origin='NG-RAIL', destination='PM-RAIL', modes='train', sort='price').json()['results']
+        self.assertEqual(unfiltered[0]['legs'][0]['mode'], 'bus')
+        self.assertEqual(len(filtered), 1)
+        self.assertTrue(all(leg['mode'] == 'train' for leg in filtered[0]['legs']))

@@ -77,3 +77,6 @@ Operations: [runbook](docs/runbook.md) · [backups](docs/backup-restore.md) · [
 Password recovery and optional email verification are available. For local development keep `manage.py run_worker` running; email previews are private files in `.local-mail/` (not actual inbox delivery). Hosted SMTP setup and security rules: [docs/account-email.md](docs/account-email.md).
 
 Native backup/restore works without Docker. Put PostgreSQL 17 client tools on PATH, export the libpq connection variables, run `ops/backup.sh`, then rehearse recovery into a scratch database with `ops/verify-restore.sh`. Detailed instructions: [docs/backup-restore.md](docs/backup-restore.md). Current implementation/test evidence: [docs/local-improvements.md](docs/local-improvements.md).
+
+## Faster journey planning
+Save directions to your account, repeat a previous journey as a fresh search, filter allowed transport and transfers, and compare up to three current offers with factual explanations. See [docs/search-convenience.md](docs/search-convenience.md) for behaviour, API parameters and verification.

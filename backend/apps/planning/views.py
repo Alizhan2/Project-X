@@ -35,6 +35,9 @@ def stops(request):
         OpenApiParameter("destination", str, required=True, description="Stop code"),
         OpenApiParameter("depart_after", str, required=True, description="ISO 8601 datetime; naive values are read in the demo timezone"),
         OpenApiParameter("passengers", int, description="1-9, default 1"),
+        OpenApiParameter("modes", str, description="Comma-separated allowed modes: bus,train,taxi. Default all; every leg must match."),
+        OpenApiParameter("max_transfers", str, enum=["any", "0", "1", "2"], description="Maximum changes; any defaults to 2."),
+        OpenApiParameter("max_connection_minutes", int, description="Optional 5-180 minute cap from arrival to the next departure, including walking."),
         OpenApiParameter("sort", str, enum=list(services.SORTS), description="departure (default), price, duration, buffer (largest minimum transfer buffer)"),
     ]
 )
@@ -60,6 +63,20 @@ def search(request):
     sort = q.get("sort", "departure")
     if sort not in services.SORTS:
         errors["sort"] = f"Must be one of: {', '.join(services.SORTS)}."
+    modes = frozenset(q.get("modes", "bus,train,taxi").split(","))
+    if not modes or not modes <= {"bus", "train", "taxi"}:
+        errors["modes"] = "Choose at least one of: bus, train, taxi."
+    transfers = q.get("max_transfers", "any")
+    if transfers not in {"any", "0", "1", "2"}:
+        errors["max_transfers"] = "Must be any, 0, 1 or 2."
+    connection = None
+    if q.get("max_connection_minutes"):
+        try:
+            connection = int(q["max_connection_minutes"])
+            if not 5 <= connection <= 180:
+                raise ValueError
+        except ValueError:
+            errors["max_connection_minutes"] = "Must be a whole number from 5 to 180."
     found = {}
     for field in ("origin", "destination"):
         stop = Stop.objects.filter(code=q.get(field, "")).first()
@@ -70,7 +87,9 @@ def search(request):
         errors["destination"] = "Destination must differ from origin."
     if errors:
         raise ValidationError(errors)
-    results = services.search(found["origin"], found["destination"], depart_after, passengers, sort)
+    results = services.search(found["origin"], found["destination"], depart_after, passengers, sort,
+                              max_legs=3 if transfers == "any" else int(transfers) + 1,
+                              modes=modes, max_connection_minutes=connection)
     return Response({
         "simulated": True,
         "window_hours": int(services.SEARCH_WINDOW.total_seconds() // 3600),

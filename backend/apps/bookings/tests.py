@@ -72,6 +72,8 @@ class CheckoutTests(BookingTestBase, TestCase):
         self.assertEqual(self.fresh().places_taken, 2)
         self.assertEqual(Reservation.objects.get().status, "held")
         self.assertEqual(b["legs"][0]["route_code"], "VC1")
+        self.assertEqual(b["legs"][0]["from_code"], "NG-BUS")
+        self.assertEqual(b["legs"][0]["to_code"], "RV-BUS")
         self.assertTrue(Job.objects.filter(kind="expire_booking").exists())
 
     def test_snapshot_survives_later_fare_and_policy_edits(self):
