@@ -3,6 +3,7 @@ import { useLanguage } from '../useLanguage'
 import { Link } from 'react-router-dom'
 import type { Itinerary, Leg, Tri } from '../api'
 import { clock, dayLabel, duration, money, sameDay } from '../format'
+import RouteLine from './RouteLine'
 
 const MODE: Record<string, string> = { bus: 'Bus', train: 'Train', taxi: 'Taxi' }
 const triText = (label: string, v: Tri) => `${label}: ${v === 'yes' ? t('yes') : v === 'no' ? t('no') : t("not known")}`
@@ -34,7 +35,7 @@ export default function ResultCard({ it, comparison, arriveBy }: { it: Itinerary
         <p className="price">{money(it.total_price, it.currency)}</p>
         <p className="muted small">{t("For {0} passenger(s)", {0: it.passengers})}</p>
       </div>
-      <ol className="route-segments" aria-label={t('Legs')}>{it.legs.map((l, i) => <li className={`route-segment route-segment-${l.mode}`} key={i}><span>{l.mode === 'taxi' ? t(MODE.taxi) : `${t(MODE[l.mode])} ${l.route_code}`}</span></li>)}</ol>
+      <div className="route-segments"><RouteLine compact legs={it.legs.map(l => ({ departs_at: l.departs_at, arrives_at: l.arrives_at, from: l.from.name, to: l.to.name, mode: l.mode, route_code: l.route_code, note: l.status === 'delayed' ? t('Delayed by {0} min', { 0: l.delay_minutes }) : undefined }))} /></div>
       <div className="result-bottom"><div className="connection-buffer">{it.min_transfer_buffer_minutes !== null && <p>{t('Connection buffer: {0} min', {0: it.min_transfer_buffer_minutes})}</p>}
         {scarce && <p className="warn small">{t('Only {0} place(s) left on {1}. ', {0: scarce.places_left, 1: scarce.route_code})}</p>}
         {delayed.map(l => <p className="warn small" role="status" key={l.route_code + l.departs_at}>{l.route_code}: {t('Delayed by {0} min', {0: l.delay_minutes})}</p>)}

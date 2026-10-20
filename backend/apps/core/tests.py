@@ -21,7 +21,7 @@ class SecuritySweepTests(TestCase):
 
     PUBLIC = {
         "api/kazakhstan/catalog/", "api/kazakhstan/search/",  # public geography and journey search
-        "api/health/", "api/stops/", "api/search/", "api/itinerary/", "api/schema/", "api/docs/",
+        "api/health/", "api/stops/", "api/search/", "api/search/days/", "api/itinerary/", "api/schema/", "api/docs/",
         "api/auth/password-reset/", "api/auth/password-reset/confirm/", "api/auth/email-verification/confirm/",
         "api/auth/csrf/", "api/auth/register/", "api/auth/login/", "api/auth/me/",
         "api/health/live/", "api/health/ready/", "api/config/",

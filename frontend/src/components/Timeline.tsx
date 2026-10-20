@@ -1,6 +1,7 @@
 import { placeName, t } from '../i18n'
 import { useLanguage } from '../useLanguage'
 import { clock, dayLabel } from '../format'
+import RouteLine from './RouteLine'
 
 interface Item {
   departs_at: string; arrives_at: string; from: string; to: string; mode: string; operator: string
@@ -12,6 +13,8 @@ const gap = (a: string, b: string) => Math.round((new Date(b).getTime() - new Da
 export default function Timeline({ legs, buffers }: { legs: Item[]; buffers?: number[] }) {
   useLanguage()
   return (
+    <>
+    {legs.length > 0 && <RouteLine legs={legs} decorative />}
     <ol className="timeline" aria-label={t("Journey timeline")}>
       {legs.map((l, i) => (
         <li key={i}>
@@ -27,5 +30,6 @@ export default function Timeline({ legs, buffers }: { legs: Item[]; buffers?: nu
         </li>
       ))}
     </ol>
+    </>
   )
 }

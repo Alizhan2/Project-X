@@ -168,3 +168,73 @@ def itinerary(request):
         if it.arrives_at > deadline:
             return Response({"code": "arrival_deadline_missed", "message": "This journey no longer arrives by your chosen time. Search again."}, status=409)
     return Response({"simulated": True, **serialize_itinerary(it)})
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter("origin", str, required=True, description="Stop code"),
+        OpenApiParameter("destination", str, required=True, description="Stop code"),
+        OpenApiParameter("date", str, required=True, description="Centre day, YYYY-MM-DD (demo timezone)"),
+        OpenApiParameter("time", str, description="Earliest departure each day, HH:MM (default 00:00)"),
+        OpenApiParameter("passengers", int, description="1-9, default 1"),
+        OpenApiParameter("modes", str, description="Comma-separated allowed modes: bus,train,taxi"),
+        OpenApiParameter("span", int, description="Days either side of `date`, 0-3 (default 3)"),
+    ],
+    responses={200: dict},
+)
+@throttle("search")
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def search_days(request):
+    """Cheapest and fastest journey per day around a date (a price calendar). Uses the same planner as /search/,
+    so every number matches what the passenger will see after choosing that day. Past days have no journeys."""
+    from datetime import date as date_type, time as time_type, timedelta
+
+    q = request.query_params
+    errors = {}
+    try:
+        passengers = int(q.get("passengers", 1))
+        if not 1 <= passengers <= services.MAX_PASSENGERS:
+            raise ValueError
+    except ValueError:
+        errors["passengers"] = f"Must be a whole number from 1 to {services.MAX_PASSENGERS}."
+    try:
+        centre = date_type.fromisoformat(q.get("date", ""))
+    except ValueError:
+        errors["date"] = "Required date, YYYY-MM-DD."
+    try:
+        start_time = time_type.fromisoformat(q.get("time", "00:00"))
+    except ValueError:
+        errors["time"] = "Must be HH:MM."
+    try:
+        span = int(q.get("span", 3))
+        if not 0 <= span <= 3:
+            raise ValueError
+    except ValueError:
+        errors["span"] = "Must be a whole number from 0 to 3."
+    modes = frozenset(q.get("modes", "bus,train,taxi").split(","))
+    if not modes <= {"bus", "train", "taxi"}:
+        errors["modes"] = "Choose from: bus, train, taxi."
+    found = {}
+    for field in ("origin", "destination"):
+        found[field] = Stop.objects.filter(code=q.get(field, "")).first()
+        if found[field] is None:
+            errors[field] = "Unknown stop code."
+    if not errors and found["origin"].pk == found["destination"].pk:
+        errors["destination"] = "Destination must differ from origin."
+    if errors:
+        raise ValidationError(errors)
+    days = []
+    now = timezone.now()
+    for offset in range(-span, span + 1):
+        day = centre + timedelta(days=offset)
+        start = timezone.make_aware(datetime.combine(day, start_time))
+        results = services.search(found["origin"], found["destination"], start, passengers, "price", now=now, modes=modes)
+        days.append({
+            "date": day.isoformat(),
+            "count": len(results),
+            "cheapest_price": f"{min(r.total_price for r in results):.2f}" if results else None,
+            "fastest_minutes": min(r.duration_minutes for r in results) if results else None,
+            "currency": results[0].currency if results else None,
+        })
+    return Response({"simulated": True, "days": days})

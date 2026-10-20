@@ -277,3 +277,7 @@ export interface FavoriteRoute { id: number; origin: string; origin_name: string
 export const fetchFavorites = (signal?: AbortSignal) => getJson<FavoriteRoute[]>('/api/favorites/', signal)
 export const saveFavorite = (origin: string, destination: string) => request<FavoriteRoute>('POST', '/api/favorites/', { origin, destination })
 export const deleteFavorite = (id: number) => request<void>('DELETE', `/api/favorites/${id}/`)
+
+export interface SearchDay { date: string; count: number; cheapest_price: string | null; fastest_minutes: number | null; currency: string | null }
+export const fetchSearchDays = (p: { origin: string; destination: string; date: string; time: string; passengers: string; modes: string }, signal?: AbortSignal) =>
+  getJson<{ days: SearchDay[] }>(`/api/search/days/?${new URLSearchParams(p)}`, signal)

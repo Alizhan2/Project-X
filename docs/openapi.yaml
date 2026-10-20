@@ -1390,6 +1390,64 @@ paths:
               schema:
                 $ref: '#/components/schemas/SearchResponse'
           description: ''
+  /api/search/days/:
+    get:
+      operationId: search_days_retrieve
+      description: |-
+        Cheapest and fastest journey per day around a date (a price calendar). Uses the same planner as /search/,
+        so every number matches what the passenger will see after choosing that day. Past days have no journeys.
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+        description: Centre day, YYYY-MM-DD (demo timezone)
+        required: true
+      - in: query
+        name: destination
+        schema:
+          type: string
+        description: Stop code
+        required: true
+      - in: query
+        name: modes
+        schema:
+          type: string
+        description: 'Comma-separated allowed modes: bus,train,taxi'
+      - in: query
+        name: origin
+        schema:
+          type: string
+        description: Stop code
+        required: true
+      - in: query
+        name: passengers
+        schema:
+          type: integer
+        description: 1-9, default 1
+      - in: query
+        name: span
+        schema:
+          type: integer
+        description: Days either side of `date`, 0-3 (default 3)
+      - in: query
+        name: time
+        schema:
+          type: string
+        description: Earliest departure each day, HH:MM (default 00:00)
+      tags:
+      - search
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/stops/:
     get:
       operationId: stops_list

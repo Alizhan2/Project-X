@@ -1,0 +1,83 @@
+/* Loaded after design.css. Contains: route overview, nearby-days strip, loading skeletons, theme toggle,
+   the dark theme and motion rules. Colours come from tokens so both themes stay in step. */
+:root { --mode-bus: #2f7d4f; --mode-train: #3f5bc4; --mode-taxi: #8a5a1a; --warn-line: #b58900; --danger-soft: #fdeeee; }
+:root { color-scheme: light; }
+
+/* ---------- Route overview ---------- */
+.route-line { display: flex; align-items: flex-start; gap: 4px; width: 100%; min-width: 0; overflow-x: auto; padding: 2px 0 4px; }
+.route-line-compact { overflow: visible; }
+.rl-col { min-width: 0; flex-basis: 0; display: flex; flex-direction: column; gap: 6px; }
+.rl-leg { min-width: 4.2rem; }
+.route-line:not(.route-line-compact) .rl-leg { min-width: 7.5rem; }
+.rl-bar { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border-radius: 999px; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; color: #fff; background: var(--mode-bus); }
+.rl-train { background: var(--mode-train); }
+.rl-taxi { background: var(--mode-taxi); color: #fff; }
+.rl-bus { color: #fff; }
+.rl-min { margin-left: auto; font-weight: 500; font-size: 12px; }
+.rl-warn { outline: 2px dashed var(--warn-line); outline-offset: 2px; }
+.rl-change { flex-basis: 0; min-width: 3rem; }
+.rl-change .rl-bar { height: 34px; padding: 0; justify-content: center; background: transparent; color: var(--muted); border-radius: 0; font-size: 11px; font-weight: 600; background-image: linear-gradient(to right, var(--muted) 55%, transparent 0); background-size: 8px 2px; background-repeat: repeat-x; background-position: 0 50%; }
+.rl-change .rl-bar span { background: var(--surface); padding: 0 6px; }
+.rl-stops { display: flex; flex-direction: column; gap: 2px; font-size: 12px; line-height: 16px; color: var(--muted); }
+.rl-stop { min-width: 0; overflow-wrap: anywhere; }
+.rl-stop strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.rl-stop-end { margin-top: 2px; }
+.route-segments { display: block; }
+
+/* ---------- Nearby days ---------- */
+.day-strip { margin: 0 0 24px; }
+.day-strip-list { display: flex; gap: 8px; list-style: none; padding: 2px 2px 8px; margin: 0; overflow-x: auto; scroll-snap-type: x proximity; }
+.day-strip-list li { flex: 1 0 8.5rem; scroll-snap-align: start; }
+.day-chip { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; text-align: left; cursor: pointer; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 14px; position: relative; }
+.day-chip:hover:not(:disabled) { border-color: var(--ink); }
+.day-chip[aria-current=date] { border: 2px solid var(--ink); background: var(--soft); padding: 11px 13px; }
+.day-chip:disabled { opacity: .55; cursor: default; }
+.day-chip-date { font-size: 12px; color: var(--muted); font-weight: 600; }
+.day-chip strong { font-size: 18px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.day-chip-meta { font-size: 11px; color: var(--muted); }
+.day-chip-badge { margin-top: 4px; font-size: 10px; font-weight: 800; letter-spacing: .02em; padding: 2px 8px; border-radius: 999px; background: var(--brand); color: var(--brand-ink); }
+
+/* ---------- Loading skeletons ---------- */
+.skeleton { display: block; border-radius: 10px; background: var(--soft); min-height: 14px; }
+.day-skeleton { height: 78px; min-width: 8.5rem; }
+.result-skeleton { display: grid; gap: 12px; }
+.result-skeleton .skeleton:nth-child(1) { height: 28px; width: 45%; }
+.result-skeleton .skeleton:nth-child(2) { height: 34px; }
+.result-skeleton .skeleton:nth-child(3) { height: 40px; width: 30%; }
+
+/* ---------- Theme toggle ---------- */
+.theme-toggle { order: 2; display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; flex-shrink: 0; }
+.theme-toggle:hover { background: var(--soft); }
+@media (max-width: 960px) { .theme-toggle { order: 0; } }
+
+/* ---------- Motion (only for people who have not asked for less) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .card, .day-chip, .rl-bar, button, a.button { transition: border-color .15s ease, background-color .15s ease, box-shadow .2s ease, transform .15s ease; }
+  .result:hover { box-shadow: 0 8px 24px #0f1f1a14; }
+  .day-chip:hover:not(:disabled) { transform: translateY(-1px); }
+  .skeleton { animation: doedu-pulse 1.4s ease-in-out infinite; }
+  @keyframes doedu-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+}
+
+/* ---------- Dark theme ---------- */
+:root[data-theme=dark] {
+  color-scheme: dark;
+  --bg: #0e1814; --surface: #16231d; --ink: #e9f2ed; --on-ink: #0e1814; --muted: #a9bbb2;
+  --brand: #c9f36b; --brand-ink: #12211b; --border: #2c3e36; --soft: #1e2f27;
+  --sim: #3b2f12; --sim-ink: #f2dcaa; --rail: #7f98ff; --taxi: #e3ad63;
+  --ok: #7fd994; --bad: #ff7b7b; --warn-line: #e3ad63; --danger-soft: #3a1717; --mode-bus: #3f9a63; --mode-taxi: var(--taxi); --mode-train: var(--rail);
+}
+:root[data-theme=dark] .sim-panel { background: #2b2410; border-color: #c79a2e; }
+:root[data-theme=dark] .success { background: #14301f; }
+:root[data-theme=dark] .chip { background: var(--soft); }
+:root[data-theme=dark] .danger-card, :root[data-theme=dark] .status-cancelled { background: var(--danger-soft); }
+:root[data-theme=dark] .warn-card, :root[data-theme=dark] .status-delayed { background: var(--sim); color: var(--sim-ink); }
+:root[data-theme=dark] .danger, :root[data-theme=dark] button.primary.danger { background: var(--bad) !important; color: #1b0a0a; }
+:root[data-theme=dark] .count { color: #1b0a0a; }
+:root[data-theme=dark] .hero-route-art { background: #eaf2e7; border-radius: 16px; padding: 12px; }
+:root[data-theme=dark] .brand img { background: var(--brand); border-radius: 8px; padding: 2px; }
+:root[data-theme=dark] button.primary:not(:disabled):hover, :root[data-theme=dark] a.button.primary:hover { background: #dcff8f; }
+:root[data-theme=dark] .result:hover { box-shadow: 0 8px 24px #00000066; }
+:root[data-theme=dark] .rl-bus, :root[data-theme=dark] .rl-train { color: #0b1410; }
+:root[data-theme=dark] .rl-taxi { color: #1c1203; }
+:root[data-theme=dark] .rl-change .rl-bar span { background: var(--surface); }

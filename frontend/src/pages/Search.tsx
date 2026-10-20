@@ -9,6 +9,7 @@ import FavoriteRoutes from '../components/FavoriteRoutes'
 import JourneyComparison from '../components/JourneyComparison'
 import UpcomingJourney from '../components/UpcomingJourney'
 import JourneyHero, { JourneyBenefits } from '../components/JourneyHero'
+import DayStrip from '../components/DayStrip'
 import { regionToday } from '../format'
 
 type Results =
@@ -105,6 +106,7 @@ export default function Search() {
       {!query && <JourneyBenefits />}
 
       {query && <>
+      {!arrivalMode && <DayStrip origin={query.origin} destination={query.destination} date={params.get('date') ?? today()} time={params.get('time') ?? '06:00'} passengers={query.passengers} modes={query.modes} onPick={date => changeParam('date', date)} />}
       <JourneyComparison arriveBy={arriveBy} options={compared.flatMap(key => shown.filter(it => it.legs_param === key))} remove={key => setCompared(old => old.filter(k => k !== key))} clear={() => setCompared(() => [])} />
 
       <div className="search-workspace">
@@ -144,7 +146,7 @@ export default function Search() {
           </div>}
         </div>
         {results.kind === 'idle' && <p className="muted">{t("Choose where you are travelling and search.")}</p>}
-        {results.kind === 'loading' && <p>{t("Searching…")}</p>}
+        {results.kind === 'loading' && <><p role="status">{t("Searching…")}</p><ul className="result-list" aria-hidden="true">{[0, 1, 2].map(i => <li key={i} className="card result-skeleton"><span className="skeleton" /><span className="skeleton" /><span className="skeleton" /></li>)}</ul></>}
         {results.kind === 'error' && <p className="status-bad" role="alert">{t(results.message)}</p>}
         {results.kind === 'done' && (
           <>

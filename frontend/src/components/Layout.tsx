@@ -5,6 +5,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { useConfig } from '../config'
 import { useNotifications } from '../notifications'
+import ThemeToggle from './ThemeToggle'
 
 export default function Layout() {
   const language = useLanguage()
@@ -42,6 +43,7 @@ export default function Layout() {
             {languages.map(code => <option key={code} value={code} lang={code}>{localeNames[code]}</option>)}
           </select>
         </label>
+        <ThemeToggle />
         <nav id="main-navigation" aria-label={t("Main")} data-open={menuOpen} onClick={e => { if (e.target instanceof Element && e.target.closest('a')) setMenuOpen(false) }}>
           <NavLink to="/" end>{t("Search")}</NavLink>
           <NavLink to="/kazakhstan">{t("Kazakhstan")}</NavLink>

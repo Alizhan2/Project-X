@@ -393,3 +393,47 @@ class SearchFilterTests(TestCase):
         self.assertEqual(unfiltered[0]['legs'][0]['mode'], 'bus')
         self.assertEqual(len(filtered), 1)
         self.assertTrue(all(leg['mode'] == 'train' for leg in filtered[0]['legs']))
+
+
+class SearchDaysTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        demo_data.reset_transport_data(REF)
+
+    def days(self, **params):
+        base = {"origin": "NG-BUS", "destination": "RV-BUS", "date": DAY.isoformat(), "time": "06:00"}
+        base.update(params)
+        return self.client.get("/api/search/days/", base)
+
+    def test_returns_seven_days_matching_the_main_search(self):
+        res = self.days()
+        self.assertEqual(res.status_code, 200)
+        days = res.json()["days"]
+        self.assertEqual(len(days), 7)
+        self.assertEqual(days[3]["date"], DAY.isoformat())
+        # Every number must equal what /search/ returns for the same day: no second, divergent algorithm.
+        full = get(self.client, depart_after=at("06:00"), sort="price").json()["results"]
+        self.assertEqual(days[3]["count"], len(full))
+        self.assertEqual(days[3]["cheapest_price"], f"{min(float(r['total_price']) for r in full):.2f}")
+        self.assertEqual(days[3]["fastest_minutes"], min(r["duration_minutes"] for r in full))
+        self.assertEqual(days[3]["currency"], "EUR")
+
+    def test_past_days_have_no_journeys_and_empty_values(self):
+        days = self.days(date=REF.isoformat(), time="00:00").json()["days"]
+        past = days[0]   # three days before the reference date: the seeded timetable does not reach back that far
+        self.assertEqual((past["count"], past["cheapest_price"], past["fastest_minutes"]), (0, None, None))
+
+    def test_modes_and_span(self):
+        only_taxi = self.days(modes="taxi", span=0).json()["days"]
+        self.assertEqual(len(only_taxi), 1)
+        self.assertEqual(only_taxi[0]["count"], 0)             # no taxi serves NG-BUS -> RV-BUS
+
+    def test_passenger_count_changes_price(self):
+        one = self.days(span=0).json()["days"][0]["cheapest_price"]
+        two = self.days(span=0, passengers=2).json()["days"][0]["cheapest_price"]
+        self.assertEqual(float(two), round(float(one) * 2, 2))
+
+    def test_validation(self):
+        for params in ({"date": "nope"}, {"time": "25:99"}, {"span": 9}, {"passengers": 0}, {"modes": "boat"},
+                       {"origin": "ZZZ"}, {"destination": "NG-BUS"}):
+            self.assertEqual(self.days(**params).status_code, 400, params)
