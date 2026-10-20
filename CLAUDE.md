@@ -49,3 +49,6 @@ business-rule tests pass · docs updated · never claim tests pass unless they w
 
 ## Account email
 See docs/account-email.md. Run the worker for queued email. Local previews are private `.local-mail/` files (never commit); hosted delivery requires SMTP and PUBLIC_APP_URL. Verification is optional in the synthetic demo.
+
+## Design tooling
+Project skill `ui-ux-pro-max` (`.claude/skills/ui-ux-pro-max`, MIT, source in its SOURCE.md): use targeted `--domain ux|color|typography|product` queries, not the generic `--design-system` output (it matched an unrelated fashion palette for a transport product). Run scripts by full path with `python3`. Figma connector is connected in the desktop app but needs a design file link; tools were not exposed in the session that installed the skill.

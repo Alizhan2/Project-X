@@ -129,7 +129,7 @@ export default function Search() {
           </select><span className="muted small">{t("From arrival to next departure, including walking.")}</span>{err('max_connection_minutes')}
         </div>
       </section>
-      <section aria-labelledby="results-h" aria-live="polite" className="results">
+      <section aria-labelledby="results-h" aria-live="polite" aria-busy={results.kind === 'loading'} className="results">
         <div className="results-bar">
           <button type="button" className="secondary mobile-filter-toggle" aria-expanded={filtersOpen} aria-controls="journey-filters" onClick={() => setFiltersOpen(!filtersOpen)}>{t('Filters')}</button>
           <h2 id="results-h" className="sr-only">{t("Results")}</h2>
