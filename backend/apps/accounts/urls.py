@@ -1,8 +1,10 @@
 from django.urls import path
 
-from . import views, email_flows, favorites
+from . import views, email_flows, favorites, plans
 
 urlpatterns = [
+    path("kazakhstan/plans/", plans.collection),
+    path("kazakhstan/plans/<int:pk>/", plans.detail),
     path("favorites/", favorites.routes),
     path("favorites/<int:pk>/", favorites.remove),
     path("auth/password-reset/", email_flows.reset_request),

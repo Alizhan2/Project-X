@@ -173,3 +173,11 @@ button.primary:not(:disabled):hover, a.button.primary:hover { background: #103c6
 .kz-cities li { display: grid; padding: 1rem 0; border-bottom: 1px solid var(--border); }
 .kz-cities span { color: var(--muted); font-size: .9rem; }
 @media (max-width: 650px) { .kz-heading { align-items: flex-start; flex-direction: column; gap: .5rem; } .kz-cities { grid-template-columns: 1fr; } }
+.kz-fields { border: 0; padding: 0; margin: 1.5rem 0; min-width: 0; }
+.kz-note { grid-column: span 2; }
+.kz-note textarea { font: inherit; min-height: 6rem; padding: .6rem; border: 1px solid #8093a6; border-radius: .35rem; resize: vertical; }
+.kz-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-top: 1rem; }
+.kz-actions button, .kz-fields button { font: inherit; padding: .6rem 1rem; cursor: pointer; min-height: 2.9rem; }
+.kz-plans { margin-top: 2rem; }
+.kz-private-note { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 650px) { .kz-note { grid-column: auto; } }

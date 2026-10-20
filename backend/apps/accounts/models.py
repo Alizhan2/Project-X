@@ -32,3 +32,24 @@ class FavoriteRoute(models.Model):
             models.UniqueConstraint(fields=["user", "origin", "destination"], name="favorite_unique_direction"),
             models.CheckConstraint(condition=~models.Q(origin=models.F("destination")), name="favorite_different_stops"),
         ]
+
+
+class JourneyPlan(models.Model):
+    """Private Kazakhstan travel intent; never a booking or supplier inventory."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='journey_plans')
+    origin = models.CharField(max_length=40)
+    destination = models.CharField(max_length=40)
+    date = models.DateField()
+    time = models.TimeField()
+    passengers = models.PositiveSmallIntegerField(default=1)
+    modes = models.CharField(max_length=16, default='bus,train')
+    note = models.CharField(max_length=1000, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at', '-id']
+        constraints = [
+            models.CheckConstraint(condition=~models.Q(origin=models.F('destination')), name='plan_different_cities'),
+            models.CheckConstraint(condition=models.Q(passengers__gte=1, passengers__lte=9), name='plan_valid_party'),
+        ]

@@ -250,6 +250,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Multimodal transport booking MVP. All data, payments and confirmations are SIMULATED.",
     "VERSION": RELEASE,
     "SERVE_INCLUDE_SCHEMA": False,
+    "ENUM_NAME_OVERRIDES": {"KazakhstanCityEnum": "apps.transport.kazakhstan.catalog.CITY_IDS"},
 }
 
 # Booking / background work

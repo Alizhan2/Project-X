@@ -22,3 +22,7 @@ Full container stack and read-only filesystem runtime, release-image publishing 
 ## Kazakhstan preparation (2026-10-20)
 
 Added `/kazakhstan` and `/api/kazakhstan/{catalog,search}/`: 20 real cities, EN/RU/KK names, KZT, Asia/Almaty. Search returns explicit `provider_not_connected` (503), not fabricated inventory. The OneTR boundary awaits official partner documentation/access. No migrations or changes to historic/demo bookings. Booking remains disabled. See [integration milestones and access request](kazakhstan.md).
+
+## Kazakhstan private plans
+
+Added account-owned journey plans (additive migration `accounts.0004_journeyplan`, applied locally via `safe_migrate`), city filtering in EN/RU/KK and public parameter-only share links. Notes remain private; link recipients get a prefilled form, never a booking or account access. The Kazakhstan page supports save/edit/repeat/delete. Tests: 235 backend, 12 frontend unit, 23 existing e2e plus targeted browser checks. See `docs/kazakhstan.md` for API and sharing semantics.

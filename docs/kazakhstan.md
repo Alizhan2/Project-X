@@ -44,3 +44,18 @@ Sources for geographic/time conventions:
 ## Validation
 
 2026-10-20: 230 backend tests passed on PostgreSQL; 9 frontend unit tests and all 23 existing Playwright scenarios passed against an isolated production-like stack. Build and OpenAPI validation passed. Lint has five existing warnings and no errors. Manual browser automation exercised EN/RU/KK, provider-unavailable responses, identical-city validation and desktop/mobile layout. Actual 1TR requests and real ticket issuance remain untested because partner access is unavailable.
+
+## Private plans and sharing
+
+The Kazakhstan page now supports private account-owned plans: create, list, edit (full replacement), repeat with a new date, and delete with confirmation. A plan contains internal city IDs, intended Kazakhstan departure date/time, 1–9 passengers, bus/train preference, and an optional private note (up to 1000 characters). It is never a booking, availability claim or price quote. Up to 50 plans per account; old plans remain readable and deletable, while saving requires a future date within one year.
+
+- `GET/POST /api/kazakhstan/plans/`
+- `PUT/DELETE /api/kazakhstan/plans/{id}/`
+
+Authentication, CSRF and ownership checks apply server-side. Migration `accounts.0004_journeyplan` adds a table without modifying existing bookings. Apply through `manage.py safe_migrate`.
+
+City filters match all three language variants and region names regardless of selected UI language. Filtering preserves the selected city until the traveller explicitly chooses another. A swap button reverses the direction.
+
+Share links whitelist only `origin`, `destination`, `date`, `time`, `passengers`, and `modes`. They contain no note, user ID or plan ID and do not grant access to saved plans. Recipients can open the filled form without an account. Invalid link values fall back to defaults with a warning; dates in the past remain visible so the traveller can change them. Clipboard failure leaves a selectable link for manual copying. The link uses the current deployment origin: links from localhost are only usable on that machine; public sharing needs a hosted deployment.
+
+Validation for this increment: 235 backend tests, 12 frontend unit tests and 23 existing browser scenarios passed. Browser checks additionally exercised multilingual city lookup, swaps, shared-link reloads, sign-in return to the form, plan persistence/edit/repeat/delete, guest privacy, RU/KK labels and mobile layout. Guest-page WCAG A/AA automated checks found no violations.

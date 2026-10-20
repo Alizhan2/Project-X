@@ -798,6 +798,94 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/kazakhstan/plans/:
+    get:
+      operationId: kazakhstan_plans_list
+      tags:
+      - kazakhstan
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlanOutput'
+          description: ''
+    post:
+      operationId: kazakhstan_plans_create
+      tags:
+      - kazakhstan
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlanInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlanInput'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanOutput'
+          description: ''
+  /api/kazakhstan/plans/{id}/:
+    put:
+      operationId: kazakhstan_plans_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - kazakhstan
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlanInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlanInput'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanOutput'
+          description: ''
+    delete:
+      operationId: kazakhstan_plans_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - kazakhstan
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/kazakhstan/search/:
     get:
       operationId: kazakhstan_search_retrieve
@@ -1447,6 +1535,50 @@ components:
       - id
       - origin
       - origin_name
+    KazakhstanCityEnum:
+      enum:
+      - kz-astana
+      - kz-almaty
+      - kz-shymkent
+      - kz-kokshetau
+      - kz-aktobe
+      - kz-atyrau
+      - kz-oral
+      - kz-aktau
+      - kz-kostanay
+      - kz-petropavl
+      - kz-pavlodar
+      - kz-karaganda
+      - kz-zhezkazgan
+      - kz-oskemen
+      - kz-semey
+      - kz-taldykorgan
+      - kz-konaev
+      - kz-taraz
+      - kz-kyzylorda
+      - kz-turkistan
+      type: string
+      description: |-
+        * `kz-astana` - kz-astana
+        * `kz-almaty` - kz-almaty
+        * `kz-shymkent` - kz-shymkent
+        * `kz-kokshetau` - kz-kokshetau
+        * `kz-aktobe` - kz-aktobe
+        * `kz-atyrau` - kz-atyrau
+        * `kz-oral` - kz-oral
+        * `kz-aktau` - kz-aktau
+        * `kz-kostanay` - kz-kostanay
+        * `kz-petropavl` - kz-petropavl
+        * `kz-pavlodar` - kz-pavlodar
+        * `kz-karaganda` - kz-karaganda
+        * `kz-zhezkazgan` - kz-zhezkazgan
+        * `kz-oskemen` - kz-oskemen
+        * `kz-semey` - kz-semey
+        * `kz-taldykorgan` - kz-taldykorgan
+        * `kz-konaev` - kz-konaev
+        * `kz-taraz` - kz-taraz
+        * `kz-kyzylorda` - kz-kyzylorda
+        * `kz-turkistan` - kz-turkistan
     KindEnum:
       enum:
       - bus
@@ -1490,6 +1622,16 @@ components:
       required:
       - email
       - password
+    ModesEnum:
+      enum:
+      - bus,train
+      - bus
+      - train
+      type: string
+      description: |-
+        * `bus,train` - bus,train
+        * `bus` - bus
+        * `train` - train
     OutcomeEnum:
       enum:
       - success
@@ -1533,6 +1675,76 @@ components:
             * `failure` - failure
       required:
       - outcome
+    PlanInput:
+      type: object
+      properties:
+        origin:
+          $ref: '#/components/schemas/KazakhstanCityEnum'
+        destination:
+          $ref: '#/components/schemas/KazakhstanCityEnum'
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          format: time
+          default: 06:00:00
+        passengers:
+          type: integer
+          maximum: 9
+          minimum: 1
+          default: 1
+        modes:
+          allOf:
+          - $ref: '#/components/schemas/ModesEnum'
+          default: bus,train
+        note:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - date
+      - destination
+      - origin
+    PlanOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        origin:
+          type: string
+          maxLength: 40
+        destination:
+          type: string
+          maxLength: 40
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          format: time
+        passengers:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        modes:
+          type: string
+          maxLength: 16
+        note:
+          type: string
+          maxLength: 1000
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date
+      - destination
+      - id
+      - origin
+      - time
+      - updated_at
     RegisterIn:
       type: object
       properties:
