@@ -24,10 +24,7 @@ independent one before any commercial launch.
 | Idempotency/replay | checkout, payment, acceptance keys + DB unique constraints; concurrent duplicates tested over HTTP | load test `dup`, tests |
 
 ## Known gaps (must be decided before public launch)
-1. **No e-mail infrastructure → no account verification and no self-service password reset.** There is deliberately **no fake reset flow**. Consequences:
-   anyone can register with any e-mail address (the address is unverified contact data); a user who forgets a password needs an administrator (Django Admin → set password).
-   Launch options: (a) keep `REGISTRATION_ENABLED=false` and create accounts for invited testers; (b) allow open registration only for the clearly-labelled synthetic demo and accept the above;
-   (c) build verified e-mail + reset first (needs an e-mail provider: external account → your approval).
+1. **Account email flows exist; hosted delivery needs SMTP configuration.** See [account-email.md](account-email.md) for one-hour, purpose-bound, one-use links, CSRF, throttles, asynchronous delivery and local previews. Verification remains optional for the synthetic demo. Choose whether public registration stays closed or is allowed under that policy. MFA is not implemented.
 2. **Ingress-level protection is still required**: application throttling is not DoS protection. Put the app behind a managed ingress/WAF or proxy with connection and request-rate limits, request-size limits and TLS hardening; limit `/admin/` to trusted networks/VPN.
 3. No MFA, no password-breach checking, no IP-based anomaly detection.
 4. Admin accounts: use a few named, individual staff accounts with strong unique passwords. The `admin@doedu.test` demo account exists **only** in synthetic dev/staging data (never create demo accounts in a public environment).

@@ -21,6 +21,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/Csrf'
           description: ''
+  /api/auth/email-verification/:
+    post:
+      operationId: auth_email_verification_create
+      tags:
+      - auth
+      security:
+      - sessionAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/email-verification/confirm/:
+    post:
+      operationId: auth_email_verification_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenIn'
+        required: true
+      security:
+      - sessionAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/auth/login/:
     post:
       operationId: auth_login_create
@@ -77,12 +120,68 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/auth/password-reset/:
+    post:
+      operationId: auth_password_reset_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailIn'
+        required: true
+      security:
+      - sessionAuth: []
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/password-reset/confirm/:
+    post:
+      operationId: auth_password_reset_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResetIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResetIn'
+        required: true
+      security:
+      - sessionAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/auth/register/:
     post:
       operationId: auth_register_create
       description: |-
         Create a passenger account (the only self-service role) and sign in. Can be closed with REGISTRATION_ENABLED=false.
-        NOTE: there is no e-mail verification or password reset yet (docs/security.md).
+        Email verification is available separately; the synthetic demo does not gate bookings on it.
       tags:
       - auth
       requestBody:
@@ -963,6 +1062,14 @@ components:
           type: string
       required:
       - detail
+    EmailIn:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
     KindEnum:
       enum:
       - bus
@@ -1065,6 +1172,22 @@ components:
       - email
       - full_name
       - password
+    ResetIn:
+      type: object
+      properties:
+        uid:
+          type: string
+          maxLength: 100
+        token:
+          type: string
+          maxLength: 200
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - token
+      - uid
     SearchResponse:
       type: object
       properties:
@@ -1122,6 +1245,18 @@ components:
       - hub
       - kind
       - name
+    TokenIn:
+      type: object
+      properties:
+        uid:
+          type: string
+          maxLength: 100
+        token:
+          type: string
+          maxLength: 200
+      required:
+      - token
+      - uid
   securitySchemes:
     cookieAuth:
       type: apiKey

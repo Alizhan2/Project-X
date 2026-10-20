@@ -72,3 +72,8 @@ python manage.py check_integrity && python manage.py ops_status   # after browse
 ```
 Dependencies: edit `backend/requirements.in`, then `pip-compile --generate-hashes --output-file=requirements.txt requirements.in` (slow: it hashes every wheel) and install with `pip install --require-hashes -r requirements.txt`.
 Operations: [runbook](docs/runbook.md) · [backups](docs/backup-restore.md) · [release procedure](docs/release-procedure.md) · [security](docs/security.md) · [privacy](docs/privacy.md) · [observability](docs/observability.md).
+
+## Account recovery and local backup tools
+Password recovery and optional email verification are available. For local development keep `manage.py run_worker` running; email previews are private files in `.local-mail/` (not actual inbox delivery). Hosted SMTP setup and security rules: [docs/account-email.md](docs/account-email.md).
+
+Native backup/restore works without Docker. Put PostgreSQL 17 client tools on PATH, export the libpq connection variables, run `ops/backup.sh`, then rehearse recovery into a scratch database with `ops/verify-restore.sh`. Detailed instructions: [docs/backup-restore.md](docs/backup-restore.md). Current implementation/test evidence: [docs/local-improvements.md](docs/local-improvements.md).

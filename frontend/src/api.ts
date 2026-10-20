@@ -140,7 +140,7 @@ export interface SearchParams {
 export const searchJourneys = (p: SearchParams, signal?: AbortSignal) =>
   getJson<SearchResponse>(`/api/search/?${new URLSearchParams({ ...p })}`, signal)
 
-export interface User { id: number; email: string; name: string; role: string; operator: string | null }
+export interface User { email_verified: boolean; id: number; email: string; name: string; role: string; operator: string | null }
 export const fetchMe = (signal?: AbortSignal) => getJson<{ user: User | null }>('/api/auth/me/', signal)
 export const login = (email: string, password: string) => request<User>('POST', '/api/auth/login/', { email, password })
 export const register = (email: string, full_name: string, password: string) =>

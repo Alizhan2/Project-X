@@ -233,6 +233,8 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.core.errors.exception_handler",
     "NUM_PROXIES": NUM_PROXIES,
     "DEFAULT_THROTTLE_RATES": {
+        "account_email": env("THROTTLE_ACCOUNT_EMAIL", "5/hour"),
+        "account_token": env("THROTTLE_ACCOUNT_TOKEN", "20/min"),
         "login": "100000/min" if _LENIENT else env("THROTTLE_LOGIN", "10/min"),
         "register": "100000/min" if _LENIENT else env("THROTTLE_REGISTER", "5/hour"),
         "search": "100000/min" if _LENIENT else env("THROTTLE_SEARCH", "120/min"),
@@ -288,3 +290,25 @@ LOGGING = {
 if "test" in sys.argv:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
     LOGGING["root"]["level"] = "WARNING"
+
+# Account links use a configured origin, never the untrusted request Host.
+PUBLIC_APP_URL = env("PUBLIC_APP_URL", "http://127.0.0.1:5173").rstrip("/")
+PASSWORD_RESET_TIMEOUT = 3600
+EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend" if IS_DEPLOYED else "apps.accounts.mail_backend.EmailBackend")
+EMAIL_FILE_PATH = BASE_DIR.parent / ".local-mail"
+EMAIL_HOST = env("EMAIL_HOST", "localhost")
+EMAIL_PORT = env_int("EMAIL_PORT", 587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Doedu <noreply@doedu.test>")
+if IS_DEPLOYED and env("PUBLIC_APP_URL"):
+    from urllib.parse import urlsplit
+    _mail_origin = urlsplit(PUBLIC_APP_URL)
+    if (_mail_origin.scheme != "https" or not _mail_origin.hostname or _mail_origin.username
+            or _mail_origin.password or _mail_origin.query or _mail_origin.fragment or _mail_origin.path):
+        raise ImproperlyConfigured("PUBLIC_APP_URL must be an HTTPS origin without credentials or a path.")
+
+ACCOUNT_EMAIL_CONFIGURED = bool(env("PUBLIC_APP_URL") and env("EMAIL_HOST") and env("DEFAULT_FROM_EMAIL"))

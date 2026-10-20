@@ -37,7 +37,7 @@ platform's secret store, never in the repository, logs, chat or screenshots.
 | `THROTTLE_LOGIN/REGISTER/SEARCH/BOOKING` | no | `10/min`, `5/hour`, `120/min`, `30/min` per client (login/register: IP; others: user or IP) when deployed |
 | `LOGIN_FAILURE_LIMIT`, `LOGIN_FAILURE_WINDOW_SECONDS` | no | per-account lockout: 5 failures / 15 min → HTTP 429 |
 | `SESSION_COOKIE_AGE_SECONDS` | no | 7 days |
-| `REGISTRATION_ENABLED` | no | public sign-up switch. **No e-mail verification or password reset exists** (docs/security.md) |
+| `REGISTRATION_ENABLED` | no | public sign-up switch. Verification/reset implemented; SMTP must be configured for hosted delivery (docs/account-email.md) |
 | `ENABLE_API_DOCS` | no | Swagger UI; off in production (the committed `docs/openapi.yaml` is the reference) |
 | `METRICS_TOKEN` | no | enables `GET /api/ops/metrics/` (Bearer token). Empty = endpoint answers 404 |
 | `RESERVATION_MINUTES`, `REPLACEMENT_OFFER_MINUTES`, `JOB_LOCK_TIMEOUT_SECONDS`, `WORKER_STALE_SECONDS` | no | 10 / 30 / 60 / 60 |
@@ -50,3 +50,6 @@ platform's secret store, never in the repository, logs, chat or screenshots.
 ## CORS
 The SPA and API are same-origin (the app server serves both; Vite proxies in development), so no CORS headers are sent
 (tested). Add `django-cors-headers` only if a genuinely cross-origin client appears, with an explicit origin allow-list.
+
+## Account email
+See [account-email.md](account-email.md) for PUBLIC_APP_URL, EMAIL_* settings, DEFAULT_FROM_EMAIL and account-email throttles. Local delivery is a private file preview; hosted SMTP is not yet configured.

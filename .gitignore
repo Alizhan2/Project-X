@@ -14,3 +14,7 @@ staticfiles/
 .env.production
 *.dump
 *.dump.sha256
+
+.local-mail/
+.playwright-cli/
+output/

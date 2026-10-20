@@ -33,7 +33,7 @@ Lock departures `ORDER BY pk` with `select_for_update` before touching `places_t
 - Production-like local run: `ops/run-staging.sh` with the variables from `.env.production.example` (DOEDU_ENV=staging). Load test only local/authorised hosts: `ops/loadtest.py`.
 - Dependencies are hash-locked (`backend/requirements.in` → `requirements.txt`). Migrations must be additive/backward compatible; use `AddIndexConcurrently` on big tables.
 - Logs are redacted JSON; never add logging of bodies, headers, cookies, IPs or e-mail addresses. Audit records are separate from logs.
-- Tools used for evidence live outside the repo (`~/.doedu-tools`: Postgres binaries, pip-tools/pip-audit/detect-secrets). Docker, `pg_dump` and GitHub runners were NOT available: say so rather than claiming they ran.
+- Tools used for evidence live outside the repo (`~/.doedu-tools`: Postgres binaries, pip-tools/pip-audit/detect-secrets). CI ran at ac46440. Logical backup/restore ran locally on 2026-10-20 using Postgres.app 17.11 clients. Full Docker Compose remains unverified. Consult docs/local-improvements.md for current evidence.
 
 ## Rules of the codebase
 - Money: `Decimal`, explicit currency; never floats. Datetimes timezone-aware (UTC stored, `Europe/Berlin` display).
@@ -46,3 +46,6 @@ Lock departures `ORDER BY pk` with `select_for_update` before touching `places_t
 ## Definition of done
 Frontend+backend work together · state persisted in PostgreSQL · permissions enforced · failure cases handled ·
 business-rule tests pass · docs updated · never claim tests pass unless they were actually run.
+
+## Account email
+See docs/account-email.md. Run the worker for queued email. Local previews are private `.local-mail/` files (never commit); hosted delivery requires SMTP and PUBLIC_APP_URL. Verification is optional in the synthetic demo.

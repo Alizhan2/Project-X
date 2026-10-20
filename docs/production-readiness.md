@@ -1,5 +1,5 @@
 # Production readiness: assessment and checklist
-**Status (see bottom): ready for a hosted demonstration once the listed decisions are made and the three not-yet-executed items are run on a real host; not commercially ready.**
+**Status (see bottom): ready for a hosted demonstration once the listed decisions are made and the remaining host checks are run; not commercially ready.**
 
 ## Confirmed working (evidence in docs/verification-report.md)
 Search/compare multimodal journeys · reservation, simulated payment, cancellation and refund rules · operator tools · notifications · disruption recovery with replacement offers · idempotency and
@@ -11,10 +11,10 @@ ids, health/readiness/metrics, integrity tooling · hash-locked dependencies · 
 |---|---|---|---|
 | 1 | Hosting provider/region, domain + TLS ingress not chosen | you | **open decision** (docs/deployment.md options) |
 | 2 | Container image build: **done in CI** (builds, non-root, liveness OK). The full compose stack as containers has not been run | needs Docker host | partly done; remaining: first `docker compose up` on the target host |
-| 3 | `pg_dump` backup scripts never executed; first real run + `verify-restore.sh` required | needs Postgres client tools | **NOT RUN** |
-| 4 | Public registration policy: no e-mail verification / password reset exists | you | **open decision** (docs/security.md): keep closed (`REGISTRATION_ENABLED=false`) or accept for a synthetic demo |
+| 3 | Logical backup and restore rehearsal | local PostgreSQL 17.11 | **RUN locally 2026-10-20**; repeat on target storage |
+| 4 | Public registration policy: optional verification/reset implemented; hosted SMTP not connected | you | **open decision** (docs/security.md): keep closed (`REGISTRATION_ENABLED=false`) or accept for a synthetic demo |
 | 5 | Alert recipient / on-call and backup owner named | you | open |
-None of these is a code defect; 2–3 are verification steps that need tools unavailable here.
+Full container runtime remains unverified; local PostgreSQL client tools were used for backup verification.
 
 ## Operational gaps (not blocking a demo, needed soon after)
 Independent pen test · monitoring/alerting connected (needs your approval of a service) · off-host backup storage configured · Django 6.1 → LTS migration plan (support ends 2027-04-30) ·
@@ -42,11 +42,11 @@ docs/deployment.md (single image: web + worker + one-shot db-roles/migrate jobs;
 | Security | rate limits, lockout, headers/CSP, error sanitisation, secrets scan | done, run; ingress limits still required |
 | Privacy | inventory, minimisation; retention/deletion defined as requirements | documented; deletion **not built** |
 | Observability | JSON logs, request ids, metrics, audit, runbook | done; external monitoring **not connected** |
-| Backups | scripts + restore procedure + measured rehearsal | physical rehearsal run; pg_dump path **not run** |
+| Backups | scripts + restore procedure + measured rehearsal | physical and logical backup/restore rehearsals run locally |
 | CI/CD | pipeline (tests, deploy gate, e2e on prod-like stack, scans, container) + release procedure | **executed on a GitHub runner: all 5 jobs green at `ac46440`** (release.yml never triggered) |
 | Commercial | backlog separate; commercial mode blocked | documented |
 
 ## Verdict
 * **Hosted demonstration**: **ready to proceed to deployment approval** (blockers 1–5 are decisions/verification steps, not defects).
 * **Staging**: ready now (the production-like stack runs from an empty database in minutes).
-* **Commercial operation**: **blocked**: no authorised transport integration, no real payment processing, no e-mail verification/reset, no independent security review, no legal/support set-up (docs/commercial-readiness.md).
+* **Commercial operation**: **blocked**: no authorised transport integration, no real payment processing, SMTP delivery not commissioned; verification optional, no independent security review, no legal/support set-up (docs/commercial-readiness.md).

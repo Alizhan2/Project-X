@@ -80,7 +80,10 @@ export default function Search() {
 
   return (
     <>
-      <h1>Plan your journey</h1>
+      <section className="journey-intro">
+        <div><h1>Plan your journey</h1><p>From your first stop to your final destination.<br />Find buses, trains and taxis that connect.</p></div>
+        <div className="route-ribbon" aria-label="Travel by bus, train and taxi"><span>Bus</span><i aria-hidden="true" /><span>Train</span><i aria-hidden="true" /><span>Taxi</span></div>
+      </section>
       {stopsError && <p className="status-bad" role="alert">Could not load stops: {stopsError}</p>}
       <form className="card search-form" onSubmit={submit} noValidate>
         <div className="field">

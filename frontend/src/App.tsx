@@ -14,6 +14,7 @@ import ServiceDetail from './pages/operator/ServiceDetail'
 import Services from './pages/operator/Services'
 import Search from './pages/Search'
 import Status from './pages/Status'
+import EmailAccount from './pages/EmailAccount'
 
 export default function App() {
   return (
@@ -21,6 +22,9 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Search />} />
         <Route path="journey" element={<Journey />} />
+        <Route path="forgot-password" element={<EmailAccount key="forgot" mode="forgot" />} />
+        <Route path="reset-password" element={<EmailAccount key="reset" mode="reset" />} />
+        <Route path="verify-email" element={<EmailAccount key="verify" mode="verify" />} />
         <Route path="login" element={<Account mode="login" />} />
         <Route path="register" element={<Account mode="register" />} />
         <Route element={<RequireAuth />}>

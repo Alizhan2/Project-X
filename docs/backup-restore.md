@@ -16,9 +16,9 @@ A backup counts as verified only after a restore succeeded and the restored data
 `ops/verify-restore.sh <backup dir>` automates 1–4 into a scratch database; schedule it (weekly) and alert on failure.
 
 ## Measured restore rehearsal (this repository, local)
-Limitations first: **`pg_dump`/`pg_restore`/`psql` are not installed on the development machine, so the scripts above were NOT executed here.** What was executed is a
+**Historical rehearsal (superseded for logical tooling on 2026-10-20; see local-improvements.md):** At that time pg_dump tools were unavailable. What was executed is a
 *cold physical* backup and restore of a separate PostgreSQL 17.10 staging cluster (stopped, data directory archived), which verifies the *data-level* restore property
-(identical state, consistent invariants, application reconnects) but not the `pg_dump` tooling. First real `pg_dump` run must be followed by `verify-restore.sh`.
+(identical state, consistent invariants, application reconnects) but not the `pg_dump` tooling. That earlier result did not verify logical tooling; the later rehearsal below does.
 
 | Step | Result |
 |---|---|
@@ -35,3 +35,10 @@ Limitations first: **`pg_dump`/`pg_restore`/`psql` are not installed on the deve
 | RPO (data you can lose) | ≤ 24 h with daily dumps; ≤ 5 min with managed PITR | rehearsal shows a post-backup change is lost, as expected |
 | RTO (time to recover) | ≤ 2 h including provisioning | restore time grows with data size: re-measure with real volume |
 | Restore drill | monthly full drill, weekly automated `verify-restore.sh` | record date and result in the release checklist |
+
+## Local logical rehearsal, 2026-10-20
+`ops/backup.sh`, `restore.sh`, and `verify-restore.sh` ran using PostgreSQL 17.11 clients from the official Postgres.app release, against the existing PostgreSQL server without Docker. Restoration used a separate scratch database which was dropped afterward. Integrity passed. Production database storage was not overwritten.
+
+Scripts now support both `sha256sum` (Linux) and `shasum -a 256` (macOS), unique backup filenames, failure cleanup, transactional restoration and rejection of a target with existing user relations. Use `PYTHON=/absolute/path/to/backend/.venv/bin/python` for the rehearsal if `python` is not on PATH. Keep libpq connection variables set and run verify-restore from `backend/`. Repeat the rehearsal on actual hosted storage; off-host copies, schedules and recovery objectives remain operational work.
+
+On this Mac, the checked client binaries are retained at `~/.doedu-tools/postgres-client-17/bin` (outside Git). Use `export PATH="$HOME/.doedu-tools/postgres-client-17/bin:$PATH"`. This does not replace or restart the existing database server. Export `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, and `PGDATABASE` from the corresponding `POSTGRES_*` environment variables without printing them. Choose a private `BACKUP_DIR` before running backup.sh; credentials and dump files must stay out of Git.

@@ -7,6 +7,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>
   register: (email: string, name: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  refresh: () => Promise<void>
 }
 
 const Ctx = createContext<AuthState | null>(null)
@@ -26,8 +27,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (e: string, p: string) => setUser(await apiLogin(e, p)), [])
   const register = useCallback(async (e: string, n: string, p: string) => setUser(await apiRegister(e, n, p)), [])
+  const refresh = useCallback(async () => setUser((await fetchMe()).user), [])
   const logout = useCallback(async () => { await apiLogout(); setUser(null) }, [])
-  const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading, login, register, logout])
+  const value = useMemo(() => ({ user, loading, login, register, logout, refresh }), [user, loading, login, register, logout, refresh])
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 

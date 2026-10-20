@@ -13,3 +13,8 @@ backend/staticfiles
 docs
 ops
 *.md
+.local-mail
+.playwright-cli
+output
+*.dump
+*.dump.sha256

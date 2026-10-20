@@ -29,6 +29,7 @@ def user_payload(user):
     operator = getattr(getattr(user, "membership", None), "operator", None)
     return {
         "id": user.pk,
+        "email_verified": user.email_verified_at is not None,
         "email": user.email,
         "name": user.get_full_name() or user.email,
         "role": user.role,
@@ -77,7 +78,7 @@ def csrf(request):
 @permission_classes([AllowAny])
 def register(request):
     """Create a passenger account (the only self-service role) and sign in. Can be closed with REGISTRATION_ENABLED=false.
-    NOTE: there is no e-mail verification or password reset yet (docs/security.md)."""
+    Email verification is available separately; the synthetic demo does not gate bookings on it."""
     if not settings.REGISTRATION_ENABLED:
         raise PermissionDenied("Registration is closed.")
     data = RegisterIn(data=request.data)

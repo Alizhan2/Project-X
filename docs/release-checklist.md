@@ -1,3 +1,5 @@
+> Latest local change evidence: [local-improvements.md](local-improvements.md). Historical CI results below refer to ac46440, not later commits.
+
 # MVP demo release checklist (superseded for hosting by docs/production-readiness.md and docs/release-procedure.md)
 Evidence column says what was actually run on the author's machine (macOS, PostgreSQL 17.10 local, Python 3.14, Node 24).
 | Item | Status |

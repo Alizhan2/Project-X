@@ -1,6 +1,5 @@
 # CI for Doedu. Every job uses synthetic data and throw-away resources (service containers / the runner).
-# STATUS: the steps were each run by hand against a clean checkout (see docs/verification-report.md), but this workflow
-# file itself has NEVER been executed on a GitHub runner. Expect to fix small runner-specific issues on first run.
+# First successful runner execution: ac46440 (five jobs). Every new revision must pass its own run.
 name: CI
 on:
   push:

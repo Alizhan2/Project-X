@@ -1,3 +1,5 @@
+> Current update (2026-10-20): see [local-improvements.md](local-improvements.md) for account email, refreshed UI, current test results and successful logical backup/restore. The report below records the earlier production-preparation milestone; earlier “not run” backup statements are superseded by this update.
+
 # Verification report: production preparation
 Machine: one macOS laptop (arm64 binaries run under x86_64 PostgreSQL 17.10 build; Python 3.14.8, Node 24.21). The load generator, application and database shared this machine,
 so absolute numbers are **not** representative of hosting hardware; they show relative behaviour and, above all, correctness under contention.
@@ -45,7 +47,7 @@ stale/expired/invalidated offers, failed simulated payment, cross-passenger acce
 
 ## 4b. Backup and restore (see docs/backup-restore.md)
 RAN a cold physical backup → `DROP DATABASE` → restore to a fresh data directory: state fingerprint identical to pre-backup, integrity OK, app reconnected, 1 s (14 MB, not representative).
-**NOT RUN**: `ops/backup.sh`, `restore.sh`, `verify-restore.sh` (no `pg_dump`/`pg_restore`/`psql` locally). Do not treat the pg_dump route as verified until its first real run.
+**At the original milestone:** pg_dump tooling was unavailable. **Update 2026-10-20:** all three scripts ran successfully locally; see local-improvements.md.
 
 ## 5. Performance (bounded, local only; `ops/loadtest.py` refuses non-local hosts without an explicit flag)
 Proposed targets for discussion: read endpoints p95 < 300 ms at 20 concurrent users; checkout p95 < 1 s at 30 concurrent; 0 oversells; 5xx < 1 %. Measured on this laptop:
@@ -65,4 +67,4 @@ Still not exercised by CI: the full `docker-compose.prod.yml` stack (db-roles �
 
 ## 6. Not executed (reviewed only)
 The full `docker-compose.prod.yml` stack and the read-only-filesystem runtime (the image build and a non-root liveness check DID run in CI, §5b); `release.yml` (never triggered);
-`pg_dump` scripts; real TLS/HSTS/proxy header behaviour; an independent penetration test; manual screen-reader testing.
+real TLS/HSTS/proxy header behaviour; an independent penetration test; manual screen-reader testing.

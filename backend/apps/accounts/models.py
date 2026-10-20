@@ -15,3 +15,5 @@ class User(AbstractUser):
         ADMIN = "admin", "Administrator"
 
     role = models.CharField(max_length=16, choices=Role.choices, default=Role.PASSENGER)
+
+    email_verified_at = models.DateTimeField(null=True, blank=True)

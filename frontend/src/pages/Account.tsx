@@ -29,10 +29,10 @@ export default function Account({ mode }: { mode: 'login' | 'register' }) {
   }
   const f = (n: string) => err?.fields[n]
   if (mode === 'register' && !cfg.registration_enabled) {
-    return <section className="card narrow"><h1>Registration is closed</h1><p>New accounts cannot be created on this deployment. <Link to="/login">Sign in</Link></p></section>
+    return <section className="card narrow account-card"><h1>Registration is closed</h1><p>New accounts cannot be created on this deployment. <Link to="/login">Sign in</Link></p></section>
   }
   return (
-    <section className="card narrow">
+    <section className="card narrow account-card">
       <h1>{mode === 'login' ? 'Sign in' : 'Create your account'}</h1>
       {err && !Object.keys(err.fields).length && <p className="status-bad" role="alert">{err.message}</p>}
       {f('detail') && <p className="status-bad" role="alert">{f('detail')}</p>}
@@ -56,6 +56,7 @@ export default function Account({ mode }: { mode: 'login' | 'register' }) {
         </div>
         <button className="primary" type="submit" disabled={busy}>{mode === 'login' ? 'Sign in' : 'Create account'}</button>
       </form>
+      {mode === 'login' && <p><Link to="/forgot-password">Forgot your password?</Link></p>}
       <p>
         {mode === 'login' ? (cfg.registration_enabled ? <>No account? <Link to="/register" state={loc.state}>Create one</Link></> : null) : <>Already registered? <Link to="/login" state={loc.state}>Sign in</Link></>}
       </p>

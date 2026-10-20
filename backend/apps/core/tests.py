@@ -21,6 +21,7 @@ class SecuritySweepTests(TestCase):
 
     PUBLIC = {
         "api/health/", "api/stops/", "api/search/", "api/itinerary/", "api/schema/", "api/docs/",
+        "api/auth/password-reset/", "api/auth/password-reset/confirm/", "api/auth/email-verification/confirm/",
         "api/auth/csrf/", "api/auth/register/", "api/auth/login/", "api/auth/me/",
         "api/health/live/", "api/health/ready/", "api/config/",
         "api/ops/metrics/",   # token-protected, answers 404 without the token (tested separately)
@@ -81,7 +82,7 @@ class SecuritySweepTests(TestCase):
         u = User.objects.create_user("q@x.co", "q@x.co", "correct-horse-42")
         self.client.force_login(u)
         body = self.client.get("/api/auth/me/").json()["user"]
-        self.assertEqual(set(body), {"id", "email", "name", "role", "operator"})
+        self.assertEqual(set(body), {"id", "email", "name", "role", "operator", "email_verified"})
 
 
 class OpenApiTests(TestCase):

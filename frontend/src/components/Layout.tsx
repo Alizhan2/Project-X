@@ -18,7 +18,7 @@ export default function Layout() {
         </div>
       )}
       <header className="site-header">
-        <span className="brand">Doedu</span>
+        <NavLink to="/" className="brand" ><span className="brand-symbol" aria-hidden="true" />Doedu</NavLink>
         <nav aria-label="Main">
           <NavLink to="/" end>Search</NavLink>
           {user && <NavLink to="/journeys">My journeys</NavLink>}
@@ -37,6 +37,7 @@ export default function Layout() {
         </nav>
       </header>
       <main id="main">
+        {user && !user.email_verified && <aside className="email-notice">Keep access to your account. <NavLink to="/verify-email">Verify your email</NavLink></aside>}
         <Outlet />
       </main>
       <footer className="site-footer">Doedu · {cfg.launch_mode} · release {cfg.release}</footer>
