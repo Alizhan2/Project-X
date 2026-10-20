@@ -3,7 +3,7 @@ import { useLanguage } from '../useLanguage'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchUpcoming, type TravelPlan } from '../api'
-import { useAuth } from '../auth'
+import { useAuth } from '../authContext'
 import { clock, dayLabel } from '../format'
 
 export default function UpcomingJourney() {

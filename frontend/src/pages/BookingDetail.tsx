@@ -9,9 +9,10 @@ import ConnectionProtection from '../components/ConnectionProtection'
 import Timeline from '../components/Timeline'
 import JourneyDownloads from '../components/JourneyDownloads'
 import { clock, dayLabel, money } from '../format'
-import { useAuth } from '../auth'
+import { useAuth } from '../authContext'
 import { getOfflineCopy, saveOfflineCopy } from '../offline'
 import { netPaid } from '../bookingAmounts'
+import ScrollTable from '../components/ScrollTable'
 
 const REASONS: Record<string, string> = {
   service_cancelled: 'one of your services was cancelled by the operator',
@@ -116,7 +117,7 @@ export default function BookingDetail() {
           </details>
         )}
         <p>{t("Passengers:")} {b.travellers.join(', ')}</p>
-        <p>{t("Net paid:")} <strong data-testid="net-paid">{money(netPaid(b), b.currency)}</strong>  {t("(prices fixed at purchase)")}</p>
+        {!offlineAt && (b.payments.some(p => p.status === 'succeeded') || b.refunds.length > 0) && <p>{t("Net paid:")} <strong data-testid="net-paid">{money(netPaid(b), b.currency)}</strong>  {t("(prices fixed at purchase)")}</p>}
         <ul className="muted small">{b.legs.map((l) => <li key={l.sequence}>{l.route_code}: {t(l.cancellation_policy)}</li>)}</ul>
 
         {b.refunds.map((r, i) => (
@@ -132,6 +133,7 @@ export default function BookingDetail() {
           <div className="card" role="region" aria-label={t("Cancellation and refund")}>
             <h2>{t("Cancel and refund")}</h2>
             {quote.disrupted && <p className="warn">{t("Because your journey is disrupted, unused legs are refunded in full.")}</p>}
+            <ScrollTable label={t("Refund per leg")}>
             <table className="legs">
               <thead><tr><th scope="col">{t("Leg")}</th><th scope="col">{t("Paid")}</th><th scope="col">{t("Refund")}</th><th scope="col">{t("Why")}</th></tr></thead>
               <tbody>
@@ -140,6 +142,7 @@ export default function BookingDetail() {
                 ))}
               </tbody>
             </table>
+            </ScrollTable>
             <p className="price-line">{t("You will receive:")} <strong data-testid="quote-total">{money(quote.total_refund, b.currency)}</strong>  {t("(simulated refund)")}</p>
             <div className="actions">
               <button className="primary danger" disabled={busy} onClick={confirmCancel}>{t("Confirm cancellation")}</button>

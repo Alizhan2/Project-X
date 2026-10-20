@@ -1,7 +1,7 @@
 import { t } from '../i18n'
 import { useLanguage } from '../useLanguage'
 import { Link } from 'react-router-dom'
-import { useNotifications } from '../notifications'
+import { useNotifications } from '../notificationsContext'
 import { clock, dayLabel } from '../format'
 
 export default function Notifications() {

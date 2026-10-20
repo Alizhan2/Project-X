@@ -2,9 +2,9 @@ import { getLanguage, languages, localeNames, setLanguage, t, type Language } fr
 import { useLanguage } from '../useLanguage'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../auth'
-import { useConfig } from '../config'
-import { useNotifications } from '../notifications'
+import { useAuth } from '../authContext'
+import { useConfig } from '../configContext'
+import { useNotifications } from '../notificationsContext'
 import { useOnline } from '../hooks'
 import ThemeToggle from './ThemeToggle'
 
@@ -70,7 +70,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="site-footer">
-        {cfg.simulated && <div className="sim-banner" role="note">{isKazakhstan ? t('Kazakhstan directory. Real ticket sales are not yet available.') : t("— all transport data, payments and booking confirmations are simulated. Confirmations are not valid travel tickets.")}</div>}
+        {cfg.simulated && <div className="sim-banner" role="note">{isKazakhstan ? t('Kazakhstan directory. Real ticket sales are not yet available.') : <>{cfg.launch_mode === 'demo' ? t("Demonstration") : t("Development build")} {t("— all transport data, payments and booking confirmations are simulated. Confirmations are not valid travel tickets.")}</>}</div>}
         <p className="release-label">Doedu · {t(cfg.launch_mode)} {t("· release")} {cfg.release}</p>
       </footer>
     </>

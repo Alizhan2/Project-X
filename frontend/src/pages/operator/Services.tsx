@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, opServices, type OpService } from '../../api'
 import { clock, dayLabel } from '../../format'
+import ScrollTable from '../../components/ScrollTable'
 
 export default function Services() {
   useLanguage()
@@ -18,6 +19,7 @@ export default function Services() {
       {!rows && !err && <p>{t("Loading…")}</p>}
       {rows && rows.length === 0 && <div className="card empty"><p>{t("You have no upcoming services.")}</p></div>}
       {rows && rows.length > 0 && (
+        <ScrollTable label={t("Services table")}>
         <table className="legs card" data-testid="services-table">
           <caption className="sr-only">{t("Upcoming services of your operator")}</caption>
           <thead><tr><th scope="col">{t("Service")}</th><th scope="col">{t("Departs")}</th><th scope="col">{t("Status")}</th><th scope="col">{t("Booked / capacity")}</th><th scope="col"><span className="sr-only">{t("Actions")}</span></th></tr></thead>
@@ -33,6 +35,7 @@ export default function Services() {
             ))}
           </tbody>
         </table>
+        </ScrollTable>
       )}
     </>
   )

@@ -79,3 +79,45 @@ test('"Lowest price" badge appears only when day prices differ', async ({ page }
     expect(badges).toBe(0)                        // all prices equal: a badge would be meaningless
   }
 })
+
+test.describe('mobile layout regressions', () => {
+  test.use({ viewport: { width: 390, height: 800 } })
+
+  test('no page scrolls sideways on a phone (wide tables scroll inside their own region)', async ({ page }) => {
+    const overflow = async (where: string) => {
+      await page.waitForTimeout(400)
+      const [scroll, width] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth])
+      expect(scroll, `horizontal overflow on ${where}`).toBeLessThanOrEqual(width)
+    }
+    await page.goto('/'); await overflow('home')
+    await page.goto(results()); await expect(page.locator('.result').first()).toBeVisible(); await overflow('results')
+    await page.locator('.result').first().getByRole('link', { name: /^Select/ }).click()
+    await expect(page.getByRole('heading', { name: 'Journey details' })).toBeVisible(); await overflow('journey details')
+    await expect(page.getByRole('region', { name: 'Fare and accessibility per leg' })).toBeVisible()   // the table sits in a scroll region
+    await page.goto('/kazakhstan'); await overflow('kazakhstan')
+  })
+
+  test('booking form and an unpaid booking read correctly on a phone', async ({ page }) => {
+    await page.goto('/register')
+    await page.getByLabel('Full name').fill('Mobile Mia')
+    await page.getByLabel('Email').fill(`mm-${Date.now()}@example.com`)
+    await page.getByLabel('Password').fill('correct-horse-42')
+    await page.getByRole('button', { name: 'Create account' }).click()
+    await expect(page).toHaveURL(/\/journeys/)                  // registration finished (the Menu button exists before sign-in on phones)
+    await page.goto(`/?origin=NG-BUS&destination=RV-BUS&date=${demoDayIso()}&time=18:00&passengers=1`)
+    await page.locator('.result').first().getByRole('link', { name: /^Select/ }).click()
+    await page.getByRole('link', { name: 'Continue to traveller details' }).click()
+    await expect(page.getByRole('heading', { name: 'Traveller details' })).toBeVisible()
+    await page.waitForTimeout(400)
+    const [scroll, width] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth])
+    expect(scroll).toBeLessThanOrEqual(width)
+    await page.getByRole('button', { name: 'Reserve and continue to payment' }).click()
+    await expect(page.getByTestId('countdown')).toBeVisible()
+    await page.goBack()
+    await page.goto('/journeys')
+    await page.getByRole('link', { name: /DD-/ }).first().click()
+    await expect(page.getByTestId('status')).toContainText('Awaiting payment')
+    await expect(page.getByTestId('net-paid')).toHaveCount(0)                       // nothing has been paid yet
+    await expect(page.locator('footer .sim-banner')).toContainText(/^(Development build|Demonstration) — all transport data/)
+  })
+})

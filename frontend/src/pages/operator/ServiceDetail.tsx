@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, opChange, opEdit, opFare, opImpact, opRoutes, opService, type Impact, type OpRoute, type OpService } from '../../api'
 import { clock, dayLabel } from '../../format'
+import ScrollTable from '../../components/ScrollTable'
 
 const REASON: Record<string, string> = { service_cancelled: 'service cancelled', connection_missed: 'connection missed', taxi_unavailable: 'taxi outside service hours' }
 
@@ -28,7 +29,19 @@ export default function ServiceDetail() {
       setRoute(routes.results.find((r) => r.code === svc.route_code) ?? null)
     } catch (e) { setErr(e instanceof ApiError ? e : new ApiError(t("Unexpected error."))) }
   }, [id])
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let current = true
+    ;(async () => {
+      try {
+        const svc = await opService(id)
+        const routes = await opRoutes()
+        if (!current) return
+        setS(svc); setCapacity(String(svc.capacity))
+        setRoute(routes.results.find((r) => r.code === svc.route_code) ?? null)
+      } catch (e) { if (current) setErr(e instanceof ApiError ? e : new ApiError(t("Unexpected error."))) }
+    })()
+    return () => { current = false }
+  }, [id])
 
   if (err) return <p className="status-bad" role="alert">{err.status === 404 ? t("Service not found (it may belong to another operator).") : t(err.message)}</p>
   if (!s) return <p>{t("Loading…")}</p>
@@ -93,13 +106,13 @@ export default function ServiceDetail() {
                 <h3>{t("Consequences")}</h3>
                 <p data-testid="impact-summary">{impact.affected.length}  {t("booking(s),")} {impact.passengers}  {t("passenger(s) affected;")} {impact.broken}  {t("journey(s) would be broken.")}</p>
                 {impact.affected.length > 0 && (
-                  <table className="legs">
+                  <ScrollTable label={t("Affected bookings")}><table className="legs">
                     <thead><tr><th scope="col">{t("Booking")}</th><th scope="col">{t("Passengers")}</th><th scope="col">{t("Effect")}</th></tr></thead>
                     <tbody>{impact.affected.map((a) => (
                       <tr key={a.reference}><th scope="row">{a.reference}</th><td>{a.passengers}</td>
                         <td>{a.after === 'broken' ? t("Journey broken: {0}", {0: t(REASON[a.reason] ?? a.reason)}) : a.after === 'delayed' ? t("Delayed, connections hold") : t("No effect")}</td></tr>
                     ))}</tbody>
-                  </table>
+                  </table></ScrollTable>
                 )}
                 <p className="muted small">{t("Affected passengers are notified and offered cancellation with refund. Passenger contact details are not shown.")}</p>
                 <button className={`primary ${action === 'cancel' ? 'danger' : ''}`} disabled={busy} onClick={apply}>
@@ -114,10 +127,10 @@ export default function ServiceDetail() {
       {route && (
         <section className="card" aria-labelledby="fare-h">
           <h2 id="fare-h">{t("Fares (per passenger)")}</h2>
-          <table className="legs">
+          <ScrollTable label={t("Fares table")}><table className="legs">
             <thead><tr><th scope="col">{t("From → to")}</th><th scope="col">{t("Price (")}{route.fares[0]?.currency})</th><th scope="col"><span className="sr-only">{t("Save")}</span></th></tr></thead>
             <tbody>{route.fares.map((f) => <FareRow key={f.id} fare={f} onSave={saveFare} />)}</tbody>
-          </table>
+          </table></ScrollTable>
         </section>
       )}
 

@@ -3,7 +3,7 @@ import { useLanguage } from '../useLanguage'
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ApiError, request } from '../api'
-import { useAuth } from '../auth'
+import { useAuth } from '../authContext'
 
 export default function EmailAccount({ mode }: { mode: 'forgot' | 'reset' | 'verify' }) {
   useLanguage()

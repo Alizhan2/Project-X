@@ -1,17 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { AuthContext } from './authContext'
 import { clearOfflineCopies, pruneOfflineCopies } from './offline'
 import { fetchMe, login as apiLogin, logout as apiLogout, register as apiRegister, type User } from './api'
-
-interface AuthState {
-  user: User | null
-  loading: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (email: string, name: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-  refresh: () => Promise<void>
-}
-
-const Ctx = createContext<AuthState | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -31,11 +21,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => setUser((await fetchMe()).user), [])
   const logout = useCallback(async () => { clearOfflineCopies(); await apiLogout(); setUser(null) }, [])
   const value = useMemo(() => ({ user, loading, login, register, logout, refresh }), [user, loading, login, register, logout, refresh])
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
-}
-
-export function useAuth() {
-  const v = useContext(Ctx)
-  if (!v) throw new Error('useAuth outside AuthProvider')
-  return v
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -3,8 +3,8 @@ import { useLanguage } from '../useLanguage'
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ApiError } from '../api'
-import { useAuth } from '../auth'
-import { useConfig } from '../config'
+import { useAuth } from '../authContext'
+import { useConfig } from '../configContext'
 
 export default function Account({ mode }: { mode: 'login' | 'register' }) {
   useLanguage()

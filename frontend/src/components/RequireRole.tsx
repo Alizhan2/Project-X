@@ -1,7 +1,7 @@
 import { t } from '../i18n'
 import { useLanguage } from '../useLanguage'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from '../auth'
+import { useAuth } from '../authContext'
 
 export default function RequireRole({ role }: { role: string }) {
   useLanguage()

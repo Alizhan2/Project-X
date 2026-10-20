@@ -3,7 +3,7 @@ import { useLanguage } from '../useLanguage'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, deleteFavorite, fetchFavorites, saveFavorite, type FavoriteRoute } from '../api'
-import { useAuth } from '../auth'
+import { useAuth } from '../authContext'
 import { repeatSearchUrl } from '../format'
 
 interface Props { origin: string; destination: string }

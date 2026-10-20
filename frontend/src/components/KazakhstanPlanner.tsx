@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, request } from '../api'
-import { useAuth } from '../auth'
+import { useAuth } from '../authContext'
 import { t } from '../i18n'
 import { useLanguage } from '../useLanguage'
 import { cityMatches, readShared, sharePath, type City, type Plan, type PlanValues } from '../kazakhstan'

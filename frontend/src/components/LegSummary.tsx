@@ -3,6 +3,7 @@ import { useLanguage } from '../useLanguage'
 import type { Itinerary, Tri } from '../api'
 import { money } from '../format'
 import Timeline from './Timeline'
+import ScrollTable from './ScrollTable'
 
 const tri = (v: Tri) => (v === 'yes' ? t('yes') : v === 'no' ? t('no') : t("not known"))
 
@@ -15,6 +16,7 @@ export default function LegSummary({ it }: { it: Itinerary }) {
         operator: l.operator, route_code: l.route_code,
         note: l.status === 'delayed' ? t("Delayed by {0} min (times include the delay)", {0: l.delay_minutes}) : undefined,
       }))} />
+      <ScrollTable label={t("Fare and accessibility per leg")}>
       <table className="legs">
         <caption className="sr-only">{t("Fare and accessibility per leg")}</caption>
         <thead><tr><th scope="col">{t("Leg")}</th><th scope="col">{t("Fare")}</th><th scope="col">{t("Accessibility")}</th><th scope="col">{t("Cancellation")}</th></tr></thead>
@@ -29,6 +31,7 @@ export default function LegSummary({ it }: { it: Itinerary }) {
           ))}
         </tbody>
       </table>
+      </ScrollTable>
     </>
   )
 }

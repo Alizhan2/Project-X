@@ -4,7 +4,7 @@ import { t, locales } from '../i18n'
 import { useLanguage } from '../useLanguage'
 
 import { useLocation } from 'react-router-dom'
-import { useAuth } from '../auth'
+import { useAuth } from '../authContext'
 import KazakhstanPlanner from '../components/KazakhstanPlanner'
 import { zone, localDate, type City } from '../kazakhstan'
 type Catalog = { cities: City[]; currency: string; timezone: string }

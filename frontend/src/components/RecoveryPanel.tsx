@@ -38,7 +38,14 @@ export default function RecoveryPanel({ booking, onChanged, onCancel }: { bookin
     }
     catch (e) { setError(e instanceof ApiError ? e.message : t("Could not load replacement options.")) }
   }, [ref])
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    // Initial load: guarded so a slow response for a previous booking can never overwrite the current one.
+    let current = true
+    fetchReplacements(ref)
+      .then(d => { if (current) { setData(d); setError(null) } })
+      .catch(e => { if (current) setError(e instanceof ApiError ? e.message : t("Could not load replacement options.")) })
+    return () => { current = false }
+  }, [ref])
 
   async function accept(o: ReplacementOffer, outcome: 'success' | 'failure') {
     setBusy(true); setError(null)

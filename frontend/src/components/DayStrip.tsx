@@ -39,7 +39,7 @@ export default function DayStrip({ origin, destination, date, time, passengers, 
                   <span className="day-chip-date">{dayLabel(d.date)}</span>
                   {d.cheapest_price !== null && d.currency
                     ? <><strong>{money(d.cheapest_price, d.currency)}</strong><span className="day-chip-meta">{t('Fastest {0}', { 0: duration(d.fastest_minutes ?? 0) })}</span></>
-                    : <span className="day-chip-meta">{t('No journeys found.')}</span>}
+                    : <span className="day-chip-meta">{t('No journeys')}</span>}
                   {isLowest && <span className="day-chip-badge">{t('Lowest price')}</span>}
                 </button>
               </li>

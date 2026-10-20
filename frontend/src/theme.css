@@ -102,3 +102,22 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin-top: 2px; a
 .activity-list p { margin: 0; }
 
 .offline-banner { background: var(--sim); color: var(--sim-ink); text-align: center; font-size: 13px; padding: 8px 16px; }
+
+/* ---------- Polish pass ---------- */
+.card + .card, section.card + section.card { margin-top: 16px; }
+/* Kazakhstan planner: it reuses the search grid inside a card, so flatten the nested card and style its plain buttons. */
+.kz-fields.search-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); padding: 0; margin: 20px 0; border: 0; background: transparent; box-shadow: none; border-radius: 0; }
+.kz-fields.search-form .kz-note { grid-column: 1 / -1; }
+.kz-fields.search-form .kz-note textarea { background: var(--surface); color: var(--ink); border-color: var(--border); border-radius: 12px; }
+.kz-actions button, .kz-fields button, .kz-plans button { min-height: 48px; padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
+.kz-actions button:hover:not(:disabled), .kz-fields button:hover:not(:disabled), .kz-plans button:hover:not(:disabled) { background: var(--soft); }
+.kz-actions button.primary { background: var(--brand); color: var(--brand-ink); border: 0; }
+.kz-actions button.primary:hover:not(:disabled) { background: #b5e153; }
+.kz-actions a { font-weight: 700; }
+.kz-fields button[type=button] { align-self: end; }
+.kz-heading + .kz-notice { margin-top: 0; }
+:root[data-theme=dark] .kz-actions button.primary:hover:not(:disabled) { background: #dcff8f; }
+.table-scroll { overflow-x: auto; max-width: 100%; }
+.table-scroll:focus-visible { outline-offset: 2px; }
+.table-scroll > table { min-width: 34rem; }
+@media (min-width: 651px) { .table-scroll > table { min-width: 0; } }
