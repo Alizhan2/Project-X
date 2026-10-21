@@ -49,3 +49,26 @@ Not started: saved travellers, repeat-trip shortcut, PWA/offline screen, connect
 
 ## Polish pass (2026-10-20)
 Screens were reviewed visually (desktop and 390 px, light and dark). Fixed: footer sentence began with a dangling dash; unpaid bookings showed "Net paid: EUR 0.00" (and an offline copy would have shown a wrong 0.00: now hidden); cards touched without spacing; Kazakhstan planner had a card-in-card layout and unstyled (grey, disabled-looking) buttons; wide tables overflowed the card on phones (now scroll inside a focusable, labelled region); the nearby-days strip repeated a long "No journeys found." in every empty cell. Lint is now clean (providers split from their hooks; data loading in effects guarded against stale responses). Regression tests added for phone overflow, the unpaid-booking view and the footer wording.
+
+## Deeper competitor review (2026-10-21): what to take
+Evidence quality: Trainline/FlixBus/Omio items come from vendor pages, app-store listings and trade press (claims, not audited); Kaspi/KTZ items from Kaspi's own help pages and Kazakh press; 1TR.kz public page is partner-oriented. Marked **unverified** where a single source.
+
+| Competitor | Feature found | Doedu today | Take it? |
+|---|---|---|---|
+| Trainline | Price alerts for the cheapest tickets; live times with a "Track" view of each stop; disruption push alerts; Delay Repay claim prefilled for the operator (**vendor claims**) | Estimated progress (not GPS), in-app disruption notices, replacement offers, full refund when a connection breaks | **Price alerts: yes.** Prefilled compensation: our equivalent is the refund/replacement flow; a delay-compensation rule is a product/legal decision |
+| Trainline | "Travel Forecast": advance warning that a train is likely delayed | None (no ML, no real feeds) | No: needs real operational data; keep out of scope |
+| FlixBus | Tickets usable offline, live bus tracking, manage changes in the app | Offline copy (PWA), estimated progress, cancel/replace | Done; tracking depends on real feeds |
+| Omio | Price-drop alerts (one German blog, **unverified**), Omio Flex (cancel shortly before departure for a fee, 2024 press release), 24/7 support advertised; a user complaint reports a missed multi-leg connection with no support channel | Policies per leg, recovery flow | **Support/help page: yes** (the complaint is exactly the gap Doedu fills, but only if help is easy to find). Paid flex = commercial phase |
+| Rome2Rio | Door-to-door options across modes with estimated prices; booking on partner sites, so one trip may be several purchases | One coordinated booking for the chain | Our edge. Door-to-door from addresses needs geocoding (out of MVP scope) |
+| Moovit / Citymapper | Subscribe to lines for alerts; severity colours; "modified service" flag | Per-booking alerts only | **Follow a route/service: yes** (alerts without a booking) |
+| Kaspi Travel (KZ) | Subscribe to notifications when sales open or **seats free up** on a train; refund from My trips; exchange; 45-day sale horizon ([Kaspi guide](https://guide.kaspi.kz/client/ru/travel/train), [digitalbusiness.kz](https://digitalbusiness.kz/2024-12-26/uznali-kak-kupit-zhd-bileti-na-kaspi-travel-za-45-dney-do-otpravleniya/)) | Sold-out services simply disappear from results | **Seat-release alert / waitlist: yes: strongest regional signal** |
+| KTZ portal/app (KZ) | **Waiting list** when no seats; e-ticket refund; cabinet to download tickets ([Kapital.kz](https://kapital.kz/gosudarstvo/65341/ktzh-zapustila-mobilnoe-prilozhenie.html)) | None | **Waitlist: yes** (same feature as above) |
+| Aviata (KZ) | Price calendar, hints that catch passenger-data mistakes | Day strip done; basic validation | Add inline validation hints (small) |
+| 1TR.kz | Partner-oriented REST API, agencies set their own commission; passenger UI appears Russian-only | kk/ru/en | Keep trilingual as a differentiator; API access is a commercial step |
+
+### Proposed next build (all implementable with no external account)
+1. **Watches**: "notify me when this journey gets cheaper" and "notify me when a place frees up on this sold-out service". Stored per account, evaluated by the existing worker when departures, fares or capacity change; delivered as in-app notifications. Covers Trainline/Omio price alerts and Kaspi/KTZ seat alerts in one feature. Honest limits: simulated data; no promise of a seat; notification only.
+2. **Follow a route**: alerts about delays/cancellations on a service without owning a booking.
+3. **Help centre page**: what happens when a connection breaks, how refunds work, what "simulated" means, who to contact (contact owner to be defined: today there is none).
+4. **Inline passenger-data hints** (Aviata-style).
+Decisions needed from the product owner: any delay-compensation rule (amount, threshold); a paid "flex" option; who answers support.
