@@ -22,7 +22,7 @@ export default function Notifications() {
             <p>{t(n.body)}</p>
             <p className="muted small">{dayLabel(n.created_at)} {clock(n.created_at)}</p>
             <p>
-              {n.link && <Link to={n.link}>{t('Open search')}</Link>}{' '}
+              {n.link && <Link to={n.link}>{n.link.startsWith('/alerts') ? t('Open alerts') : t('Open search')}</Link>}{' '}
               {n.booking && <Link to={`/booking/${n.booking}`}>{t("Open booking")} {n.booking}</Link>}{' '}
               {!n.read && <button className="link" onClick={() => read(n.id)}>{t("Mark as read")}</button>}
             </p>

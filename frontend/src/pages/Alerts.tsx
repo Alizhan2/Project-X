@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ApiError, fetchWatches, removeWatch, type Watch } from '../api'
+import { ApiError, fetchFollows, fetchWatches, removeWatch, unfollowLine, type LineFollow, type Watch } from '../api'
 import { clock, dayLabel, money } from '../format'
 import { placeName, t } from '../i18n'
 import { useLanguage } from '../useLanguage'
@@ -9,6 +9,8 @@ export default function Alerts() {
   useLanguage()
   const [data, setData] = useState<{ max_active: number; results: Watch[] } | null>(null)
   const [err, setErr] = useState<ApiError | null>(null)
+  const [follows, setFollows] = useState<{ max_follows: number; results: LineFollow[] } | null>(null)
+  useEffect(() => { fetchFollows().then(setFollows).catch(() => undefined) }, [])
   useEffect(() => {
     const ctrl = new AbortController()
     fetchWatches(ctrl.signal).then(setData).catch((e: unknown) => { if (!ctrl.signal.aborted) setErr(e instanceof ApiError ? e : new ApiError(t('Unexpected error.'))) })
@@ -23,6 +25,7 @@ export default function Alerts() {
       {data && (
         <>
           <p className="muted">{t('You can have up to {0} active alerts.', { 0: data.max_active })} {t('Alerts only notify you. They do not hold places or prices, and everything here is simulated.')}</p>
+          <h2>{t('Journey alerts')}</h2>
           {data.results.length === 0 && <div className="card empty"><p><strong>{t('No alerts yet.')}</strong></p><p className="muted">{t('Search for a journey and choose "Notify me" under the results.')}</p><Link to="/">{t('Search for a journey')}</Link></div>}
           <ul className="result-list">
             {data.results.map(w => (
@@ -44,6 +47,22 @@ export default function Alerts() {
             ))}
           </ul>
           {active === 0 && data.results.length > 0 && <p className="muted small">{t('Finished alerts stay here until you remove them.')}</p>}
+
+          <section aria-labelledby="followed-h" className="followed-lines">
+            <h2 id="followed-h">{t('Followed lines')}</h2>
+            {follows && follows.results.length === 0 && <p className="muted">{t('No followed lines yet. Open a journey and choose "Follow" for a line.')}</p>}
+            {follows && follows.results.length > 0 && (
+              <ul className="result-list">
+                {follows.results.map(f => (
+                  <li key={f.id} className="card alert-item">
+                    <div><p><strong>{f.route_code}</strong> · {f.operator}</p><p className="muted">{placeName(f.from)} → {placeName(f.to)}</p></div>
+                    <button type="button" className="link" aria-label={t('Unfollow {0}', { 0: f.route_code })}
+                      onClick={async () => { await unfollowLine(f.id).catch(() => undefined); setFollows(x => x && ({ ...x, results: x.results.filter(y => y.id !== f.id) })) }}>{t('Unfollow')}</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </>
       )}
     </>

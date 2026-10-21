@@ -16,6 +16,7 @@ from apps.bookings.models import Booking, BookingLeg, Reservation
 from apps.core import jobs
 from apps.core.models import AuditRecord
 from apps.notifications.services import notify
+from apps.notifications.follows import notify_followers
 from apps.notifications.watches import schedule_evaluation
 from apps.transport.models import Departure, RouteStop, TransferLink
 
@@ -181,8 +182,10 @@ def apply_change(*, actor, departure_id, action, minutes=0):
         kind = DisruptionEvent.Kind.CANCEL if action == "cancel" else (DisruptionEvent.Kind.DELAY if minutes > 0 else DisruptionEvent.Kind.CLEAR)
         event = DisruptionEvent.objects.create(departure=dep, kind=kind, delay_minutes=delay if kind == "delay" else 0, created_by=actor)
         affected = 0
+        booked_user_ids = set()
         transfers = _transfer_map()
         for b in _bookings_on(dep):
+            booked_user_ids.add(b.user_id)
             a = assess(b, None, transfers)
             if b.status == Booking.Status.PENDING_PAYMENT:
                 if action == "cancel":
@@ -204,6 +207,7 @@ def apply_change(*, actor, departure_id, action, minutes=0):
                        + (f"; you arrive about {a.arrival_delay_minutes} minutes later." if a.arrival_delay_minutes else " and your arrival time is unchanged."),
                        b, f"event:{event.pk}:booking:{b.pk}")
                 affected += 1
+        notify_followers(dep, kind, delay, event.pk, exclude_user_ids=booked_user_ids)
         # Open offers that include this service are re-evaluated (e.g. the replacement itself got cancelled/delayed).
         from django.db.models import Q
         from .models import ReplacementOffer

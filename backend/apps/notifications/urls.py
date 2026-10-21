@@ -1,8 +1,10 @@
 from django.urls import path
 
-from . import views, watch_views
+from . import follows, views, watch_views
 
 urlpatterns = [
+    path("follows/", follows.collection),
+    path("follows/<int:pk>/", follows.remove),
     path("watches/", watch_views.collection),
     path("watches/<int:pk>/", watch_views.remove),
     path("notifications/", views.notifications),

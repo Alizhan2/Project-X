@@ -130,3 +130,11 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin-top: 2px; a
 .alert-item p { margin: 4px 0; }
 .badge.alert-active { background: var(--brand); color: var(--brand-ink); }
 .badge.alert-expired { opacity: .75; }
+
+/* ---------- Follow lines ---------- */
+.follow-lines { margin: 20px 0; }
+.follow-lines h2 { font-size: 18px; margin: 0 0 6px; }
+.follow-lines ul, .followed-lines ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+.follow-lines li { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.follow-lines button[aria-pressed=true] { background: var(--soft); border-color: var(--ink); }
+.followed-lines { margin-top: 32px; }

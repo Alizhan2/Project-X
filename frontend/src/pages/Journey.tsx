@@ -3,6 +3,7 @@ import { useLanguage } from '../useLanguage'
 import { Link, useSearchParams } from 'react-router-dom'
 import LegSummary from '../components/LegSummary'
 import ConnectionProtection from '../components/ConnectionProtection'
+import FollowLines from '../components/FollowLines'
 import { useItinerary } from '../hooks'
 import { duration, money } from '../format'
 
@@ -36,6 +37,7 @@ export default function Journey() {
             <p className="muted">{duration(it.duration_minutes)} · {it.transfers === 0 ? t("Direct") : t("{0} transfer(s)", {0: it.transfers})} · <span className="badge">{t("Simulated data")}</span></p>
             <LegSummary it={it} />
             <ConnectionProtection legs={it.legs.map(l => ({ mode: l.mode, from: l.from.name, to: l.to.name }))} buffers={it.transfer_buffers} />
+            <FollowLines lines={it.legs.map(l => ({ route_code: l.route_code, route_name: l.route_name, mode: l.mode }))} />
             <p className="price-line">{t("Total for")} {it.passengers}  {t("passenger(s):")} <strong>{money(it.total_price, it.currency)}</strong></p>
             <Link className="button primary" to={`/book?${new URLSearchParams({ legs, passengers, total: it.total_price, ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>{t("Continue to traveller details")}</Link>
           </section>

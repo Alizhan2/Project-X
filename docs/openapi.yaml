@@ -678,6 +678,70 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/follows/:
+    get:
+      operationId: follows_retrieve
+      tags:
+      - follows
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: follows_create
+      tags:
+      - follows
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FollowIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FollowIn'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/follows/{id}/:
+    delete:
+      operationId: follows_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - follows
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/health/:
     get:
       operationId: health_retrieve
@@ -1720,6 +1784,14 @@ components:
       - id
       - origin
       - origin_name
+    FollowIn:
+      type: object
+      properties:
+        route_code:
+          type: string
+          maxLength: 16
+      required:
+      - route_code
     KazakhstanCityEnum:
       enum:
       - kz-astana

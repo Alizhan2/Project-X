@@ -300,3 +300,8 @@ export interface WatchBody { kind: Watch['kind']; origin: string; destination: s
 export const fetchWatches = (signal?: AbortSignal) => getJson<{ max_active: number; results: Watch[] }>('/api/watches/', signal)
 export const createWatch = (body: WatchBody) => request<Watch>('POST', '/api/watches/', body)
 export const removeWatch = (id: number) => request<void>('DELETE', `/api/watches/${id}/`)
+
+export interface LineFollow { id: number; route_code: string; route_name: string; mode: string; operator: string; from: string; to: string }
+export const fetchFollows = (signal?: AbortSignal) => getJson<{ max_follows: number; results: LineFollow[] }>('/api/follows/', signal)
+export const followLine = (route_code: string) => request<LineFollow>('POST', '/api/follows/', { route_code })
+export const unfollowLine = (id: number) => request<void>('DELETE', `/api/follows/${id}/`)

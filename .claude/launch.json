@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "doedu-backend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "set -a && . ./.env && set +a && cd backend && exec .venv/bin/python manage.py runserver 127.0.0.1:8000 --noreload"],
+      "port": 8000
+    },
+    {
+      "name": "doedu-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}

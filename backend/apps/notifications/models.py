@@ -62,3 +62,16 @@ class Watch(models.Model):
             models.CheckConstraint(condition=Q(passengers__gte=1, passengers__lte=9), name="watch_passengers_1_9"),
             models.CheckConstraint(condition=~Q(kind="price") | Q(baseline_price__isnull=False), name="watch_price_has_baseline"),
         ]
+
+
+class LineFollow(models.Model):
+    """A passenger follows a line (route): they are told when an upcoming service on it is delayed or cancelled, even
+    without a booking. Names of followed lines only; no location or travel history."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="line_follows")
+    route = models.ForeignKey("transport.Route", on_delete=models.CASCADE, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        constraints = [models.UniqueConstraint(fields=["user", "route"], name="linefollow_unique_per_user")]
