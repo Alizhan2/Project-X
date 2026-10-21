@@ -138,3 +138,10 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin-top: 2px; a
 .follow-lines li { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .follow-lines button[aria-pressed=true] { background: var(--soft); border-color: var(--ink); }
 .followed-lines { margin-top: 32px; }
+
+/* Help centre */
+.help { max-width: 46rem; }
+.help-list { display: grid; gap: .6rem; margin: 1rem 0; }
+.help-item summary { cursor: pointer; font-weight: 600; }
+.help-item summary:focus-visible { outline: 2px solid var(--focus, currentColor); outline-offset: 3px; }
+.help-item p { margin: .6rem 0 0; }

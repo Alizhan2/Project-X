@@ -58,6 +58,7 @@ export default function Layout() {
             </NavLink>
           )}
           {user?.role === 'operator' && <NavLink to="/operator">{t("Operator")}</NavLink>}
+          <NavLink to="/help">{t("Help")}</NavLink>
           <NavLink to="/status">{t("System status")}</NavLink>
           {user ? (
             <button className="link" onClick={async () => { await logout(); nav('/') }}>{t("Sign out (")}{user.name})</button>

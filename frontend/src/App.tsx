@@ -1,6 +1,7 @@
 import { t } from './i18n'
 import { useLanguage } from './useLanguage'
 import { Route, Routes } from 'react-router-dom'
+import Help from './pages/Help'
 import Layout from './components/Layout'
 import RequireAuth from './components/RequireAuth'
 import Account from './pages/Account'
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="operator/new" element={<NewService />} />
           <Route path="operator/services/:id" element={<ServiceDetail />} />
         </Route>
+        <Route path="help" element={<Help />} />
         <Route path="status" element={<Status />} />
         <Route path="*" element={<p>{t("Page not found.")}</p>} />
       </Route>

@@ -102,11 +102,11 @@ class WatchEvaluationTests(BookingTestBase, TestCase):
     def test_a_price_rise_is_silent_and_a_later_fall_is_a_new_drop(self):
         w = Watch.objects.get(pk=create(self.c, time="11:30", modes="bus").json()["id"])    # bus only: price follows the bus fares
         fares = Fare.objects.filter(route__code__in=["VC1", "GL1", "GL3"], from_stop__code="NG-BUS", to_stop__code="RV-BUS")
-        fares.update(price=Decimal("20.00"))     # direct fares soar; the 2-bus change via Millford (8.40) becomes the cheapest
+        fares.update(price=Decimal("20.00"))     # direct fares soar (no cheaper change exists: re-boarding one line is not offered)
         self.assertFalse(watches.evaluate(w.pk))                                # went up: nothing to say
-        self.assertEqual(Watch.objects.get(pk=w.pk).baseline_price, Decimal("8.40"))          # the baseline follows the latest price
+        self.assertEqual(Watch.objects.get(pk=w.pk).baseline_price, Decimal("20.00"))         # the baseline follows the latest price
         fares.update(price=Decimal("2.00"))
-        self.assertTrue(watches.evaluate(w.pk))                                 # 8.40 -> 2.00 is a drop from the last price seen
+        self.assertTrue(watches.evaluate(w.pk))                                 # 20.00 -> 2.00 is a drop from the last price seen
         self.assertEqual(self.notes("watch_price").count(), 1)
 
     def test_availability_watch_fires_once_when_a_place_frees_up(self):

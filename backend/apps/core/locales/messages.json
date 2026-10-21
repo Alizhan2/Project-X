@@ -3210,5 +3210,81 @@
   "Show that day": {
     "ru": "Показать этот день",
     "kk": "Сол күнді көрсету"
+  },
+  "Help": {
+    "ru": "Помощь",
+    "kk": "Көмек"
+  },
+  "Short answers about booking, delays and refunds. All data is simulated.": {
+    "ru": "Короткие ответы о бронировании, задержках и возвратах. Все данные имитированы.",
+    "kk": "Брондау, кешігу және қайтару туралы қысқа жауаптар. Барлық деректер имитацияланған."
+  },
+  "Back to search": {
+    "ru": "Назад к поиску",
+    "kk": "Іздеуге оралу"
+  },
+  "What does \"simulated\" mean?": {
+    "ru": "Что значит «имитация»?",
+    "kk": "«Имитация» нені білдіреді?"
+  },
+  "Everything in Doedu is a demonstration. Timetables, prices, payments, refunds and confirmations are made up. A confirmation is not a travel ticket and no money is ever charged. Do not use it to travel.": {
+    "ru": "Всё в Doedu — демонстрация. Расписания, цены, платежи, возвраты и подтверждения придуманы. Подтверждение не является проездным билетом, деньги не списываются. Не используйте его для поездки.",
+    "kk": "Doedu-дағы бәрі — көрсетілім. Кестелер, бағалар, төлемдер, қайтарулар және растаулар ойдан шығарылған. Растау жол билеті емес, ақша алынбайды. Сапарға пайдаланбаңыз."
+  },
+  "What happens if a connection breaks?": {
+    "ru": "Что, если пересадка сорвётся?",
+    "kk": "Ауысу бұзылса не болады?"
+  },
+  "If a service is cancelled or delayed so that you can no longer make the next leg, you get a notification. Doedu then looks for replacement journeys to your destination and shows the exact price difference. Nothing is booked or held until you accept one; if none exists, you can cancel the unused legs for a full refund.": {
+    "ru": "Если рейс отменён или задержан и вы не успеваете на следующий участок, вы получите уведомление. Doedu найдёт замену до пункта назначения и покажет точную разницу в цене. Пока вы не примете вариант, ничего не бронируется и не удерживается; если замены нет, неиспользованные участки можно отменить с полным возвратом.",
+    "kk": "Рейс тоқтатылса немесе кешіксе және келесі бөлікке үлгермесеңіз, хабарлама аласыз. Doedu межеге дейінгі ауыстыру нұсқаларын тауып, баға айырмасын нақты көрсетеді. Нұсқаны қабылдағанша ештеңе брондалмайды және ұсталмайды; нұсқа болмаса, пайдаланылмаған бөліктерді толық қайтарумен бас тартуға болады."
+  },
+  "How long is a place held while I pay?": {
+    "ru": "Как долго держится место при оплате?",
+    "kk": "Төлеу кезінде орын қанша уақыт ұсталады?"
+  },
+  "Places are held for a short time after checkout (10 minutes in this demo). If you do not pay in time, the booking expires and the places go back on sale.": {
+    "ru": "Места удерживаются недолго после оформления (в демо — 10 минут). Если не оплатить вовремя, бронь истекает, а места возвращаются в продажу.",
+    "kk": "Рәсімдеуден кейін орындар қысқа уақыт ұсталады (демода — 10 минут). Уақытында төлемесеңіз, бронь аяқталып, орындар қайта сатылымға түседі."
+  },
+  "How do refunds work?": {
+    "ru": "Как работают возвраты?",
+    "kk": "Қайтару қалай жұмыс істейді?"
+  },
+  "Each leg has its own cancellation policy, shown before you book and saved with your booking. The refund depends on how long before departure you cancel; a service cancelled by the operator is refunded in full. Refunds here are simulated.": {
+    "ru": "У каждого участка своя политика отмены: она показана до бронирования и сохраняется в брони. Сумма возврата зависит от того, за сколько до отправления вы отменяете; рейс, отменённый перевозчиком, возвращается полностью. Возвраты здесь имитированы.",
+    "kk": "Әр бөліктің өз бас тарту ережесі бар: ол брондау алдында көрсетіледі және брондаумен бірге сақталады. Қайтарылатын сома жөнелтуге дейінгі уақытқа байланысты; тасымалдаушы тоқтатқан рейс толық қайтарылады. Мұндағы қайтарулар имитацияланған."
+  },
+  "What is a change buffer?": {
+    "ru": "Что такое запас на пересадку?",
+    "kk": "Ауысу қоры деген не?"
+  },
+  "The spare minutes between arriving and the next departure, after the minimum change time. It is a plain time difference, not a prediction that a service will be on time. Taxis leave when you are ready, so there is nothing to miss.": {
+    "ru": "Свободные минуты между прибытием и следующим отправлением после минимального времени на пересадку. Это простая разница во времени, а не прогноз пунктуальности. Такси выезжает, когда вы готовы, поэтому опоздать нельзя.",
+    "kk": "Келу мен келесі жөнелту арасындағы, ауысуға кететін ең аз уақыттан кейінгі қосымша минуттар. Бұл жай уақыт айырмасы, дәлдік болжамы емес. Такси сіз дайын болғанда шығады, сондықтан кешігу мүмкін емес."
+  },
+  "Why does a search show no journeys?": {
+    "ru": "Почему поиск не находит поездок?",
+    "kk": "Неге іздеу сапарларды таппайды?"
+  },
+  "Services may not run at that time, may be cancelled or full, or the connection may be impossible. Try another date or time, the nearby-days strip, or fewer filters. When nothing matches, Doedu shows the next journey that does.": {
+    "ru": "В это время рейсов может не быть, они могут быть отменены или заполнены, либо пересадка невозможна. Попробуйте другую дату или время, полосу ближайших дней или меньше фильтров. Если ничего нет, Doedu покажет ближайший подходящий рейс.",
+    "kk": "Бұл уақытта рейс болмауы, тоқтатылуы не толуы немесе ауысу мүмкін болмауы ықтимал. Басқа күнді не уақытты, жақын күндер жолағын немесе аз сүзгіні қолданып көріңіз. Ештеңе табылмаса, Doedu ең жақын қолайлы рейсті көрсетеді."
+  },
+  "What are alerts and followed lines?": {
+    "ru": "Что такое оповещения и отслеживаемые линии?",
+    "kk": "Хабарландырулар мен бақыланатын желілер деген не?"
+  },
+  "Alerts tell you when a journey gets cheaper or a full service has places again. Following a line tells you about delays and cancellations without a booking. They only notify you: no place or price is held.": {
+    "ru": "Оповещения сообщают, когда поездка подешевела или на заполненном рейсе появились места. Подписка на линию сообщает о задержках и отменах без брони. Они только уведомляют: место и цена не удерживаются.",
+    "kk": "Хабарландырулар сапар арзандағанда немесе толған рейсте орын босағанда хабарлайды. Желіні бақылау брондаусыз кешігу мен тоқтатуды хабарлайды. Олар тек хабарлайды: орын мен баға ұсталмайды."
+  },
+  "Who can I contact?": {
+    "ru": "Куда обратиться?",
+    "kk": "Кімге хабарласуға болады?"
+  },
+  "This demo has no support team yet, so there is nobody to answer messages. Your bookings, notices and replacement offers are always available under My journeys and Notifications.": {
+    "ru": "В демо пока нет службы поддержки, поэтому отвечать на сообщения некому. Ваши брони, уведомления и предложения замены всегда доступны в разделах «Мои поездки» и «Уведомления».",
+    "kk": "Демода әзірге қолдау қызметі жоқ, сондықтан хабарламаларға жауап беретін ешкім жоқ. Брондарыңыз, хабарландырулар мен ауыстыру ұсыныстары әрдайым «Менің сапарларым» және «Хабарландырулар» бөлімдерінде қолжетімді."
   }
 }
