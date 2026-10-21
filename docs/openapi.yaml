@@ -2033,6 +2033,12 @@ components:
           type: integer
         count:
           type: integer
+        next_available:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 'When nothing matches: the first journey in the next 3 days
+            (departs_at, total_price, currency), else null.'
         results:
           type: array
           items:
@@ -2040,6 +2046,7 @@ components:
             additionalProperties: {}
       required:
       - count
+      - next_available
       - results
       - simulated
       - window_hours

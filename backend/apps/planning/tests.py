@@ -465,3 +465,28 @@ class SearchGapTests(TestCase):
         self.assertTrue(taxis)
         first = taxis[0]["legs"][0]
         self.assertGreaterEqual(first["departs_at"][11:16], offer.service_start.strftime("%H:%M")[:5])
+
+
+class NextAvailableTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        demo_data.reset_transport_data(REF)
+
+    def test_empty_window_reports_the_next_matching_journey(self):
+        from datetime import datetime
+        from decimal import Decimal
+        from types import SimpleNamespace
+        from unittest import mock
+        later = SimpleNamespace(departs_at=datetime.fromisoformat(at("06:30", NEXT) + ":00+02:00"), total_price=Decimal("4.50"), currency="EUR")
+        with mock.patch("apps.planning.views.services.search", side_effect=[[], [], [later]]) as planner:
+            body = get(self.client, depart_after=at("07:00")).json()
+        self.assertEqual(planner.call_count, 3)
+        self.assertEqual(body["count"], 0)
+        self.assertEqual(body["next_available"]["total_price"], "4.50")
+        self.assertTrue(body["next_available"]["departs_at"].startswith(NEXT.isoformat()))
+
+    def test_no_lookup_when_results_exist_or_nothing_follows(self):
+        self.assertIsNone(get(self.client, depart_after=at("07:00")).json()["next_available"])
+        far = (REF + timedelta(days=60)).isoformat() + "T07:00"
+        body = get(self.client, depart_after=far).json()
+        self.assertEqual((body["count"], body["next_available"]), (0, None))

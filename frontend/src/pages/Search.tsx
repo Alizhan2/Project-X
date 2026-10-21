@@ -11,7 +11,7 @@ import UpcomingJourney from '../components/UpcomingJourney'
 import JourneyHero, { JourneyBenefits } from '../components/JourneyHero'
 import DayStrip from '../components/DayStrip'
 import WatchPrompt from '../components/WatchPrompt'
-import { regionToday } from '../format'
+import { clock, dayLabel, money, regionToday } from '../format'
 
 type Results =
   | { kind: 'idle' }
@@ -170,6 +170,10 @@ export default function Search() {
             {shown.length === 0 ? (
               <div className="card empty">
                 <p><strong>{t("No journeys found.")}</strong></p>
+                {results.data.next_available && <p data-testid="next-available">
+                  {t("The next matching journey leaves on {0} at {1} from {2}.", {0: dayLabel(results.data.next_available.departs_at), 1: clock(results.data.next_available.departs_at), 2: money(results.data.next_available.total_price, results.data.next_available.currency)})}{' '}
+                  <button type="button" className="secondary" onClick={() => { const next = new URLSearchParams(params); next.set('date', results.data.next_available!.departs_at.slice(0, 10)); next.set('time', clock(results.data.next_available!.departs_at)); setParams(next) }}>{t("Show that day")}</button>
+                </p>}
                 <p className="muted">
                   {arrivalMode ? t("Try a later arrival deadline, ") : t("Try another date or time, ")}{t("fewer passengers, relaxing the transfer filter, or a different stop. Cancelled services, services without enough free places, and impossible connections are not shown.")} </p>
               </div>

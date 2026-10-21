@@ -1,4 +1,4 @@
-from datetime import datetime, timezone as datetime_timezone
+from datetime import datetime, timedelta, timezone as datetime_timezone
 
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
@@ -28,6 +28,7 @@ def stops(request):
         "simulated": serializers.BooleanField(),
         "window_hours": serializers.IntegerField(),
         "count": serializers.IntegerField(),
+        "next_available": serializers.DictField(allow_null=True, help_text="When nothing matches: the first journey in the next 3 days (departs_at, total_price, currency), else null."),
         "results": serializers.ListField(child=serializers.DictField()),
     }),
     parameters=[
@@ -101,10 +102,22 @@ def search(request):
     results = planner(found["origin"], found["destination"], search_time, passengers, sort,
                               max_legs=3 if transfers == "any" else int(transfers) + 1,
                               modes=modes, max_connection_minutes=connection)
+    nxt = None
+    if not results and planner is services.search:
+        # Empty window: look at the following days (same planner and filters) so the page can say when service resumes.
+        for day in range(1, 4):
+            later = planner(found["origin"], found["destination"], search_time + timedelta(days=day), passengers, "departure",
+                            max_legs=3 if transfers == "any" else int(transfers) + 1,
+                            modes=modes, max_connection_minutes=connection)
+            if later:
+                nxt = {"departs_at": later[0].departs_at.isoformat(), "total_price": str(later[0].total_price),
+                       "currency": later[0].currency}
+                break
     return Response({
         "simulated": True,
         "window_hours": int(services.SEARCH_WINDOW.total_seconds() // 3600),
         "count": len(results),
+        "next_available": nxt,
         "results": [serialize_itinerary(i) for i in results],
     })
 
