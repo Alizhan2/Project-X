@@ -437,3 +437,31 @@ class SearchDaysTests(TestCase):
         for params in ({"date": "nope"}, {"time": "25:99"}, {"span": 9}, {"passengers": 0}, {"modes": "boat"},
                        {"origin": "ZZZ"}, {"destination": "NG-BUS"}):
             self.assertEqual(self.days(**params).status_code, 400, params)
+
+
+class SearchGapTests(TestCase):
+    """Regressions from the "different time shows no tickets" review."""
+
+    @classmethod
+    def setUpTestData(cls):
+        demo_data.reset_transport_data(REF)
+
+    def results(self, o, d, hhmm, **kw):
+        return get(self.client, origin=o, destination=d, depart_after=at(hhmm), **kw).json()["results"]
+
+    def test_no_journey_boards_the_same_line_twice_in_a_row(self):
+        for hhmm in ("06:00", "11:00"):
+            for r in self.results("NG-BUS", "RV-BUS", hhmm):
+                routes = [l.get("route") or l.get("route_code") for l in r["legs"]]
+                for a, b in zip(r["legs"], r["legs"][1:]):
+                    if a["mode"] != "taxi" and b["mode"] != "taxi":
+                        self.assertNotEqual(a.get("route_code") or a.get("route"), b.get("route_code") or b.get("route"), routes)
+
+    def test_taxi_first_journey_waits_for_service_to_open(self):
+        from apps.transport.models import TaxiOffer
+        offer = TaxiOffer.objects.first()
+        res = self.results(offer.from_stop.code, offer.to_stop.code, "03:00")
+        taxis = [r for r in res if r["legs"][0]["mode"] == "taxi"]
+        self.assertTrue(taxis)
+        first = taxis[0]["legs"][0]
+        self.assertGreaterEqual(first["departs_at"][11:16], offer.service_start.strftime("%H:%M")[:5])

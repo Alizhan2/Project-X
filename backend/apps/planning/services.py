@@ -214,12 +214,20 @@ class Network:
         return dep.departs_at + timedelta(minutes=rs.arrival_offset_min + dep.delay_minutes)
 
 
-def _taxi_leg(offer: TaxiOffer, from_stop: Stop, to_stop: Stop, ready: datetime, passengers: int):
+def _taxi_leg(offer: TaxiOffer, from_stop: Stop, to_stop: Stop, ready: datetime, passengers: int,
+              latest_pickup: datetime | None = None):
+    """A taxi leaves `pickup_wait_min` after the passenger is ready. Before the service window opens the passenger
+    waits for it (same local day), as long as the pickup is not later than `latest_pickup` (search bounds only)."""
     if passengers > offer.max_passengers:
         return None
     pickup = ready + timedelta(minutes=offer.pickup_wait_min)
-    local = timezone.localtime(pickup).time()
-    if not (offer.service_start <= local <= offer.service_end):
+    local = timezone.localtime(pickup)
+    if local.time() < offer.service_start:
+        pickup = local.replace(hour=offer.service_start.hour, minute=offer.service_start.minute,
+                               second=offer.service_start.second, microsecond=0)
+        if latest_pickup is not None and pickup > latest_pickup:
+            return None
+    elif local.time() > offer.service_end:
         return None
     return Leg(from_stop, to_stop, pickup, pickup + timedelta(minutes=offer.ride_min), offer.price, offer.currency, taxi=offer)
 
@@ -275,7 +283,8 @@ def search(origin: Stop, destination: Stop, depart_after: datetime, passengers: 
                     taken_per_dest[d_rs.stop_id] = taken_per_dest.get(d_rs.stop_id, 0) + 1
                     yield Leg(stop, net.stops[d_rs.stop_id], leaves, net.arrives(dep, d_rs), fare.price, fare.currency, departure=dep)
         for offer in net.taxis.get(stop.pk, []):
-            leg = _taxi_leg(offer, stop, net.stops[offer.to_stop_id], ready, passengers)
+            latest = window_end if first else ready + timedelta(minutes=settings.MAX_TRANSFER_WAIT_MIN)
+            leg = _taxi_leg(offer, stop, net.stops[offer.to_stop_id], ready, passengers, latest)
             if leg:
                 yield leg
 
@@ -287,6 +296,8 @@ def search(origin: Stop, destination: Stop, depart_after: datetime, passengers: 
                 continue
             if leg.to_stop.pk in visited:
                 continue
+            if legs and leg.departure and legs[-1].departure and leg.departure.route_id == legs[-1].departure.route_id:
+                continue  # stay on board instead of leaving and re-boarding the same line
             new_legs = legs + [leg]
             if leg.to_stop.pk == destination.pk:
                 record(new_legs)
