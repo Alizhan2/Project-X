@@ -16,6 +16,7 @@ from apps.bookings.models import Booking, BookingLeg, Reservation
 from apps.core import jobs
 from apps.core.models import AuditRecord
 from apps.notifications.services import notify
+from apps.notifications.watches import schedule_evaluation
 from apps.transport.models import Departure, RouteStop, TransferLink
 
 from .models import DisruptionEvent
@@ -216,4 +217,5 @@ def apply_change(*, actor, departure_id, action, minutes=0):
             actor=actor, action=f"service.{kind}", object_type="departure", object_id=str(dep.pk),
             detail={"delay_minutes": delay, "affected_bookings": affected, "route": dep.route.code},
         )
+        schedule_evaluation()      # cancellations/delays change what searches return
         return event, False

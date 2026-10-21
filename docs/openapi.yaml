@@ -1529,6 +1529,70 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/watches/:
+    get:
+      operationId: watches_retrieve
+      tags:
+      - watches
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: watches_create
+      tags:
+      - watches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WatchIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WatchIn'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/watches/{id}/:
+    delete:
+      operationId: watches_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - watches
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
 components:
   schemas:
     AcceptIn:
@@ -1700,16 +1764,6 @@ components:
         * `kz-taraz` - kz-taraz
         * `kz-kyzylorda` - kz-kyzylorda
         * `kz-turkistan` - kz-turkistan
-    KindEnum:
-      enum:
-      - bus
-      - rail
-      - taxi
-      type: string
-      description: |-
-        * `bus` - Bus stop
-        * `rail` - Railway station
-        * `taxi` - Taxi rank
     LegIn:
       type: object
       description: A bus/train leg (`departure_id`) or a simulated taxi leg (`taxi_offer_id`
@@ -1943,7 +1997,7 @@ components:
           type: string
           maxLength: 100
         kind:
-          $ref: '#/components/schemas/KindEnum'
+          $ref: '#/components/schemas/StopKindEnum'
         hub:
           type: string
           readOnly: true
@@ -1955,6 +2009,16 @@ components:
       - hub
       - kind
       - name
+    StopKindEnum:
+      enum:
+      - bus
+      - rail
+      - taxi
+      type: string
+      description: |-
+        * `bus` - Bus stop
+        * `rail` - Railway station
+        * `taxi` - Taxi rank
     TokenIn:
       type: object
       properties:
@@ -1987,6 +2051,43 @@ components:
       required:
       - full_name
       - id
+    WatchIn:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/WatchInKindEnum'
+        origin:
+          type: string
+        destination:
+          type: string
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          format: time
+        passengers:
+          type: integer
+          maximum: 9
+          minimum: 1
+        modes:
+          type: string
+          default: bus,train,taxi
+      required:
+      - date
+      - destination
+      - kind
+      - origin
+      - passengers
+      - time
+    WatchInKindEnum:
+      enum:
+      - price
+      - availability
+      type: string
+      description: |-
+        * `price` - price
+        * `availability` - availability
   securitySchemes:
     cookieAuth:
       type: apiKey

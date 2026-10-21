@@ -14,6 +14,7 @@ import RequireRole from './components/RequireRole'
 import NewService from './pages/operator/NewService'
 import ServiceDetail from './pages/operator/ServiceDetail'
 import Services from './pages/operator/Services'
+import Alerts from './pages/Alerts'
 import Search from './pages/Search'
 import Kazakhstan from './pages/Kazakhstan'
 import Status from './pages/Status'
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="booking/:ref" element={<BookingDetail />} />
           <Route path="journeys" element={<MyJourneys />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="alerts" element={<Alerts />} />
         </Route>
         <Route element={<RequireRole role="operator" />}>
           <Route path="operator" element={<Services />} />

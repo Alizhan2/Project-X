@@ -15,6 +15,7 @@ from rest_framework.response import Response
 
 from apps.core.models import AuditRecord
 from apps.disruptions import services as disruptions
+from apps.notifications.watches import schedule_evaluation
 from apps.disruptions.models import DisruptionEvent
 
 from .models import Departure, Fare, Route
@@ -112,6 +113,7 @@ def services(request):
     except IntegrityError:
         raise serializers.ValidationError({"departs_at": "This route already has a service at that time."})
     AuditRecord.objects.create(actor=request.user, action="service.created", object_type="departure", object_id=str(d.pk), detail={"route": route.code})
+    schedule_evaluation()
     return Response(dep_payload(d), status=201)
 
 
@@ -146,6 +148,7 @@ def service_detail(request, pk):
             raise serializers.ValidationError({"departs_at": "This route already has a service at that time."})
         AuditRecord.objects.create(actor=request.user, action="service.edited", object_type="departure", object_id=str(d.pk),
                                    detail={k: str(x) for k, x in v.items()})
+        schedule_evaluation()
     return Response(dep_payload(d))
 
 
@@ -165,6 +168,7 @@ def fare_detail(request, pk):
     fare.save(update_fields=["price"])
     AuditRecord.objects.create(actor=request.user, action="fare.changed", object_type="fare", object_id=str(fare.pk),
                                detail={"from": str(old), "to": str(fare.price)})
+    schedule_evaluation()
     return Response({"id": fare.pk, "price": f"{fare.price:.2f}"})
 
 

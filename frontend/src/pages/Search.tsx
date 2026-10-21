@@ -10,6 +10,7 @@ import JourneyComparison from '../components/JourneyComparison'
 import UpcomingJourney from '../components/UpcomingJourney'
 import JourneyHero, { JourneyBenefits } from '../components/JourneyHero'
 import DayStrip from '../components/DayStrip'
+import WatchPrompt from '../components/WatchPrompt'
 import { regionToday } from '../format'
 
 type Results =
@@ -82,6 +83,15 @@ export default function Search() {
   const shown = results.kind === 'done'
     ? results.data.results
     : []
+  // The alert is described by the same server-side parameters the search used, with modes in canonical order.
+  const MODE_ORDER = ['bus', 'train', 'taxi']
+  const watchSearch = query && {
+    origin: query.origin, destination: query.destination, date: params.get('date') ?? today(), time: params.get('time') ?? '06:00',
+    passengers: Number(query.passengers), modes: query.modes.split(',').sort((a, b) => MODE_ORDER.indexOf(a) - MODE_ORDER.indexOf(b)).join(','),
+  }
+  const cheapest = results.kind === 'done' && results.data.results.length
+    ? results.data.results.reduce((best, r) => (Number(r.total_price) < Number(best.total_price) ? r : best))
+    : null
   const fieldErr = results.kind === 'error' ? results.fields : {}
 
   function changeParam(name: string, value: string) {
@@ -107,6 +117,7 @@ export default function Search() {
 
       {query && <>
       {!arrivalMode && <DayStrip origin={query.origin} destination={query.destination} date={params.get('date') ?? today()} time={params.get('time') ?? '06:00'} passengers={query.passengers} modes={query.modes} onPick={date => changeParam('date', date)} />}
+      {!arrivalMode && results.kind === 'done' && <WatchPrompt search={watchSearch!} cheapest={cheapest ? { price: cheapest.total_price, currency: cheapest.currency } : null} />}
       <JourneyComparison arriveBy={arriveBy} options={compared.flatMap(key => shown.filter(it => it.legs_param === key))} remove={key => setCompared(old => old.filter(k => k !== key))} clear={() => setCompared(() => [])} />
 
       <div className="search-workspace">

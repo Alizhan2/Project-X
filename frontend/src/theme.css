@@ -121,3 +121,12 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin-top: 2px; a
 .table-scroll:focus-visible { outline-offset: 2px; }
 .table-scroll > table { min-width: 34rem; }
 @media (min-width: 651px) { .table-scroll > table { min-width: 0; } }
+
+/* ---------- Alerts / watches ---------- */
+.watch-prompt { margin: 0 0 24px; display: grid; gap: 10px; }
+.watch-prompt h2 { margin: 0; font-size: 18px; }
+.watch-prompt p { margin: 0; }
+.alert-item { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: center; }
+.alert-item p { margin: 4px 0; }
+.badge.alert-active { background: var(--brand); color: var(--brand-ink); }
+.badge.alert-expired { opacity: .75; }

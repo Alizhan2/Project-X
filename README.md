@@ -97,3 +97,6 @@ Open `/kazakhstan` for 20 Kazakhstan cities, three-language region names, KZT an
 Production builds register a service worker (`frontend/public/sw.js`): it caches only static, content-hashed files and the last good `index.html`, never `/api/` or `/admin/`.
 Confirmed upcoming bookings are also kept as an on-device copy (see docs/privacy.md) so My journeys works offline. Service worker tests need a production build:
 `cd frontend && npm run build && BACKEND_URL=http://127.0.0.1:8000 npx vite preview --host 127.0.0.1 --port 5302` then `PWA_PREVIEW=1 BASE_URL=http://127.0.0.1:5302 npx playwright test pwa` (skipped on the dev server). Also verified against gunicorn + WhiteNoise + the production CSP.
+
+## Alerts (watches)
+Passengers can ask to be told when a searched price drops or a journey becomes available (`/alerts`). The worker (`manage.py run_worker`) checks them every 5 minutes and right after relevant changes; opening the Alerts page also checks them, so the feature works without a worker, only less promptly. Alerts only notify: nothing is reserved.

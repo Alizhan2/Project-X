@@ -51,6 +51,7 @@ export default function Layout() {
           <NavLink to="/" end>{t("Search")}</NavLink>
           <NavLink to="/kazakhstan">{t("Kazakhstan")}</NavLink>
           <NavLink to="/journeys">{t("My journeys")}</NavLink>
+          {user && <NavLink to="/alerts">{t("Alerts")}</NavLink>}
           {user && (
             <NavLink to="/notifications">
                {t("Notifications")}{unread > 0 && <span className="count" aria-label={t("{0} unread", {0: unread})}> {unread}</span>}

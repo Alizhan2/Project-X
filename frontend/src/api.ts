@@ -221,7 +221,7 @@ export const fetchQuote = (ref: string) => getJson<CancellationQuote>(`/api/book
 export const cancelBooking = (ref: string, expected_refund?: string) =>
   request<Booking>('POST', `/api/bookings/${ref}/cancel/`, expected_refund ? { expected_refund } : {})
 
-export interface AppNotification { id: number; kind: string; title: string; body: string; booking: string | null; created_at: string; read: boolean }
+export interface AppNotification { id: number; kind: string; title: string; body: string; booking: string | null; link: string | null; created_at: string; read: boolean }
 export const fetchNotifications = (signal?: AbortSignal) =>
   getJson<{ unread: number; results: AppNotification[] }>('/api/notifications/', signal)
 export const markRead = (id: number) => request<void>('POST', `/api/notifications/${id}/read/`)
@@ -288,3 +288,15 @@ export interface SavedTraveller { id: number; full_name: string }
 export const fetchSavedTravellers = (signal?: AbortSignal) => getJson<SavedTraveller[]>('/api/travellers/', signal)
 export const saveTraveller = (full_name: string) => request<SavedTraveller>('POST', '/api/travellers/', { full_name })
 export const removeTraveller = (id: number) => request<void>('DELETE', `/api/travellers/${id}/`)
+
+export interface Watch {
+  id: number; kind: 'price' | 'availability'; status: 'active' | 'triggered' | 'expired'
+  origin: { code: string; name: string }; destination: { code: string; name: string }
+  date: string; time: string; passengers: number; modes: string
+  baseline_price: string | null; currency: string | null
+  last_checked_at: string | null; last_notified_at: string | null; link: string
+}
+export interface WatchBody { kind: Watch['kind']; origin: string; destination: string; date: string; time: string; passengers: number; modes: string }
+export const fetchWatches = (signal?: AbortSignal) => getJson<{ max_active: number; results: Watch[] }>('/api/watches/', signal)
+export const createWatch = (body: WatchBody) => request<Watch>('POST', '/api/watches/', body)
+export const removeWatch = (id: number) => request<void>('DELETE', `/api/watches/${id}/`)

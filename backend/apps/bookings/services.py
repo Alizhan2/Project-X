@@ -18,6 +18,7 @@ from django.utils import timezone
 
 from apps.core import jobs
 from apps.core.models import AuditRecord
+from apps.notifications.watches import schedule_evaluation
 from apps.planning.services import OfferError, build_itinerary
 from apps.transport.models import Departure
 
@@ -135,6 +136,7 @@ def _free_places(booking, reservation_status, booking_status, *, now, actor=None
     AuditRecord.objects.create(
         actor=actor, action=action, object_type="booking", object_id=booking.reference, detail={}
     )
+    schedule_evaluation()      # freed places can satisfy availability alerts
 
 
 def expire_booking(booking_id, now=None):

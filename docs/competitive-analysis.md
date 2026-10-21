@@ -72,3 +72,6 @@ Evidence quality: Trainline/FlixBus/Omio items come from vendor pages, app-store
 3. **Help centre page**: what happens when a connection breaks, how refunds work, what "simulated" means, who to contact (contact owner to be defined: today there is none).
 4. **Inline passenger-data hints** (Aviata-style).
 Decisions needed from the product owner: any delay-compensation rule (amount, threshold); a paid "flex" option; who answers support.
+
+## Status update: Alerts (watches) built (2026-10-21)
+Price-drop and availability alerts (Trainline/Omio price alerts; Kaspi/KTZ seat-release/waitlist idea). `Watch` model, `/api/watches/`, Alerts page, "Notify me" under the results (not for arrive-by searches), notification links back to the search. Evaluated by the worker every 5 minutes, promptly after anything that can change results (fare/capacity/service edits, cancellations or expiries that free places; bursts collapse into one job) and lazily when the owner lists their alerts (correct even without a worker). Alerts only notify: no seat or price is held. Race found and fixed: two simultaneous listings could read a stale price (now waits for the evaluation; test fails without the fix). Next from the plan: follow-a-route alerts, help page, inline passenger hints.

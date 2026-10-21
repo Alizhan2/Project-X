@@ -14,6 +14,7 @@ from django.core.management.base import BaseCommand
 from apps.core import jobs
 import apps.bookings.services  # noqa: F401  (registers job handlers)
 import apps.disruptions.recovery
+import apps.notifications.watches
 
 
 log = logging.getLogger(__name__)
@@ -51,6 +52,8 @@ class Command(BaseCommand):
                     from django.core.management import call_command
                     call_command("clearsessions")
                     WorkerHeartbeat.objects.filter(last_seen__lt=timezone.now() - timedelta(days=1)).delete()
+                    from apps.core.models import Job
+                    Job.objects.filter(status=Job.Status.DONE, created_at__lt=timezone.now() - timedelta(days=7)).delete()   # periodic jobs would otherwise pile up
                     last_cleanup = time.monotonic()
                 backoff = 1
             except (OperationalError, InterfaceError) as exc:
@@ -70,4 +73,5 @@ class Command(BaseCommand):
 
     def sweep(self):
         """Safety net independent of the job table: expire any overdue pending booking."""
+        apps.notifications.watches.ensure_periodic()          # at most one evaluation job per 5-minute window
         return apps.bookings.services.expire_due_bookings() + apps.disruptions.recovery.expire_due_offers()

@@ -9,7 +9,7 @@ from .models import Notification
 def _payload(n):
     return {
         "id": n.pk, "kind": n.kind, "title": n.title, "body": n.body,
-        "booking": n.booking.reference if n.booking_id else None,
+        "booking": n.booking.reference if n.booking_id else None, "link": n.link or None,
         "created_at": timezone.localtime(n.created_at), "read": n.read_at is not None,
     }
 
