@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from decimal import Decimal
+from unittest import mock
 
 from django.test import Client, TestCase
 from django.utils import timezone
@@ -170,20 +171,21 @@ class ServiceChangeTests(BookingTestBase, TestCase):
         self.assertEqual((self.vc.status, self.vc.delay_minutes), ("scheduled", 0))
         self.assertEqual(self.c.get(f"/api/bookings/{self.ref}/").json()["disruption"]["status"], "ok")
 
-    def test_cancellation_notifies_removes_from_search_and_allows_full_refund(self):
+    @mock.patch("django.utils.timezone.now")
+    def test_cancellation_refunds_cancelled_leg_and_preserves_other_fare_policies(self, frozen_now):
+        frozen_now.return_value = self.vc.departs_at - timedelta(hours=1)
         change(self.valley, self.vc, "cancel")
         self.assertTrue(self.notes("journey_disrupted").exists())
         res = self.c.get("/api/search/", {"origin": "NG-BUS", "destination": "RV-BUS", "depart_after": f"{DAY}T11:00"}).json()
         self.assertNotIn(self.vc.pk, [r["legs"][0]["departure_id"] for r in res["results"]])
-        # Even 1h before departure (normally 0%): a disrupted journey refunds every unused leg in full.
-        from apps.bookings.tests import depart_in
-        depart_in(self.ref, 1)
+        # One hour before the bus: only its cancellation overrides the purchased policies.
         q = self.c.get(f"/api/bookings/{self.ref}/cancellation/").json()
         self.assertTrue(q["disrupted"])
-        self.assertTrue(all(l["percent"] == 100 for l in q["lines"]))
+        self.assertEqual([line["percent"] for line in q["lines"]], [100, 50, 100])
         cancel = self.c.post(f"/api/bookings/{self.ref}/cancel/", {}, content_type="application/json").json()
         self.assertEqual(cancel["refunds"][0]["reason"], "Cancelled after disruption")
-        self.assertEqual(Decimal(cancel["refunds"][0]["amount"]), Decimal(cancel["total_amount"]))
+        self.assertEqual(Decimal(cancel["refunds"][0]["amount"]), Decimal(q["total_refund"]))
+        self.assertLess(Decimal(cancel["refunds"][0]["amount"]), Decimal(cancel["total_amount"]))
 
     def test_cancelling_twice_and_changing_a_cancelled_service(self):
         change(self.valley, self.vc, "cancel")
