@@ -20,6 +20,14 @@ export const money = (amount: string, currency: string) => `${currency} ${amount
 
 // Searches use the transport region's calendar, independent of the passenger's device timezone.
 export const regionToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Berlin' })
-export const repeatSearchUrl = (origin: string, destination: string, passengers = 1) => `/?${new URLSearchParams({
-  origin, destination, passengers: String(passengers), date: regionToday(), time: '06:00', repeat: '1',
+export const repeatSearchUrl = (origin: string, destination: string, passengers = 1, wheelchairRequired = false) => `/demo?${new URLSearchParams({
+  origin, destination, passengers: String(passengers), date: regionToday(), time: '06:00', repeat: '1', wheelchair_required: String(wheelchairRequired),
 })}`
+
+/** A demo-region datetime-local value from an absolute timestamp, independent of device timezone. */
+export function demoDateTimeInput(iso: string): string {
+  if (!iso || !Number.isFinite(Date.parse(iso))) return ''
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(iso))
+  const value = (type: string) => parts.find(part => part.type === type)?.value ?? ''
+  return `${value('year')}-${value('month')}-${value('day')}T${value('hour')}:${value('minute')}`
+}

@@ -54,6 +54,8 @@ def serialize_itinerary(it):
         "transfers": it.transfers,
         "min_transfer_buffer_minutes": it.min_transfer_buffer_minutes,
         "transfer_buffers": it.buffers or [],
+        "connections": it.connections or [],
+        "wheelchair_required": it.wheelchair_required,
         "passengers": it.passengers,
         "total_price": f"{it.total_price:.2f}",
         "currency": it.currency,

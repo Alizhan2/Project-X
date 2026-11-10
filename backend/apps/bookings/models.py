@@ -27,6 +27,8 @@ class Booking(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="bookings")
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING_PAYMENT)
     passengers = models.PositiveSmallIntegerField()
+    wheelchair_required = models.BooleanField(default=False)
+    recovery_preferences = models.JSONField(default=dict, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3)
     contact_email = models.EmailField()
@@ -82,6 +84,8 @@ class BookingLeg(models.Model):
     policy_full_refund_hours = models.PositiveIntegerField()
     policy_partial_refund_hours = models.PositiveIntegerField()
     policy_partial_percent = models.PositiveSmallIntegerField()
+    boarded_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["booking", "sequence"]

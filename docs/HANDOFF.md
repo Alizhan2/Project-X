@@ -1,28 +1,29 @@
 # Handoff
-Updated 2026-10-20. Current evidence: [travel-companion.md](travel-companion.md), [search-convenience.md](search-convenience.md) and [local-improvements.md](local-improvements.md).
 
-## Current state
-- Latest update: English/Russian/Kazakh SPA, API presentation messages, queued account emails, PDF and calendar downloads. See [localization.md](localization.md). No new dependencies or migrations; restart the worker with the web service. Local checks: 224 backend tests, nine frontend checks, 23 existing browser scenarios. This localization change has not been pushed or checked in GitHub Actions yet.
-- Previous update: arrive-by search and arrival-deadline validation at itinerary/checkout, plus keyboard focus preservation during sorting. Local checks: 218 backend tests, five frontend tests and 23 browser scenarios passed. No new dependencies or migrations. See arrive-by.md and GitHub Actions for this revision's CI result; preceding commit 942792d passed all five jobs.
-- Previous update: next-journey card, current booking timeline, private calendar/PDF downloads. Local verification: 205 backend tests, five frontend tests and 23 browser scenarios passed. Install the updated hash-locked requirements (ReportLab); no migration is required. Consult GitHub Actions for this revision's CI result; the preceding feature commit fa843f8 passed all five jobs.
-- Previous feature update: saved directions/repeat search, server-side filters and three-journey comparison. Additive accounts migration 0003 applied locally. Local checks passed: 197 backend tests, 5 comparison tests and 23 browser scenarios. Consult GitHub Actions for this revision's CI result; the prior account-email/UI commit 82829f7 passed all five jobs.
-- Repository: https://github.com/Alizhan2/Project-X (public). This update contains the account-email, UI and backup changes. Earlier CI at `ac46440` passed all five jobs; consult the GitHub Actions run for the current commit before deploying.
-- MVP stages 0–7 plus production preparation already existed. Added password recovery, optional email verification, UI improvements, native logical backup verification and documentation corrections.
-- Transport, payments, refunds and tickets remain simulated. No commercial launch or server deployment occurred.
-- Existing local PostgreSQL (:5432), Django (:8000) and Vite (:5173) were reused. An additive account migration was applied; the user's database was not reseeded. The local worker is now running for email and reservation jobs.
-- Account mail uses private `.local-mail/` preview files locally. Run `manage.py run_worker` after restarting the environment. Actual SMTP is not connected. See account-email.md.
-- PostgreSQL 17.11 client tools live at `~/.doedu-tools/postgres-client-17/bin`; logical backup/restore was verified without Docker.
+Updated 10 November 2026. See [requirements alignment](requirements-alignment-2026-11-10.md) for this increment and [business rules](business-rules.md) for current behaviour. Earlier dated verification documents are historical evidence, not certification of the current revision.
 
-## Next deployment work
-Choose server/hosting project, SSH access and exact hostname/DNS provider before any deployment. Inspect existing services/ports first, then follow deployment.md and release-procedure.md. Full Docker Compose verification is deferred by the user's choice to continue without Docker. If using a native deployment, explicitly arrange service supervision, least-privilege DB roles, TLS and backups; do not run Django's development server publicly.
+## Current product
 
-## Remaining unverified items
-Full container stack and read-only filesystem runtime, release-image publishing workflow, real TLS/HSTS/proxy setup, actual SMTP inbox delivery, hosted/off-host backup scheduling, independent security review and manual screen-reader testing. Earlier CI image build/liveness and current native logical backup evidence should not be confused with these checks.
+- Kazakhstan planning is `/`: 20 real cities, EN/RU/KK, KZT, Asia/Almaty, private plans and parameter-only sharing. Provider access is not connected; no fabricated inventory or ticket sale.
+- Fictional demo booking is `/demo`: EUR, Europe/Berlin, buses/trains/on-demand taxis, up to three legs, arrive-by, filters, comparison, favourites, repeats, upcoming trip, calendar/PDF and offline copies. Historic fictional root links redirect preserving parameters. `/kazakhstan` remains compatible.
+- Five-minute default reservations. Explicit walking/boarding connection margins and risk statuses; strict accessibility excludes unknown vehicles, stops and transfer paths.
+- Recovery preferences: reachable location, earliest departure, deadline, payment-now budget, accessibility. Usable onward legs may be retained. Full new fare is charged; eligible old-leg refunds are separate.
+- Durable payment attempts support unknown/pending results, same-key reconciliation and full compensation after failed confirmation. Refund requests, pending outcomes, completion, failures and retries are visible.
+- Accounts, email recovery/verification, operator changes, notices, audits, alerts/followed lines and Help remain available. All new presentation strings have RU/KK translations.
 
-## Kazakhstan preparation (2026-10-20)
+## Local update and verification
 
-Added `/kazakhstan` and `/api/kazakhstan/{catalog,search}/`: 20 real cities, EN/RU/KK names, KZT, Asia/Almaty. Search returns explicit `provider_not_connected` (503), not fabricated inventory. The OneTR boundary awaits official partner documentation/access. No migrations or changes to historic/demo bookings. Booking remains disabled. See [integration milestones and access request](kazakhstan.md).
+Additive migrations are required for transport transfer metadata, booking access/used markers, offer constraints and payment/refund lifecycle fields. Apply via `manage.py safe_migrate` and restart both application and worker. Do not reseed the user's database. A private pre-migration PostgreSQL backup was saved for this local update.
 
-## Kazakhstan private plans
+Local checks passed: 315 backend tests, 27 frontend unit tests, build/lint/schema checks, 51 standard browser scenarios and 2 separately enabled PWA scenarios. Final combined evidence is recorded in requirements-alignment-2026-11-10.md. No push, GitHub CI run, remote server or external publication is implied by local checks.
 
-Added account-owned journey plans (additive migration `accounts.0004_journeyplan`, applied locally via `safe_migrate`), city filtering in EN/RU/KK and public parameter-only share links. Notes remain private; link recipients get a prefilled form, never a booking or account access. The Kazakhstan page supports save/edit/repeat/delete. Tests: 235 backend, 12 frontend unit, 23 existing e2e plus targeted browser checks. See `docs/kazakhstan.md` for API and sharing semantics.
+## Remaining boundaries
+
+- All booking inventory, payments, refunds and confirmations remain simulated; commercial mode is still refused.
+- Recorded used markers and recovery preserve used legs, but general per-leg cancellation/amendment is not implemented; whole cancellation retains its documented capacity-counter simplification.
+- Actual SMTP delivery, public server/domain/HTTPS, off-host backup scheduling, full container/read-only runtime and manual screen-reader/user studies remain separate work.
+- Process-plan activities, team hours/approvals and usability participant responses must be recorded from real events, not generated from software state.
+
+## Deployment
+
+Repository: https://github.com/Alizhan2/Project-X. Choose hosting, exact hostname and DNS provider before deploying. Inspect services first; follow deployment.md and release-procedure.md. Never expose Django's development server publicly or relax startup safety gates. Real supplier integration needs official documentation, permitted fixtures and server-side credentials.

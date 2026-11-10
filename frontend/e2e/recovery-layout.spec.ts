@@ -20,6 +20,8 @@ for (const settlement of ['none', 'pay', 'refund'] as const) {
       id: 1, status: 'proposed', expires_at: new Date(Date.now() + 600_000).toISOString(),
       arrives_at: arrival, currency: 'EUR', replacement_price: '10.00', replaced_value: '10.00',
       difference: settlement === 'pay' ? '0.10' : settlement === 'refund' ? '-0.10' : '0.00',
+      payment_now: '10.00', eligible_refund: settlement === 'refund' ? '10.10' : settlement === 'pay' ? '9.90' : '10.00',
+      net_extra_cost: settlement === 'refund' ? '-0.10' : settlement === 'pay' ? '0.10' : '0.00', refund_status: null,
       settlement, reserves_capacity: false, availability_warning: 'Places are not held until you accept.',
       legs: [{ mode: 'train', route_code: 'DR2', operator: 'Demo Rail', from: { name: 'Riverton Station' },
         to: { name: 'Portmouth Harbour Station' }, departs_at: departure, arrives_at: arrival,
@@ -42,7 +44,7 @@ for (const settlement of ['none', 'pay', 'refund'] as const) {
         const body = route.request().postDataJSON()
         accepted.push(body)
         if (body.outcome === 'failure') return route.fulfill({ status: 409, json: { code: 'payment_failed', message: 'Simulated failure.' } })
-        return route.fulfill({ json: { replayed: false, booking: { ...booking, disruption: null } } })
+        return route.fulfill({ json: { replayed: false, offer: { ...offer, status: 'accepted' }, booking: { ...booking, disruption: null } } })
       }
       return route.fulfill({ status: 404, json: { message: 'Unexpected test request.' } })
     })
@@ -61,9 +63,9 @@ for (const settlement of ['none', 'pay', 'refund'] as const) {
       await expect(page.getByRole('alert').filter({ hasText: 'Nothing was changed' })).toBeVisible()
       await expect(option).toBeVisible()
     }
-    await confirmation.getByRole('button', { name: settlement === 'pay' ? /Pay.*and confirm/ : /^Confirm replacement/ }).click()
+    await confirmation.getByRole('button', { name: 'Pay full replacement price and confirm (simulated)' }).click()
     await expect(page.getByText('Your replacement journey is booked (simulated).')).toBeVisible()
-    expect(accepted.at(-1)).toEqual({ outcome: 'success' })
+    expect(accepted.at(-1)).toEqual({ outcome: 'success', reconcile: false })
     await expect(page.getByTestId('offer')).toHaveCount(0)
   })
 }

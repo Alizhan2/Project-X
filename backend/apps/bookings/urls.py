@@ -1,7 +1,7 @@
 from django.urls import path
 
 from apps.disruptions import views as recovery_views
-from apps.payments.views import pay
+from apps.payments.views import pay, reconcile, retry_refund
 
 from . import views, exports
 
@@ -15,6 +15,8 @@ urlpatterns = [
     path("bookings/<str:reference>/cancellation/", views.booking_cancellation_quote),
     path("bookings/<str:reference>/cancel/", views.booking_cancel),
     path("bookings/<str:reference>/pay/", pay),
+    path("bookings/<str:reference>/pay/reconcile/", reconcile),
+    path("bookings/<str:reference>/refunds/<int:refund_id>/retry/", retry_refund),
     path("bookings/<str:reference>/replacements/", recovery_views.replacements),
     path("bookings/<str:reference>/replacements/<int:offer_id>/accept/", recovery_views.accept),
     path("bookings/<str:reference>/replacements/<int:offer_id>/decline/", recovery_views.decline),

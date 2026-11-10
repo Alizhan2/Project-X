@@ -11,7 +11,7 @@ const keys = ['origin', 'destination', 'date', 'time', 'passengers', 'modes'] as
 export function sharePath(values: PlanValues) {
   const params = new URLSearchParams()
   for (const key of keys) params.set(key, values[key])
-  return `/kazakhstan?${params}`
+  return `/?${params}`
 }
 export function readShared(search: string, cities: City[], now = new Date()): { values: PlanValues; invalid: boolean } {
   const params = new URLSearchParams(search), values = defaults(now)

@@ -29,7 +29,7 @@ for (const [name, size] of Object.entries(VIEWPORTS)) {
     test.use({ viewport: size })
 
     test('public pages', async ({ page }) => {
-      await page.goto('/'); await scan(page, 'search (empty)')
+      await page.goto('/demo'); await scan(page, 'search (empty)')
       await page.goto(`/?origin=NG-BUS&destination=PM-MARINA&date=${demoDayIso()}&time=11:00&passengers=1&sort=price`)
       await expect(page.locator('.result').first()).toBeVisible(); await scan(page, 'search results')
       await page.goto(`/?origin=LK-BUS&destination=NG-BUS&date=${demoDayIso()}&time=06:00&passengers=9`)

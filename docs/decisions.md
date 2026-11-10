@@ -33,3 +33,7 @@
 | 30 | `commercial` launch mode refuses to start; simulation flag gates payment endpoints | Infrastructure readiness must not imply a real sale is possible |
 | 31 | `sync_demo_schedule` additive command (and worker auto-sync) for the hosted demo instead of allowing the destructive seed in production | Keeps the demo alive without a wipe path; creates no accounts |
 | 32 | Capacity drift is repaired only by an audited, dry-run-first command | Counters are a lock target; blind edits would hide bugs |
+
+## November 2026 requirements alignment
+
+The five-minute reservation default and explicit walking plus boarding buffer supersede earlier transfer assumptions. Replacement price is charged in full; old-leg refunds follow snapshot eligibility and complete separately. Kazakhstan planning becomes `/`, while the historical synthetic EUR/Berlin network stays at `/demo`. Details and verification are in requirements-alignment-2026-11-10.md and business-rules.md.

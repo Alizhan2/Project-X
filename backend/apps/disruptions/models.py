@@ -55,6 +55,8 @@ class ReplacementOffer(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
     note = models.CharField(max_length=200, blank=True)
+    constraints_snapshot = models.JSONField(default=dict)
+    eligible_refund = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         ordering = ["arrives_at", "id"]

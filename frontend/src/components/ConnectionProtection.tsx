@@ -3,12 +3,6 @@ import { useLanguage } from '../useLanguage'
 
 interface Leg { mode: string; from: string; to: string }
 
-/**
- * Plain-language answer to "what if a connection breaks?". Every sentence describes behaviour that exists:
- * the spare time per change is arithmetic on the timetable (not a punctuality forecast), notifications and
- * non-reserving replacement offers come from the disruption pipeline, and a disrupted journey refunds unused
- * legs in full. All money is simulated in the demonstration.
- */
 export default function ConnectionProtection({ legs, buffers }: { legs: Leg[]; buffers?: number[] }) {
   useLanguage()
   if (legs.length < 2) {
@@ -33,7 +27,7 @@ export default function ConnectionProtection({ legs, buffers }: { legs: Leg[]; b
         })}
       </ul>}
       {buffers && <p className="muted small">{t('Spare time is the extra time beyond the minimum needed to change. It is not a prediction of punctuality.')}</p>}
-      <p>{t('If a delay or cancellation breaks a connection after you have booked, we notify you, search replacements for the rest of your trip and show the exact price difference before you decide. Offers do not hold places until you accept. If nothing suitable exists, you can cancel for a full refund of the unused legs. In this demonstration all payments and refunds are simulated.')}</p>
+      <p>{t('If a connection breaks, review replacement routes, the full payment required now and any separate eligible refund. Your original booking stays intact until replacement confirmation succeeds. Cancellation follows each saved fare policy; a delay alone does not guarantee a full refund. All payments and refunds are simulated.')}</p>
     </section>
   )
 }

@@ -14,7 +14,7 @@ function accessSummary(legs: Leg[]) {
   return triText(legs.length > 1 ? t("Wheelchair-accessible vehicles (all legs)") : t("Wheelchair-accessible vehicle"), v)
 }
 
-export default function ResultCard({ it, comparison, arriveBy }: { it: Itinerary; arriveBy?: string; comparison?: { label: string; selected: boolean; disabled: boolean; toggle: () => void } }) {
+export default function ResultCard({ it, comparison, arriveBy, wheelchairRequired = false }: { it: Itinerary; arriveBy?: string; wheelchairRequired?: boolean; comparison?: { label: string; selected: boolean; disabled: boolean; toggle: () => void } }) {
   useLanguage()
   const nextDay = !sameDay(it.departs_at, it.arrives_at)
   const delayed = it.legs.filter((l) => l.status === 'delayed')
@@ -37,9 +37,10 @@ export default function ResultCard({ it, comparison, arriveBy }: { it: Itinerary
       </div>
       <div className="route-segments"><RouteLine compact legs={it.legs.map(l => ({ departs_at: l.departs_at, arrives_at: l.arrives_at, from: l.from.name, to: l.to.name, mode: l.mode, route_code: l.route_code, note: l.status === 'delayed' ? t('Delayed by {0} min', { 0: l.delay_minutes }) : undefined }))} /></div>
       <div className="result-bottom"><div className="connection-buffer">{it.min_transfer_buffer_minutes !== null && <p>{t('Connection buffer: {0} min', {0: it.min_transfer_buffer_minutes})}</p>}
+        {it.connections?.some(c => c.status === 'at_risk') && <p className="warn small" role="status">{t('Connection at risk')}</p>}
         {scarce && <p className="warn small">{t('Only {0} place(s) left on {1}. ', {0: scarce.places_left, 1: scarce.route_code})}</p>}
         {delayed.map(l => <p className="warn small" role="status" key={l.route_code + l.departs_at}>{l.route_code}: {t('Delayed by {0} min', {0: l.delay_minutes})}</p>)}
-      </div><div className="result-actions">        <Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price, ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>
+      </div><div className="result-actions">        <Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price, wheelchair_required: String(wheelchairRequired), ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>
            {t("Select")}<span className="sr-only"> {clock(it.departs_at)}  {t("departure")}</span>
         </Link>
         {comparison && <label className="compare-choice"><input type="checkbox" aria-label={comparison.label} checked={comparison.selected} disabled={comparison.disabled} onChange={comparison.toggle} />{t("Compare")}{comparison.disabled && <span className="sr-only">  {t("(maximum three selected)")}</span>}</label>}

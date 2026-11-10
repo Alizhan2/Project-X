@@ -27,7 +27,7 @@ test('deep links survive a hard refresh (SPA fallback) and unknown API paths are
 })
 
 test('runtime config drives the simulation banner and release footer', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/demo')
   await expect(page.getByRole('note')).toContainText('not valid travel tickets')
   await expect(page.locator('footer')).toContainText('release')
 })

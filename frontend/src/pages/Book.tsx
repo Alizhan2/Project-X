@@ -17,7 +17,8 @@ export default function Book() {
   const { user } = useAuth()
   const nav = useNavigate()
   const arriveBy = p.get('arrive_by') || undefined
-  const st = useItinerary(legs, passengers, arriveBy)
+  const wheelchairRequired = p.get('wheelchair_required') === 'true'
+  const st = useItinerary(legs, passengers, arriveBy, wheelchairRequired)
   const n = Number(passengers)
   const [names, setNames] = useState<string[]>(() => Array.from({ length: n }, (_, i) => (i === 0 ? (user?.name ?? '') : '')))
   const [email, setEmail] = useState(user?.email ?? '')
@@ -43,7 +44,7 @@ export default function Book() {
     try {
       const booking = await createBooking({
         passengers: n, contact_email: email, travellers: names, expected_total: expected || undefined,
-        legs: st.data.selection, arrive_by: arriveBy,
+        legs: st.data.selection, arrive_by: arriveBy, wheelchair_required: wheelchairRequired,
       }, key.current)
       if (keepNames) await Promise.allSettled(newNames.map(saveTraveller))   // optional; never blocks or fails the booking
       nav(`/booking/${booking.reference}/pay`, { replace: true })
@@ -56,16 +57,17 @@ export default function Book() {
   return (
     <>
       <h1>{t("Traveller details")}</h1>
+      {wheelchairRequired && <p className="email-notice">{t("Require a fully step-free journey")}</p>}
       {arriveBy && <p>{t("Arrive by")} {arriveBy.replace('T', ' ')}  {t("(Europe/Berlin). The deadline is checked again when reserving.")}</p>}
       {st.kind === 'loading' && <p>{t("Loading journey…")}</p>}
-      {st.kind === 'error' && <div className="card" role="alert"><p className="status-bad">{st.error.message}</p><Link to="/">{t("Search again")}</Link></div>}
+      {st.kind === 'error' && <div className="card" role="alert"><p className="status-bad">{st.error.message}</p><Link to="/demo">{t("Search again")}</Link></div>}
       {st.kind === 'ready' && (
         <div className="two-col">
           <form className="card" onSubmit={submit} noValidate>
             {err && !changedTotal && (
               <div role="alert" className="status-bad">
                 <p>{t(err.message)}</p>
-                {['unavailable', 'no_capacity', 'invalid_leg', 'arrival_deadline_missed'].includes(err.code ?? '') && <p><Link to="/">{t("Search again")}</Link></p>}
+                {['unavailable', 'no_capacity', 'invalid_leg', 'arrival_deadline_missed'].includes(err.code ?? '') && <p><Link to="/demo">{t("Search again")}</Link></p>}
               </div>
             )}
             {changedTotal && (

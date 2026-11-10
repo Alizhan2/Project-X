@@ -24,3 +24,10 @@ class RouteAdmin(admin.ModelAdmin):
 class DepartureAdmin(admin.ModelAdmin):
     list_display = ("route", "departs_at", "status", "delay_minutes", "capacity", "places_taken")
     list_filter = ("status", "route__operator")
+
+
+@admin.register(models.TransferLink)
+class TransferLinkAdmin(admin.ModelAdmin):
+    list_display = ("from_stop", "to_stop", "minutes", "boarding_buffer_minutes", "step_free")
+    list_filter = ("step_free",)
+    list_select_related = ("from_stop", "to_stop")

@@ -11,7 +11,7 @@ export default function LegSummary({ it }: { it: Itinerary }) {
   useLanguage()
   return (
     <>
-      <Timeline buffers={it.transfer_buffers} legs={it.legs.map((l) => ({
+      <Timeline connections={it.connections} buffers={it.transfer_buffers} legs={it.legs.map((l) => ({
         departs_at: l.departs_at, arrives_at: l.arrives_at, from: l.from.name, to: l.to.name, mode: l.mode,
         operator: l.operator, route_code: l.route_code,
         note: l.status === 'delayed' ? t("Delayed by {0} min (times include the delay)", {0: l.delay_minutes}) : undefined,

@@ -12,16 +12,18 @@ export default function Journey() {
   const [p] = useSearchParams()
   const legs = p.get('legs') ?? '', passengers = p.get('passengers') ?? '1', seen = p.get('total')
   const arriveBy = p.get('arrive_by') || undefined
-  const st = useItinerary(legs, passengers, arriveBy)
+  const wheelchairRequired = p.get('wheelchair_required') === 'true'
+  const st = useItinerary(legs, passengers, arriveBy, wheelchairRequired)
   return (
     <>
       <h1>{t("Journey details")}</h1>
+      {wheelchairRequired && <p className="email-notice">{t("Require a fully step-free journey")}</p>}
       {arriveBy && <p>{t("Arrive by")} {arriveBy.replace('T', ' ')}  {t("(Europe/Berlin). Checked against the current timetable; not a punctuality guarantee.")}</p>}
       {st.kind === 'loading' && <p>{t("Loading journey…")}</p>}
       {st.kind === 'error' && (
         <div className="card" role="alert">
           <p className="status-bad">{st.error.status === 409 ? st.error.message : t("Could not load this journey.")}</p>
-          <p><Link to="/">{t("Search again")}</Link></p>
+          <p><Link to="/demo">{t("Search again")}</Link></p>
         </div>
       )}
       {st.kind === 'ready' && (() => {
@@ -39,7 +41,7 @@ export default function Journey() {
             <ConnectionProtection legs={it.legs.map(l => ({ mode: l.mode, from: l.from.name, to: l.to.name }))} buffers={it.transfer_buffers} />
             <FollowLines lines={it.legs.map(l => ({ route_code: l.route_code, route_name: l.route_name, mode: l.mode }))} />
             <p className="price-line">{t("Total for")} {it.passengers}  {t("passenger(s):")} <strong>{money(it.total_price, it.currency)}</strong></p>
-            <Link className="button primary" to={`/book?${new URLSearchParams({ legs, passengers, total: it.total_price, ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>{t("Continue to traveller details")}</Link>
+            <Link className="button primary" to={`/book?${new URLSearchParams({ legs, passengers, total: it.total_price, wheelchair_required: String(wheelchairRequired), ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>{t("Continue to traveller details")}</Link>
           </section>
         )
       })()}

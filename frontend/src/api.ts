@@ -47,7 +47,15 @@ export interface Leg {
   cancellation_policy: string
 }
 
+export interface Connection {
+  from_stop: string; to_stop: string; walking_minutes: number | null; boarding_buffer_minutes: number
+  margin_minutes: number | null; status: 'infeasible' | 'at_risk' | 'feasible' | 'on_demand'
+  path_step_free: Tri
+}
+
 export interface Itinerary {
+  wheelchair_required?: boolean
+  connections?: Connection[]
   departs_at: string
   arrives_at: string
   duration_minutes: number
@@ -141,6 +149,7 @@ export interface SearchParams {
   modes?: string
   max_transfers?: string
   max_connection_minutes?: string
+  wheelchair_required?: string
 }
 
 export const searchJourneys = (p: SearchParams, signal?: AbortSignal) =>
@@ -153,14 +162,15 @@ export const register = (email: string, full_name: string, password: string) =>
   request<User>('POST', '/api/auth/register/', { email, full_name, password })
 export const logout = () => request<void>('POST', '/api/auth/logout/')
 
-export const fetchItinerary = (legs: string, passengers: string, signal?: AbortSignal, arriveBy?: string) =>
-  getJson<Itinerary & { simulated: boolean }>(`/api/itinerary/?${new URLSearchParams({ legs, passengers, ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`, signal)
+export const fetchItinerary = (legs: string, passengers: string, signal?: AbortSignal, arriveBy?: string, wheelchairRequired = false) =>
+  getJson<Itinerary & { simulated: boolean }>(`/api/itinerary/?${new URLSearchParams({ legs, passengers, wheelchair_required: String(wheelchairRequired), ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`, signal)
 
 export interface BookingLeg {
   sequence: number; status: string; mode: string; operator: string; route_code: string; route_name: string
   from: string; to: string; from_code: string; to_code: string; departs_at: string; arrives_at: string; unit_price: string; price_basis: string; cancellation_policy: string
 }
 export interface Booking {
+  wheelchair_required?: boolean
   travel_plan: TravelPlan | null
   reference: string; status: 'pending_payment' | 'confirmed' | 'cancelled' | 'expired'; status_label: string
   passengers: number; total_amount: string; currency: string; contact_email: string
@@ -168,10 +178,11 @@ export interface Booking {
   travellers: string[]; legs: BookingLeg[]
   disruption: Disruption | null; cancellable: boolean
   activity?: ActivityEvent[]
-  refunds: { status: string; amount: string; reason: string; created_at: string }[]
-  payments: { status: string; purpose: string; amount: string; failure_reason: string; created_at: string }[]
+  refunds: { id: number; status: string; amount: string; reason: string; failure_reason?: string; created_at: string }[]
+  payments: { id: number; idempotency_key: string; offer_id?: number | null; status: string; purpose: string; amount: string; failure_reason: string; created_at: string }[]
 }
 export interface CheckoutBody {
+  wheelchair_required?: boolean
   arrive_by?: string
   passengers: number; legs: SelectionItem[]
   expected_total?: string; contact_email: string; travellers: string[]
@@ -207,13 +218,18 @@ export async function downloadJourney(reference: string, kind: 'calendar' | 'pdf
   link.remove()
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
-export const payBooking = (ref: string, outcome: 'success' | 'failure', key: string) =>
+export type PaymentOutcome = 'success' | 'failure' | 'pending'
+export const payBooking = (ref: string, outcome: PaymentOutcome, key: string) =>
   request<{ replayed: boolean; payment: { status: string; failure_reason: string }; booking: Booking }>(
     'POST', `/api/bookings/${ref}/pay/`, { outcome }, { idempotencyKey: key })
+export const reconcilePayment = (ref: string, outcome: 'success' | 'failure', key: string) =>
+  request<{ replayed: boolean; payment: { status: string; failure_reason: string }; booking: Booking }>('POST', `/api/bookings/${ref}/pay/reconcile/`, { outcome }, { idempotencyKey: key })
+export const retryRefund = (ref: string, id: number, outcome: PaymentOutcome = 'success') =>
+  request<Booking>('POST', `/api/bookings/${ref}/refunds/${id}/retry/`, { outcome })
 export const abandonBooking = (ref: string) => request<Booking>('POST', `/api/bookings/${ref}/abandon/`)
 
 // ---- Stage 5: cancellation, notifications, operator ----
-export interface Disruption { status: 'ok' | 'delayed' | 'broken'; reason: string; problem_sequence: number | null; arrival_delay_minutes: number }
+export interface Disruption { status: 'ok' | 'delayed' | 'broken'; reason: string; problem_sequence: number | null; arrival_delay_minutes: number; connections?: Connection[] }
 export interface CancellationQuote {
   disrupted: boolean; total_refund: string
   lines: { sequence: number; route_code: string; paid: string; percent: number; refund: string; reason: string }[]
@@ -262,16 +278,22 @@ export interface OfferLeg {
 export interface ReplacementOffer {
   id: number; status: string; expires_at: string; arrives_at: string; legs: OfferLeg[]
   replacement_price: string; replaced_value: string; currency: string; difference: string
+  connections?: Connection[]
+  retained_legs?: LegRow[]; affected_legs?: LegRow[]
+  payment_now: string; eligible_refund: string; net_extra_cost: string; refund_status: string | null
   settlement: 'pay' | 'refund' | 'none'; reserves_capacity: boolean; availability_warning: string
 }
 export interface LegRow { sequence: number; mode: string; route_code: string; from: string; to: string; from_code: string; to_code: string; departs_at: string; arrives_at: string }
+export interface RecoveryPreferences { origin?: string; earliest_departure?: string; latest_arrival?: string; max_payment_now?: string; wheelchair_required?: string }
 export interface Replacements {
+  constraints?: RecoveryPreferences
+  locations?: { code: string; name: string }[]
   state: 'not_disrupted' | 'options' | 'none'; offers: ReplacementOffer[]; retained_legs: LegRow[]; affected_legs: LegRow[]
   original_arrival: string | null; reason?: string; cancellation?: CancellationQuote
 }
-export const fetchReplacements = (ref: string, signal?: AbortSignal) => getJson<Replacements>(`/api/bookings/${ref}/replacements/`, signal)
-export const acceptReplacement = (ref: string, id: number, outcome: 'success' | 'failure', key: string) =>
-  request<{ replayed: boolean; booking: Booking }>('POST', `/api/bookings/${ref}/replacements/${id}/accept/`, { outcome }, { idempotencyKey: key })
+export const fetchReplacements = (ref: string, signal?: AbortSignal, preferences: RecoveryPreferences = {}) => getJson<Replacements>(`/api/bookings/${ref}/replacements/?${new URLSearchParams(preferences as Record<string, string>)}`, signal)
+export const acceptReplacement = (ref: string, id: number, outcome: PaymentOutcome, key: string, reconcile = false) =>
+  request<{ replayed: boolean; booking: Booking; offer: ReplacementOffer; payment?: { status: string } }>('POST', `/api/bookings/${ref}/replacements/${id}/accept/`, { outcome, reconcile }, { idempotencyKey: key })
 export const declineReplacement = (ref: string, id: number) => request<ReplacementOffer>('POST', `/api/bookings/${ref}/replacements/${id}/decline/`)
 
 

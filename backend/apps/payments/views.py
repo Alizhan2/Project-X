@@ -43,3 +43,44 @@ def pay(request, reference):
         "payment": {"status": attempt.status, "failure_reason": attempt.failure_reason, "amount": f"{attempt.amount:.2f}"},
         "booking": booking_payload(_own_booking(request, reference)),
     })
+
+
+class ResolveIn(serializers.Serializer):
+    outcome = serializers.ChoiceField(choices=services.OUTCOMES)
+
+
+@extend_schema(request=ResolveIn, responses={200: dict, 409: dict}, parameters=[OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, required=True)])
+@throttle("booking")
+@api_view(["POST"])
+def reconcile(request, reference):
+    if not settings.SIMULATION_ENABLED:
+        return Response({"code": "payments_not_configured"}, status=503)
+    _own_booking(request, reference)
+    data = ResolveIn(data=request.data)
+    data.is_valid(raise_exception=True)
+    try:
+        attempt, replayed = services.pay_booking(user=request.user, reference=reference,
+            idempotency_key=idempotency_key(request), outcome=data.validated_data["outcome"], reconcile=True)
+    except BookingError as exc:
+        raise Conflict(exc.code, exc.message) from exc
+    return Response({"replayed": replayed, "payment": {"status": attempt.status, "failure_reason": attempt.failure_reason,
+                     "amount": f"{attempt.amount:.2f}", "compensated": attempt.compensated},
+                     "booking": booking_payload(_own_booking(request, reference))})
+
+
+@extend_schema(request=ResolveIn, responses={200: dict, 409: dict})
+@throttle("booking")
+@api_view(["POST"])
+def retry_refund(request, reference, refund_id):
+    if not settings.SIMULATION_ENABLED:
+        return Response({"code": "payments_not_configured"}, status=503)
+    booking = _own_booking(request, reference)
+    if not booking.refunds.filter(pk=refund_id).exists():
+        raise Http404
+    data = ResolveIn(data=request.data)
+    data.is_valid(raise_exception=True)
+    try:
+        services.process_refund(refund_id, data.validated_data["outcome"])
+    except BookingError as exc:
+        raise Conflict(exc.code, exc.message) from exc
+    return Response(booking_payload(_own_booking(request, reference)))

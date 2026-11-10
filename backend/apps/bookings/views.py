@@ -44,6 +44,7 @@ class LegIn(serializers.Serializer):
 
 
 class CheckoutIn(serializers.Serializer):
+    wheelchair_required = serializers.BooleanField(default=False)
     arrive_by = serializers.DateTimeField(required=False)
     passengers = serializers.IntegerField(min_value=1, max_value=9)
     legs = LegIn(many=True, allow_empty=False, max_length=3)
@@ -78,17 +79,17 @@ def booking_payload(b):
         "travel_plan": travel_plan(b, live) if live is not None else None,
         "disruption": None if live is None else {
             "status": live.status, "reason": live.reason, "problem_sequence": live.problem_sequence,
-            "arrival_delay_minutes": live.arrival_delay_minutes,
+            "arrival_delay_minutes": live.arrival_delay_minutes, "connections": getattr(live, "connections", []),
         },
         "cancellable": b.status in (Booking.Status.CONFIRMED, Booking.Status.PENDING_PAYMENT),
         "refunds": [
-            {"status": r.status, "amount": f"{r.amount:.2f}", "reason": r.get_reason_display(), "created_at": timezone.localtime(r.created_at)}
+            {"id": r.pk, "failure_reason": r.failure_reason, "status": r.status, "amount": f"{r.amount:.2f}", "reason": r.get_reason_display(), "created_at": timezone.localtime(r.created_at)}
             for r in b.refunds.all()
         ],
         "reference": b.reference,
         "status": b.status,
         "status_label": b.get_status_display(),
-        "passengers": b.passengers,
+        "passengers": b.passengers, "wheelchair_required": b.wheelchair_required,
         "total_amount": f"{b.total_amount:.2f}",
         "currency": b.currency,
         "contact_email": b.contact_email,
@@ -109,7 +110,7 @@ def booking_payload(b):
             for l in b.legs.all()
         ],
         "payments": [
-            {"status": p.status, "purpose": p.purpose, "amount": f"{p.amount:.2f}", "failure_reason": p.failure_reason,
+            {"id": p.pk, "idempotency_key": p.idempotency_key, "offer_id": p.offer_id, "compensated": p.compensated, "status": p.status, "purpose": p.purpose, "amount": f"{p.amount:.2f}", "failure_reason": p.failure_reason,
              "created_at": timezone.localtime(p.created_at)}
             for p in b.payment_attempts.all()
         ],
@@ -145,7 +146,7 @@ def bookings(request):
             user=request.user, selection=[_selection(l) for l in v["legs"]], passengers=v["passengers"],
             traveller_names=v["travellers"], contact_email=v["contact_email"], idempotency_key=key,
             expected_total=v.get("expected_total"),
-            arrive_by=v.get("arrive_by"),
+            arrive_by=v.get("arrive_by"), wheelchair_required=v["wheelchair_required"],
         )
     except services.BookingError as e:
         raise Conflict(e.code, e.message, **e.extra) from e

@@ -118,7 +118,7 @@ def pdf_bytes(plan, booking):
             section.append(p(f"Connection: {minutes} min between arrival and next departure, including walking."))
         section.append(Spacer(1, 14))
         story.append(KeepTogether(section))
-    story.extend([p(f"Net paid: {booking.currency} {booking.total_amount:.2f} (simulated)."),
+    story.extend([p(f"Active journey cost: {booking.currency} {booking.total_amount:.2f} (simulated)."),
                   p("Progress is based on the timetable, not GPS. Passenger names and contact details are omitted from this portable copy.")])
     def footer(canvas, document):
         canvas.saveState()

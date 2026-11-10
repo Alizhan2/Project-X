@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
-from django.db.models import Count, Q, Sum
+from django.db.models import Sum
 
 from apps.bookings.models import Booking, BookingLeg, Reservation
 from apps.core import ops
@@ -29,13 +29,12 @@ class Command(BaseCommand):
         live_on_dead = Reservation.objects.filter(status__in=["held", "consumed"], leg__booking__status__in=["cancelled", "expired"]).count()
         if live_on_dead:
             findings.append(f"{live_on_dead} live reservations belong to cancelled/expired bookings")
-        # refunds can never exceed what was paid
-        for b in Booking.objects.annotate(
-            paid=Sum("payment_attempts__amount", filter=Q(payment_attempts__status="succeeded")),
-            refunded=Sum("refunds__amount", filter=Q(refunds__status="completed")),
-        ).filter(refunded__isnull=False):
-            if (b.refunded or Decimal(0)) > (b.paid or Decimal(0)):
-                findings.append(f"booking {b.reference}: refunded {b.refunded} exceeds paid {b.paid}")
+        # Aggregate separately: joining two histories multiplies rows and miscounts money.
+        for b in Booking.objects.filter(refunds__isnull=False).distinct():
+            paid = PaymentAttempt.objects.filter(booking=b, status="succeeded").aggregate(total=Sum("amount"))["total"] or Decimal(0)
+            refunded = Refund.objects.filter(booking=b, status__in=["requested", "pending", "completed"]).aggregate(total=Sum("amount"))["total"] or Decimal(0)
+            if refunded > paid:
+                findings.append(f"booking {b.reference}: refunded/reserved {refunded} exceeds paid {paid}")
         for f in findings:
             self.stdout.write(self.style.ERROR(f))
         self.stdout.write(self.style.SUCCESS("integrity OK") if not findings else f"{len(findings)} finding(s)")

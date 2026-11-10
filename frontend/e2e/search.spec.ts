@@ -5,7 +5,7 @@ import type { SearchResponse } from '../src/api'
 // Requires seeded demo data: `python manage.py seed_demo` (demo day = reference date + 1).
 
 test('search shows database-backed direct bus journeys with prices and simulated label', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/demo')
   await page.getByLabel('From', { exact: true }).selectOption({ label: 'Northgate Bus Station' })
   await page.getByLabel('To', { exact: true }).selectOption({ label: 'Riverton Bus Station' })
   await page.getByLabel('Date').fill(demoDayIso())

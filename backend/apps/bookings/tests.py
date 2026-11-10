@@ -455,12 +455,19 @@ def depart_in(ref, hours):
 
 
 class CancellationTests(BookingTestBase, TestCase):
+    def published_depart_in(self, ref, hours):
+        leg = BookingLeg.objects.get(booking__reference=ref)
+        target = timezone.now() + timedelta(hours=hours)
+        from apps.transport.models import RouteStop
+        offset = RouteStop.objects.get(route=leg.departure.route, stop=leg.from_stop).departure_offset_min
+        Departure.objects.filter(pk=leg.departure_id).update(departs_at=target-timedelta(minutes=offset+leg.departure.delay_minutes))
+
     def cancel(self, ref, c=None, **body):
         return (c or self.c).post(f"/api/bookings/{ref}/cancel/", body, content_type="application/json")
 
     def refund_for(self, hours, passengers=1):
         ref = confirmed_booking(self.c, self.dep, passengers)
-        depart_in(ref, hours)
+        self.published_depart_in(ref, hours)
         return ref, Decimal(self.c.get(f"/api/bookings/{ref}/cancellation/").json()["total_refund"])
 
     def test_refund_tiers_follow_the_snapshotted_policy(self):
@@ -470,6 +477,12 @@ class CancellationTests(BookingTestBase, TestCase):
         self.assertEqual(self.refund_for(2.01)[1], Decimal("3.50"))
         self.assertEqual(self.refund_for(1.5)[1], Decimal("0.00"))
         self.assertEqual(self.refund_for(-1)[1], Decimal("0.00"))      # already departed
+
+    def test_snapshot_time_alone_does_not_override_the_published_cutoff(self):
+        ref = confirmed_booking(self.c, self.dep)
+        original = self.c.get(f"/api/bookings/{ref}/cancellation/").json()["total_refund"]
+        BookingLeg.objects.filter(booking__reference=ref).update(departs_at=timezone.now()-timedelta(hours=1))
+        self.assertEqual(self.c.get(f"/api/bookings/{ref}/cancellation/").json()["total_refund"], original)
 
     def test_tier_boundaries_are_inclusive(self):
         ref = confirmed_booking(self.c, self.dep)
@@ -482,17 +495,17 @@ class CancellationTests(BookingTestBase, TestCase):
 
     def test_refund_rounds_half_up_to_cents(self):
         ref = confirmed_booking(self.c, self.dep, passengers=1)
-        depart_in(ref, 5)
+        self.published_depart_in(ref, 5)
         BookingLeg.objects.filter(booking__reference=ref).update(unit_price=Decimal("7.05"))  # 50% = 3.525
         self.assertEqual(self.c.get(f"/api/bookings/{ref}/cancellation/").json()["total_refund"], "3.53")
 
     def test_cancel_refunds_frees_places_and_records_everything(self):
         ref = confirmed_booking(self.c, self.dep, passengers=2)
-        depart_in(ref, 48)
+        self.published_depart_in(ref, 48)
         res = self.cancel(ref)
         self.assertEqual(res.status_code, 200, res.content)
         b = res.json()
-        self.assertEqual((b["status"], b["refunds"][0]["amount"], b["refunds"][0]["status"]), ("cancelled", "14.00", "completed"))
+        self.assertEqual((b["status"], b["refunds"][0]["amount"], b["refunds"][0]["status"]), ("cancelled", "14.00", "requested"))
         self.assertEqual(self.fresh().places_taken, 0)
         self.assertEqual(Reservation.objects.get().status, "released")
         from apps.core.models import AuditRecord
@@ -502,7 +515,7 @@ class CancellationTests(BookingTestBase, TestCase):
 
     def test_repeated_cancellation_never_refunds_twice(self):
         ref = confirmed_booking(self.c, self.dep)
-        depart_in(ref, 48)
+        self.published_depart_in(ref, 48)
         for _ in range(3):
             self.assertEqual(self.cancel(ref).status_code, 200)
         self.assertEqual(Refund.objects.filter(booking__reference=ref).count(), 1)
@@ -518,9 +531,9 @@ class CancellationTests(BookingTestBase, TestCase):
 
     def test_refund_changed_between_quote_and_cancel_is_rejected(self):
         ref = confirmed_booking(self.c, self.dep)
-        depart_in(ref, 48)
+        self.published_depart_in(ref, 48)
         quote = self.c.get(f"/api/bookings/{ref}/cancellation/").json()["total_refund"]
-        depart_in(ref, 5)  # time passes: the tier drops
+        self.published_depart_in(ref, 5)  # time passes: the tier drops
         res = self.cancel(ref, expected_refund=quote)
         self.assertEqual((res.status_code, res.json()["code"]), (409, "refund_changed"))
         self.assertEqual(Booking.objects.get(reference=ref).status, "confirmed")
@@ -530,9 +543,11 @@ class CancellationTests(BookingTestBase, TestCase):
         it, payload = pick_chain(self.c, "NG-BUS", "PM-MARINA", ["bus", "train", "taxi"])
         ref = checkout(self.c, payload).json()["reference"]
         pay(self.c, ref)
-        # 5h before: bus/train (standard) 50%, taxi (free until 1h before) 100%.
-        BookingLeg.objects.filter(booking__reference=ref).update(departs_at=timezone.now() + timedelta(hours=5))
-        q = self.c.get(f"/api/bookings/{ref}/cancellation/").json()
+        # Five hours before the first published departure: both standard fares are in their partial window.
+        from unittest.mock import patch
+        first = BookingLeg.objects.filter(booking__reference=ref).order_by("sequence").first()
+        with patch("apps.bookings.services.timezone.now", return_value=first.departs_at-timedelta(hours=5)):
+            q = self.c.get(f"/api/bookings/{ref}/cancellation/").json()
         self.assertEqual([l["percent"] for l in q["lines"]], [50, 50, 100])
         expected = Decimal(it["legs"][0]["unit_price"]) / 2 + Decimal(it["legs"][1]["unit_price"]) / 2 + Decimal("14.00")
         self.assertEqual(Decimal(q["total_refund"]), expected.quantize(Decimal("0.01")))

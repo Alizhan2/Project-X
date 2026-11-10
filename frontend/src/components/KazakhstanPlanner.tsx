@@ -56,7 +56,7 @@ export default function KazakhstanPlanner({ cities, search, today }: { cities: C
     const ctrl = new AbortController(); controller.current = ctrl; setBusy(true)
     try {
       if (action === 'search') {
-        await request('GET', `/api/kazakhstan/search/${sharePath(values).slice('/kazakhstan'.length)}`, undefined, { signal: ctrl.signal })
+        await request('GET', `/api/kazakhstan/search/${sharePath(values).slice(1)}`, undefined, { signal: ctrl.signal })
         setMessage('Real ticket sales are not yet available.')
       } else {
         const plan = await request<Plan>(editing ? 'PUT' : 'POST', `/api/kazakhstan/plans/${editing ? `${editing}/` : ''}`, { ...values, note }, { signal: ctrl.signal })

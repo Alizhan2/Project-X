@@ -5,7 +5,7 @@ import type { Itinerary } from '../api'
 import { explainDifference } from '../comparison'
 import { clock, dayLabel, duration, money } from '../format'
 
-export default function JourneyComparison({ options, remove, clear, arriveBy }: { options: Itinerary[]; remove: (key: string) => void; clear: () => void; arriveBy?: string }) {
+export default function JourneyComparison({ options, remove, clear, arriveBy, wheelchairRequired = false }: { options: Itinerary[]; remove: (key: string) => void; clear: () => void; arriveBy?: string; wheelchairRequired?: boolean }) {
   useLanguage()
   if (!options.length) return null
   return <section className="comparison card" aria-labelledby="comparison-heading">
@@ -24,7 +24,7 @@ export default function JourneyComparison({ options, remove, clear, arriveBy }: 
         <dt>{t("Cancellation policies")}</dt><dd>{[...new Set(it.legs.map(l => t(l.cancellation_policy)))].join('; ')}</dd>
       </dl>
       {index > 0 && <ul className="comparison-facts" aria-label={t("Option {0} differences", {0: index + 1})}>{explainDifference(it, options[0]).map(fact => <li key={t(fact)}>{t(fact)}</li>)}</ul>}
-      <div className="actions"><Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price, ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>{t("View option")} {index + 1}</Link><button className="link" onClick={() => remove(it.legs_param)}>{t("Remove option")} {index + 1}</button></div>
+      <div className="actions"><Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price, wheelchair_required: String(wheelchairRequired), ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>{t("View option")} {index + 1}</Link><button className="link" onClick={() => remove(it.legs_param)}>{t("Remove option")} {index + 1}</button></div>
     </article>)}</div>
     <p className="small muted">{t("Connection buffers are timetable margins, not predictions of punctuality. Prices and availability are checked again before booking. Changing the search clears this comparison.")}</p>
   </section>

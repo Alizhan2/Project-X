@@ -182,7 +182,9 @@ class TransferLink(models.Model):
 
     from_stop = models.ForeignKey(Stop, on_delete=models.CASCADE, related_name="transfers_out")
     to_stop = models.ForeignKey(Stop, on_delete=models.CASCADE, related_name="transfers_in")
-    minutes = models.PositiveSmallIntegerField()
+    minutes = models.PositiveSmallIntegerField(help_text="Walking time between stops")
+    boarding_buffer_minutes = models.PositiveSmallIntegerField(default=0)
+    step_free = models.BooleanField(null=True, blank=True, help_text="Unknown paths cannot satisfy strict accessibility")
 
     class Meta:
         constraints = [

@@ -255,7 +255,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Booking / background work
-RESERVATION_MINUTES = env_int("RESERVATION_MINUTES", 10)
+RESERVATION_MINUTES = env_int("RESERVATION_MINUTES", 5)
 JOB_LOCK_TIMEOUT_SECONDS = env_int("JOB_LOCK_TIMEOUT_SECONDS", 60)
 WORKER_STALE_SECONDS = env_int("WORKER_STALE_SECONDS", 60)       # readiness: no worker heartbeat for this long = degraded
 DEMO_SCHEDULE_DAYS = env_int("DEMO_SCHEDULE_DAYS", 0)           # >0: the worker keeps a hosted demo's synthetic timetable this many days ahead

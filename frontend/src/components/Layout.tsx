@@ -31,7 +31,8 @@ export default function Layout() {
   const nav = useNavigate()
   const cfg = useConfig()
   const [menuOpen, setMenuOpen] = useState(false)
-  const isKazakhstan = useLocation().pathname === '/kazakhstan'
+  const pathname = useLocation().pathname
+  const isKazakhstan = pathname === '/' || pathname === '/kazakhstan'
   const { unread } = useNotifications()
   const online = useOnline()
   return (
@@ -48,8 +49,8 @@ export default function Layout() {
         </label>
         <ThemeToggle />
         <nav id="main-navigation" aria-label={t("Main")} data-open={menuOpen} onClick={e => { if (e.target instanceof Element && e.target.closest('a')) setMenuOpen(false) }}>
-          <NavLink to="/" end>{t("Search")}</NavLink>
-          <NavLink to="/kazakhstan">{t("Kazakhstan")}</NavLink>
+          <NavLink to="/" end>{t("Kazakhstan")}</NavLink>
+          <NavLink to="/demo">{t("Demo journeys")}</NavLink>
           <NavLink to="/journeys">{t("My journeys")}</NavLink>
           {user && <NavLink to="/alerts">{t("Alerts")}</NavLink>}
           {user && (

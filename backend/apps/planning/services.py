@@ -20,7 +20,9 @@ from decimal import Decimal
 from django.conf import settings
 from django.utils import timezone
 
-from apps.transport.models import Departure, Fare, RouteStop, Stop, TaxiOffer, TransferLink
+from apps.transport.models import Departure, Fare, RouteStop, Stop, TaxiOffer
+
+from .transfers import (assess_connection, connection_accessible, leg_accessible, load_transfer_rules, transfer_minutes)
 
 SEARCH_WINDOW = timedelta(hours=24)
 MAX_PASSENGERS = 9
@@ -106,8 +108,10 @@ class Leg:
 class Itinerary:
     legs: list[Leg]
     passengers: int
-    # Spare minutes at each connection into a fixed-time service (see `_buffers`); empty for direct journeys.
+    # Legacy fixed-service buffers; connections below retain every pair, including on-demand taxis.
     buffers: list[int] | None = None
+    connections: list[dict] | None = None
+    wheelchair_required: bool = False
 
     @property
     def currency(self):
@@ -152,31 +156,11 @@ class Itinerary:
         return ",".join(l.token for l in self.legs)
 
 
-def transfer_minutes(net_transfers: dict, a: Stop, b: Stop):
-    """Required minutes to change from stop a to stop b, or None if no connection is modelled."""
-    if a.pk == b.pk:
-        return settings.MIN_SAME_STOP_TRANSFER_MIN
-    return net_transfers.get((a.pk, b.pk))
-
-
-def _buffers(legs, transfers) -> list[int]:
-    """Spare minutes per connection: (next departure - arrival) - required transfer time.
-
-    Only connections into fixed-time services (bus/train) count: a taxi leaves when the passenger is ready, so
-    there is nothing to miss. This is a plain time difference, not a measured probability of making the connection.
-    """
-    out = []
-    for a, b in zip(legs, legs[1:]):
-        if b.taxi:
-            continue
-        need = transfer_minutes(transfers, a.to_stop, b.from_stop) or 0
-        out.append(int((b.departs_at - a.arrives_at).total_seconds() // 60) - need)
-    return out
-
-
-def make_itinerary(legs, passengers, transfers) -> Itinerary:
-    it = Itinerary(legs, passengers)
-    it.buffers = _buffers(legs, transfers)
+def make_itinerary(legs, passengers, transfers, *, wheelchair_required=False) -> Itinerary:
+    it = Itinerary(legs, passengers, wheelchair_required=wheelchair_required)
+    it.connections = [assess_connection(a.to_stop, b.from_stop, a.arrives_at, b.departs_at, transfers,
+                                        on_demand=b.taxi is not None) for a, b in zip(legs, legs[1:])]
+    it.buffers = [c["margin_minutes"] for c in it.connections if c["status"] != "on_demand" and c["margin_minutes"] is not None]
     return it
 
 
@@ -202,7 +186,7 @@ class Network:
         )
         for d in qs:
             self.departures.setdefault(d.route_id, []).append(d)
-        self.transfers = {(t.from_stop_id, t.to_stop_id): t.minutes for t in TransferLink.objects.all()}
+        self.transfers = load_transfer_rules()
         self.taxis: dict[int, list[TaxiOffer]] = {}
         for t in TaxiOffer.objects.select_related("operator", "policy"):
             self.taxis.setdefault(t.from_stop_id, []).append(t)
@@ -237,7 +221,8 @@ def _taxi_leg(offer: TaxiOffer, from_stop: Stop, to_stop: Stop, ready: datetime,
 def search(origin: Stop, destination: Stop, depart_after: datetime, passengers: int, sort: str = "departure",
            now: datetime | None = None, *, max_legs: int = MAX_LEGS, window: timedelta = SEARCH_WINDOW,
            walk_from_start: bool = False, latest_arrival: datetime | None = None,
-           modes: frozenset[str] | None = None, max_connection_minutes: int | None = None) -> list[Itinerary]:
+           modes: frozenset[str] | None = None, max_connection_minutes: int | None = None,
+           wheelchair_required: bool = False) -> list[Itinerary]:
     """`max_legs`, `window`, `walk_from_start` and `latest_arrival` serve disruption recovery: the passenger is
     already at `origin` (and may first walk via a TransferLink), has fewer legs left, and wants to arrive by a deadline."""
     if origin.pk == destination.pk:
@@ -246,6 +231,7 @@ def search(origin: Stop, destination: Stop, depart_after: datetime, passengers: 
     now = now or timezone.now()
     window_end = depart_after + window
     net = Network(depart_after, window_end)
+    origin, destination = net.stops[origin.pk], net.stops[destination.pk]
     found: dict[tuple, Itinerary] = {}
     earliest = max(depart_after, now)
     max_total = timedelta(hours=settings.MAX_JOURNEY_HOURS)
@@ -256,7 +242,7 @@ def search(origin: Stop, destination: Stop, depart_after: datetime, passengers: 
         if latest_arrival is not None and legs[-1].arrives_at > latest_arrival:
             return
         key = tuple(l.key for l in legs)
-        found.setdefault(key, make_itinerary(list(legs), passengers, net.transfers))
+        found.setdefault(key, make_itinerary(list(legs), passengers, net.transfers, wheelchair_required=wheelchair_required))
 
     def options_from(stop: Stop, ready: datetime, first: bool):
         """Yield candidate next legs leaving `stop` no earlier than `ready`."""
@@ -292,7 +278,7 @@ def search(origin: Stop, destination: Stop, depart_after: datetime, passengers: 
         for leg in options_from(stop, ready, first):
             if legs and max_connection_minutes is not None and leg.departs_at - legs[-1].arrives_at > timedelta(minutes=max_connection_minutes):
                 continue
-            if leg.mode not in modes:
+            if leg.mode not in modes or (wheelchair_required and not leg_accessible(leg)):
                 continue
             if leg.to_stop.pk in visited:
                 continue
@@ -308,13 +294,13 @@ def search(origin: Stop, destination: Stop, depart_after: datetime, passengers: 
             # Continue at the same stop, or after an explicit transfer to another stop.
             extend(leg.to_stop, leg.arrives_at + timedelta(minutes=settings.MIN_SAME_STOP_TRANSFER_MIN), new_legs, seen, False)
             for (a, b), minutes in net.transfers.items():
-                if a == leg.to_stop.pk and b not in seen:
+                if a == leg.to_stop.pk and b not in seen and (not wheelchair_required or connection_accessible(net.transfers, leg.to_stop, net.stops[b])):
                     extend(net.stops[b], leg.arrives_at + timedelta(minutes=minutes), new_legs, seen | {b}, False)
 
     extend(origin, earliest, [], frozenset({origin.pk}), True)
     if walk_from_start:
         for (a, b), minutes in net.transfers.items():
-            if a == origin.pk and b != destination.pk:
+            if a == origin.pk and b != destination.pk and (not wheelchair_required or connection_accessible(net.transfers, origin, net.stops[b])):
                 extend(net.stops[b], earliest + timedelta(minutes=minutes), [], frozenset({origin.pk, b}), True)
     results = sorted(found.values(), key=SORTS[sort])
     return results[:MAX_RESULTS]
@@ -335,7 +321,7 @@ SORTS = {
 
 
 def search_arrive_by(origin, destination, arrive_by, passengers, sort="latest_departure",
-                     now=None, *, max_legs=MAX_LEGS, modes=None, max_connection_minutes=None):
+                     now=None, *, max_legs=MAX_LEGS, modes=None, max_connection_minutes=None, wheelchair_required=False):
     """Bounded reverse search, then forward replay using the existing on-demand taxi rules.
 
     First departure is within the 24 hours before the deadline and still in the future.
@@ -387,7 +373,7 @@ def search_arrive_by(origin, destination, arrive_by, passengers, sort="latest_de
             return
         if legs[-1].arrives_at - legs[0].departs_at > timedelta(hours=settings.MAX_JOURNEY_HOURS):
             return
-        found.setdefault(tuple(l.key for l in legs), make_itinerary(legs, passengers, net.transfers))
+        found.setdefault(tuple(l.key for l in legs), make_itinerary(legs, passengers, net.transfers, wheelchair_required=wheelchair_required))
 
     def incoming(stop, deadline, terminal):
         for rid, idx in net.stops_at.get(stop.pk, []):
@@ -427,6 +413,8 @@ def search_arrive_by(origin, destination, arrive_by, passengers, sort="latest_de
 
     def extend(stop, deadline, legs, visited):
         for leg in incoming(stop, deadline, not legs):
+            if wheelchair_required and not leg_accessible(leg):
+                continue
             if leg.from_stop.pk in visited:
                 continue
             reverse_legs = legs + [leg]
@@ -440,7 +428,7 @@ def search_arrive_by(origin, destination, arrive_by, passengers, sort="latest_de
             taxi_wait = leg.taxi.pickup_wait_min if leg.taxi else 0
             extend(leg.from_stop, leg.departs_at - timedelta(minutes=settings.MIN_SAME_STOP_TRANSFER_MIN + taxi_wait), reverse_legs, seen)
             for (a, b), minutes in net.transfers.items():
-                if b == leg.from_stop.pk and a not in seen:
+                if b == leg.from_stop.pk and a not in seen and (not wheelchair_required or connection_accessible(net.transfers, net.stops[a], leg.from_stop)):
                     extend(net.stops[a], leg.departs_at - timedelta(minutes=minutes + taxi_wait), reverse_legs, seen | {a})
 
     extend(destination, arrive_by, [], frozenset({destination.pk}))
@@ -449,7 +437,7 @@ def search_arrive_by(origin, destination, arrive_by, passengers, sort="latest_de
 
 # ---------------------------------------------------------------------------------------- validation
 
-def build_itinerary(selection: list[dict], passengers: int, now: datetime, previous: Leg | None = None) -> Itinerary:
+def build_itinerary(selection: list[dict], passengers: int, now: datetime, previous: Leg | None = None, *, wheelchair_required: bool = False) -> Itinerary:
     """Recompute an itinerary from current database state for the selected legs (used at checkout).
 
     Items: {"departure_id", "from_stop", "to_stop"} for bus/train or {"taxi_offer_id", "from_stop", "to_stop",
@@ -463,7 +451,7 @@ def build_itinerary(selection: list[dict], passengers: int, now: datetime, previ
         raise OfferError("invalid_leg", "No legs selected.")
     if len(selection) > MAX_LEGS:
         raise OfferError("invalid_leg", f"A journey has at most {MAX_LEGS} legs.")
-    transfers = {(t.from_stop_id, t.to_stop_id): t.minutes for t in TransferLink.objects.all()}
+    transfers = load_transfer_rules()
     legs: list[Leg] = []
     for i, item in enumerate(selection):
         origin = Stop.objects.filter(code=item["from_stop"]).first()
@@ -483,8 +471,10 @@ def build_itinerary(selection: list[dict], passengers: int, now: datetime, previ
             leg = _build_service(item, origin, dest, now)
         if ready is not None and leg.departs_at < ready + timedelta(minutes=leg.taxi.pickup_wait_min if leg.taxi else 0):
             raise OfferError("connection_missed", "The connection is no longer possible: the previous service arrives too late.")
+        if wheelchair_required and (not leg_accessible(leg) or (prev is not None and not connection_accessible(transfers, prev.to_stop, origin))):
+            raise OfferError("accessibility_unavailable", "The vehicle, stops or transfer path are not confirmed accessible.")
         legs.append(leg)
-    return make_itinerary(legs, passengers, transfers)
+    return make_itinerary(legs, passengers, transfers, wheelchair_required=wheelchair_required)
 
 
 def _build_service(item, origin, dest, now) -> Leg:

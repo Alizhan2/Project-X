@@ -5,6 +5,8 @@ from django.test import TestCase
 from apps.bookings.tests import BookingTestBase, body, checkout, client_for, confirmed_booking, depart_in, make_user, pay
 from apps.disruptions.tests import chain_booking, change, make_operator_user
 from apps.transport.models import Departure
+from apps.payments.models import Refund
+from apps.payments.services import process_refund
 
 
 def titles(client, ref):
@@ -37,10 +39,14 @@ class ActivityTests(BookingTestBase, TestCase):
         kinds = [e["kind"] for e in events]
         self.assertEqual(kinds[:2], ["reserved", "payment"])
         self.assertIn("journey_disrupted", kinds)
-        self.assertEqual(kinds[-2:], ["refund", "cancelled"])   # same instant: the refund is listed before the cancellation it belongs to
+        self.assertEqual(kinds[-2:], ["cancelled", "refund"])
         self.assertEqual([e["at"] for e in events], sorted(e["at"] for e in events))
         refund = next(e for e in events if e["kind"] == "refund")
-        self.assertEqual(refund["title"], "Refund issued (simulated)")
+        self.assertEqual(refund["title"], "Refund requested (simulated)")
+        process_refund(Refund.objects.get(booking__reference=ref).pk)
+        events = self.c.get(f"/api/bookings/{ref}/").json()["activity"]
+        self.assertEqual(events[-1]["title"], "Refund issued (simulated)")
+        self.assertEqual([e["at"] for e in events], sorted(e["at"] for e in events))
 
     def test_activity_contains_no_personal_data(self):
         ref = confirmed_booking(self.c, self.dep)

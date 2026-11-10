@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test'
 test.skip(!process.env.PWA_PREVIEW, 'needs a production build (vite preview)')
 
 test('manifest is valid and installable metadata is present', async ({ page, request }) => {
-  await page.goto('/')
+  await page.goto('/demo')
   await expect(page.locator('link[rel=manifest]')).toHaveAttribute('href', '/manifest.webmanifest')
   const manifest = await (await request.get('/manifest.webmanifest')).json()
   expect(manifest.display).toBe('standalone')
@@ -16,7 +16,7 @@ test('manifest is valid and installable metadata is present', async ({ page, req
 })
 
 test('the app shell loads offline, and no API data is ever cached', async ({ page, context }) => {
-  await page.goto('/')
+  await page.goto('/demo')
   await page.evaluate(() => navigator.serviceWorker.ready)
   await page.reload()                                           // now controlled by the worker
   await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()

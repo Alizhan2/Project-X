@@ -1,7 +1,7 @@
 import { placeName, t } from '../i18n'
 import { useLanguage } from '../useLanguage'
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, fetchStops, searchJourneys, type SearchResponse, type Stop } from '../api'
 import ResultCard from '../components/ResultCard'
 import SearchForm from '../components/SearchForm'
@@ -63,6 +63,7 @@ export default function Search() {
       modes: params.get('modes') ?? 'bus,train,taxi',
       max_transfers: params.get('max_transfers') ?? 'any',
       max_connection_minutes: params.get('max_connection_minutes') ?? '',
+      wheelchair_required: params.get('wheelchair_required') ?? 'false',
     }
   }, [params])
 
@@ -105,24 +106,28 @@ export default function Search() {
 
   return (
     <>
+      <aside className="email-notice"><strong>{t("Demo journeys")}</strong> · {t("Fictional stops, EUR and Europe/Berlin time. No real tickets.")} <Link to="/">{t("Plan a journey in Kazakhstan")}</Link></aside>
       {!query ? <JourneyHero /> : <header className="search-results-heading"><h1>{t('Choose your journey')}</h1>{results.kind === 'done' && <span className="badge">{t('{0} journeys', {0: shown.length})}</span>}</header>}
       <UpcomingJourney />
       {params.get("repeat") === "1" && <p className="email-notice">{t("A new search for this direction. Choose your travel date; prices and availability are current. No previous booking is changed.")}</p>}
       {stopsError && <p className="status-bad" role="alert">{t("Could not load stops:")} {t(stopsError)}</p>}
       {query && <div className="search-summary"><div><strong>{placeName(stops?.find(s => s.code === params.get('origin'))?.name ?? params.get('origin') ?? '')} → {placeName(stops?.find(s => s.code === params.get('destination'))?.name ?? params.get('destination') ?? '')}</strong><p>{params.get('date')} · {arrivalMode ? t('Arrive by') : t('Depart after')} {params.get('time') ?? '06:00'} · {t('For {0} passenger(s)', {0: params.get('passengers') ?? '1'})}</p></div><button type="button" className="secondary" aria-expanded={editing} aria-controls="journey-search" onClick={() => setEditing(!editing)}>{t('Change search')}</button></div>}
       <div id="journey-search" hidden={!!query && !editing && results.kind !== 'error'}>
-      <SearchForm key={JSON.stringify(['origin', 'destination', 'date', 'time', 'passengers', 'time_mode'].map(k => params.get(k)))} params={params} setParams={setParams} stops={stops} fieldErr={fieldErr} />
+      <SearchForm key={JSON.stringify(['origin', 'destination', 'date', 'time', 'passengers', 'time_mode', 'wheelchair_required'].map(k => params.get(k)))} params={params} setParams={setParams} stops={stops} fieldErr={fieldErr} />
       </div>
       {!query && <JourneyBenefits />}
 
       {query && <>
-      {!arrivalMode && <DayStrip origin={query.origin} destination={query.destination} date={params.get('date') ?? today()} time={params.get('time') ?? '06:00'} passengers={query.passengers} modes={query.modes} onPick={date => changeParam('date', date)} />}
-      {!arrivalMode && results.kind === 'done' && <WatchPrompt search={watchSearch!} cheapest={cheapest ? { price: cheapest.total_price, currency: cheapest.currency } : null} />}
-      <JourneyComparison arriveBy={arriveBy} options={compared.flatMap(key => shown.filter(it => it.legs_param === key))} remove={key => setCompared(old => old.filter(k => k !== key))} clear={() => setCompared(() => [])} />
+      {!arrivalMode && params.get('wheelchair_required') !== 'true' && <DayStrip origin={query.origin} destination={query.destination} date={params.get('date') ?? today()} time={params.get('time') ?? '06:00'} passengers={query.passengers} modes={query.modes} onPick={date => changeParam('date', date)} />}
+      {!arrivalMode && params.get('wheelchair_required') !== 'true' && results.kind === 'done' && <WatchPrompt search={watchSearch!} cheapest={cheapest ? { price: cheapest.total_price, currency: cheapest.currency } : null} />}
+      <JourneyComparison wheelchairRequired={params.get("wheelchair_required") === "true"} arriveBy={arriveBy} options={compared.flatMap(key => shown.filter(it => it.legs_param === key))} remove={key => setCompared(old => old.filter(k => k !== key))} clear={() => setCompared(() => [])} />
 
       <div className="search-workspace">
       <section id="journey-filters" data-open={filtersOpen} className="search-filters" aria-label={t("Journey filters")}>
         <h2>{t('Filters')}</h2>
+        <label className="check"><input type="checkbox" checked={params.get('wheelchair_required') === 'true'} onChange={e => changeParam('wheelchair_required', String(e.target.checked))} />{t("Require a fully step-free journey")}</label>
+        <p className="small muted">{t("Only confirmed accessible vehicles, stops and transfer paths. Unknown accessibility is excluded.")}</p>
+        {err('wheelchair_required')}
         <fieldset><legend>{t("Transport")}</legend><div className="mode-options">{['bus', 'train', 'taxi'].map(mode => <label key={mode}>
           <input type="checkbox" checked={modes.split(',').includes(mode)} disabled={modes === mode} onChange={e => {
             const next = e.target.checked ? [...modes.split(','), mode] : modes.split(',').filter(m => m !== mode)
@@ -179,7 +184,7 @@ export default function Search() {
               </div>
             ) : (
               <ul className="result-list">
-                {shown.map((it, index) => <ResultCard key={it.legs_param} it={it} arriveBy={arriveBy} comparison={{
+                {shown.map((it, index) => <ResultCard wheelchairRequired={params.get("wheelchair_required") === "true"} key={it.legs_param} it={it} arriveBy={arriveBy} comparison={{
                   label: t("Compare journey {0}", {0: index + 1}), selected: compared.includes(it.legs_param), disabled: compared.length >= 3 && !compared.includes(it.legs_param),
                   toggle: () => setCompared(old => old.includes(it.legs_param) ? old.filter(k => k !== it.legs_param) : old.length < 3 ? [...old, it.legs_param] : old),
                 }} />)}

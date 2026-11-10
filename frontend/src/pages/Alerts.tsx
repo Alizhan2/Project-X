@@ -26,7 +26,7 @@ export default function Alerts() {
         <>
           <p className="muted">{t('You can have up to {0} active alerts.', { 0: data.max_active })} {t('Alerts only notify you. They do not hold places or prices, and everything here is simulated.')}</p>
           <h2>{t('Journey alerts')}</h2>
-          {data.results.length === 0 && <div className="card empty"><p><strong>{t('No alerts yet.')}</strong></p><p className="muted">{t('Search for a journey and choose "Notify me" under the results.')}</p><Link to="/">{t('Search for a journey')}</Link></div>}
+          {data.results.length === 0 && <div className="card empty"><p><strong>{t('No alerts yet.')}</strong></p><p className="muted">{t('Search for a journey and choose "Notify me" under the results.')}</p><Link to="/demo">{t('Search for a journey')}</Link></div>}
           <ul className="result-list">
             {data.results.map(w => (
               <li key={w.id} className="card alert-item">

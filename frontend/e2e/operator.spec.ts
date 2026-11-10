@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test'
 // Requires freshly seeded demo data (`manage.py seed_demo`): the delay applied here persists.
 const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD ?? 'doedu-demo-2026'
 
-test('operator delay breaks a passenger connection; passenger is notified and cancels with a full refund', async ({ browser }) => {
+test('operator delay breaks a connection; passenger reviews policy-based refund and cancels', async ({ browser }) => {
   // ---- passenger books Bus VC1 12:00 -> Train DR1 -> Taxi (40 min to spare at the tight connection)
   const pCtx = await browser.newContext()
   const passenger = await pCtx.newPage()
@@ -50,7 +50,7 @@ test('operator delay breaks a passenger connection; passenger is notified and ca
   await passenger.getByRole('link', { name: `Open booking ${ref}` }).first().click()
   await expect(passenger.getByRole('heading', { name: 'Your journey is disrupted' })).toBeVisible()
   await passenger.getByRole('button', { name: 'Cancel this journey…' }).click()
-  await expect(passenger.getByText('refunded in full')).toBeVisible()
+  await expect(passenger.getByRole('region', { name: 'Cancellation and refund' }).getByText('A delay alone does not guarantee a full refund. The cancellation policy saved at purchase applies.')).toBeVisible()
   const total = (await passenger.getByTestId('quote-total').innerText())
   await passenger.getByRole('button', { name: 'Confirm cancellation' }).click()
   await expect(passenger.getByTestId('refund')).toContainText('Cancelled after disruption')

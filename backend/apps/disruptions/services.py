@@ -18,7 +18,8 @@ from apps.core.models import AuditRecord
 from apps.notifications.services import notify
 from apps.notifications.follows import notify_followers
 from apps.notifications.watches import schedule_evaluation
-from apps.transport.models import Departure, RouteStop, TransferLink
+from apps.transport.models import Departure, RouteStop
+from apps.planning.transfers import assess_connection, load_transfer_rules, transfer_minutes
 
 from .models import DisruptionEvent
 
@@ -50,10 +51,11 @@ class Assessment:
     problem_sequence: int | None = None
     legs: list[LiveLeg] = field(default_factory=list)
     arrival_delay_minutes: int = 0
+    connections: list[dict] = field(default_factory=list)
 
 
 def _transfer_map():
-    return {(t.from_stop_id, t.to_stop_id): t.minutes for t in TransferLink.objects.all()}
+    return load_transfer_rules()
 
 
 def live_legs(booking, overrides=None, transfers=None) -> list[LiveLeg]:
@@ -61,7 +63,7 @@ def live_legs(booking, overrides=None, transfers=None) -> list[LiveLeg]:
     overrides = overrides or {}
     transfers = transfers if transfers is not None else _transfer_map()
     out: list[LiveLeg] = []
-    for leg in booking.legs.select_related("departure", "taxi_offer").order_by("sequence"):
+    for leg in booking.legs.select_related("departure", "taxi_offer", "from_stop", "to_stop").order_by("sequence"):
         if leg.status != BookingLeg.Status.BOOKED:
             continue
         if leg.departure_id:
@@ -78,13 +80,21 @@ def live_legs(booking, overrides=None, transfers=None) -> list[LiveLeg]:
             offer = leg.taxi_offer
             if out:
                 prev = out[-1]
-                need = settings.MIN_SAME_STOP_TRANSFER_MIN if prev.leg.to_stop_id == leg.from_stop_id else transfers.get((prev.leg.to_stop_id, leg.from_stop_id), 0)
+                need = transfer_minutes(transfers, prev.leg.to_stop, leg.from_stop)
+                if need is None:
+                    out.append(LiveLeg(leg, leg.departs_at, leg.arrives_at, taxi_unavailable=True))
+                    continue
                 pickup = prev.arrives_at + timedelta(minutes=need + offer.pickup_wait_min)
             else:
                 pickup = leg.departs_at
-            local = timezone.localtime(pickup).time()
-            out.append(LiveLeg(leg, pickup, pickup + timedelta(minutes=offer.ride_min),
-                               taxi_unavailable=not (offer.service_start <= local <= offer.service_end)))
+            # Use the same service-opening wait as search and checkout.
+            from apps.planning.services import _taxi_leg
+            ready = pickup - timedelta(minutes=offer.pickup_wait_min)
+            latest_pickup = ready + timedelta(minutes=settings.MAX_TRANSFER_WAIT_MIN) if out else None
+            current = _taxi_leg(offer, leg.from_stop, leg.to_stop, ready, booking.passengers, latest_pickup)
+            out.append(LiveLeg(leg, current.departs_at if current else pickup,
+                               current.arrives_at if current else pickup + timedelta(minutes=offer.ride_min),
+                               taxi_unavailable=current is None))
     return out
 
 
@@ -92,6 +102,9 @@ def assess(booking, overrides=None, transfers=None) -> Assessment:
     transfers = transfers if transfers is not None else _transfer_map()
     legs = live_legs(booking, overrides, transfers)
     a = Assessment(booking=booking, status="ok", legs=legs)
+    a.connections = [assess_connection(prev.leg.to_stop, nxt.leg.from_stop, prev.arrives_at, nxt.departs_at,
+                                       transfers, on_demand=nxt.leg.taxi_offer_id is not None)
+                     for prev, nxt in zip(legs, legs[1:])]
     for i, ll in enumerate(legs):
         if ll.cancelled:
             a.status, a.reason, a.problem_sequence = "broken", "service_cancelled", ll.leg.sequence
@@ -100,9 +113,7 @@ def assess(booking, overrides=None, transfers=None) -> Assessment:
             a.status, a.reason, a.problem_sequence = "broken", "taxi_unavailable", ll.leg.sequence
             break
         if i > 0 and ll.leg.departure_id:
-            prev = legs[i - 1]
-            need = settings.MIN_SAME_STOP_TRANSFER_MIN if prev.leg.to_stop_id == ll.leg.from_stop_id else transfers.get((prev.leg.to_stop_id, ll.leg.from_stop_id), 0)
-            if ll.departs_at < prev.arrives_at + timedelta(minutes=need):
+            if a.connections[i - 1]["status"] == "infeasible":
                 a.status, a.reason, a.problem_sequence = "broken", "connection_missed", ll.leg.sequence
                 break
     if a.status == "ok" and legs:
@@ -191,14 +202,14 @@ def apply_change(*, actor, departure_id, action, minutes=0):
                 if action == "cancel":
                     free_pending_booking(b.pk, reason="service_cancelled")
                     notify(b.user, "reservation_released", "Reservation released",
-                           f"{_describe('service_cancelled', label)} Your unpaid reservation {b.reference} was released; nothing was charged.",
+                           f"{_describe('service_cancelled', label)} Your unpaid reservation {b.reference} was released. Check payment history if an outcome is pending.",
                            b, f"event:{event.pk}:booking:{b.pk}")
                     affected += 1
                 continue
             if a.status == "broken":
                 jobs.enqueue("recover_booking", {"booking_id": b.pk, "event_id": event.pk}, dedupe_key=f"recover:{event.pk}:{b.pk}")
                 notify(b.user, "journey_disrupted", f"Your journey {b.reference} needs attention",
-                       f"{_describe(a.reason, label)} Open the booking to review replacement options or cancel for a full refund.",
+                       f"{_describe(a.reason, label)} Open the booking to review replacement options and the cancellation policy.",
                        b, f"event:{event.pk}:booking:{b.pk}")
                 affected += 1
             elif a.status == "delayed" and kind == DisruptionEvent.Kind.DELAY:

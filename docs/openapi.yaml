@@ -459,6 +459,51 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/bookings/{reference}/pay/reconcile/:
+    post:
+      operationId: bookings_pay_reconcile_create
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResolveIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResolveIn'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/bookings/{reference}/pdf/:
     get:
       operationId: bookings_pdf_retrieve
@@ -487,17 +532,85 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
-  /api/bookings/{reference}/replacements/:
-    get:
-      operationId: bookings_replacements_retrieve
-      description: Replacement options for a disrupted booking (refreshes them first).
-        Offers do not reserve places.
+  /api/bookings/{reference}/refunds/{refund_id}/retry/:
+    post:
+      operationId: bookings_refunds_retry_create
       parameters:
       - in: path
         name: reference
         schema:
           type: string
         required: true
+      - in: path
+        name: refund_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResolveIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResolveIn'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/bookings/{reference}/replacements/:
+    get:
+      operationId: bookings_replacements_retrieve
+      parameters:
+      - in: query
+        name: earliest_departure
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: latest_arrival
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: max_payment_now
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: origin
+        schema:
+          type: string
+          maxLength: 16
+          minLength: 1
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: wheelchair_required
+        schema:
+          type: boolean
       tags:
       - bookings
       security:
@@ -826,6 +939,11 @@ paths:
         name: passengers
         schema:
           type: integer
+      - in: query
+        name: wheelchair_required
+        schema:
+          type: boolean
+        description: Recheck strict accessibility against current data.
       tags:
       - itinerary
       security:
@@ -1442,6 +1560,12 @@ paths:
           - price
         description: Default departure for depart_after, latest_departure for arrive_by.
           Also price, duration and buffer.
+      - in: query
+        name: wheelchair_required
+        schema:
+          type: boolean
+        description: Require confirmed accessible vehicles, stops and transfer paths;
+          excludes unknown.
       tags:
       - search
       security:
@@ -1499,6 +1623,12 @@ paths:
         schema:
           type: string
         description: Earliest departure each day, HH:MM (default 00:00)
+      - in: query
+        name: wheelchair_required
+        schema:
+          type: boolean
+        description: Require confirmed accessible vehicles, stops and transfer paths;
+          excludes unknown.
       tags:
       - search
       security:
@@ -1662,15 +1792,19 @@ components:
     AcceptIn:
       type: object
       properties:
+        reconcile:
+          type: boolean
+          default: false
         outcome:
           allOf:
           - $ref: '#/components/schemas/OutcomeEnum'
           default: success
           description: |-
-            Simulator only (top-up payment).
+            Simulator only (full replacement payment).
 
             * `success` - success
             * `failure` - failure
+            * `pending` - pending
     ActionEnum:
       enum:
       - delay
@@ -1711,6 +1845,9 @@ components:
     CheckoutIn:
       type: object
       properties:
+        wheelchair_required:
+          type: boolean
+          default: false
         arrive_by:
           type: string
           format: date-time
@@ -1883,10 +2020,12 @@ components:
       enum:
       - success
       - failure
+      - pending
       type: string
       description: |-
         * `success` - success
         * `failure` - failure
+        * `pending` - pending
     PatchedFareIn:
       type: object
       properties:
@@ -1920,6 +2059,7 @@ components:
 
             * `success` - success
             * `failure` - failure
+            * `pending` - pending
       required:
       - outcome
     PlanInput:
@@ -2024,6 +2164,13 @@ components:
       - password
       - token
       - uid
+    ResolveIn:
+      type: object
+      properties:
+        outcome:
+          $ref: '#/components/schemas/OutcomeEnum'
+      required:
+      - outcome
     SearchResponse:
       type: object
       properties:

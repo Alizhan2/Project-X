@@ -8,7 +8,7 @@ async function register(page: Page, name: string) {
   await page.getByLabel('Email').fill(`cp-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`)
   await page.getByLabel('Password').fill('correct-horse-42')
   await page.getByRole('button', { name: 'Create account' }).click()
-  await expect(page.getByRole('button', { name: /Sign out|Menu/ }).first()).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'My journeys', exact: true })).toBeVisible()
 }
 
 async function startBooking(page: Page, passengers: number, time = '12:00') {
@@ -64,7 +64,7 @@ test('a multimodal journey explains what protects each change; the booking shows
   await expect(protection).toContainText(/Change at .*: \d+ min to spare\. If the earlier service arrives more than \d+ min late/)
   await expect(protection).toContainText('Taxi after')
   await expect(protection).toContainText('not a prediction of punctuality')
-  await expect(protection).toContainText('exact price difference')
+  await expect(protection).toContainText('the full payment required now and any separate eligible refund')
   await expect(protection).toContainText('simulated')
 
   await page.getByRole('link', { name: 'Continue to traveller details' }).click()

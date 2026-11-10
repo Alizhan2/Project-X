@@ -214,9 +214,21 @@ class ServiceChangeTests(BookingTestBase, TestCase):
         self.assertEqual((a.status, a.arrival_delay_minutes), ("delayed", 0))  # first leg is late but every connection holds
 
     def test_delay_pushing_a_taxi_pickup_outside_service_hours_breaks_the_journey(self):
-        train = Departure.objects.get(pk=Booking.objects.get(reference=self.ref).legs.get(sequence=1).departure_id)
-        a = dis.assess(Booking.objects.get(reference=self.ref), {train.pk: ("delayed", 12 * 60)})
+        from datetime import time
+        from apps.transport.models import TaxiOffer
+        booking = Booking.objects.get(reference=self.ref)
+        train = Departure.objects.get(pk=booking.legs.get(sequence=1).departure_id)
+        # Arrival becomes 02:30; a 07:00 opening exceeds the shared three-hour connection wait.
+        TaxiOffer.objects.filter(pk=booking.legs.get(sequence=2).taxi_offer_id).update(service_start=time(7))
+        a = dis.assess(booking, {train.pk: ("delayed", 12 * 60)})
         self.assertEqual((a.status, a.reason), ("broken", "taxi_unavailable"))
+
+    def test_delayed_taxi_waits_for_opening_within_the_connection_limit(self):
+        booking = Booking.objects.get(reference=self.ref)
+        train = Departure.objects.get(pk=booking.legs.get(sequence=1).departure_id)
+        a = dis.assess(booking, {train.pk: ("delayed", 12 * 60)})
+        self.assertEqual((a.status, a.reason), ("delayed", ""))
+        self.assertEqual(timezone.localtime(a.legs[-1].departs_at).strftime("%H:%M"), "05:00")
 
     def test_unpaid_reservation_on_a_cancelled_service_is_released(self):
         other = make_user("p2@example.com")

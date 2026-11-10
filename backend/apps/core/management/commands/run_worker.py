@@ -14,6 +14,7 @@ from django.core.management.base import BaseCommand
 from apps.core import jobs
 import apps.bookings.services  # noqa: F401  (registers job handlers)
 import apps.disruptions.recovery
+import apps.payments.services  # noqa: F401  (registers durable refund processing)
 import apps.notifications.watches
 
 

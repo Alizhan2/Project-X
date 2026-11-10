@@ -1,6 +1,6 @@
 # Doedu Kazakhstan
 
-The `/kazakhstan` page is a separate geographic catalogue and integration preparation area. Existing simulated itineraries, EUR bookings and Europe/Berlin demo timestamps are preserved. It does not sell tickets, make supplier requests, create reservations, or take payments.
+The home page `/` (with `/kazakhstan` kept as an alias) is the geographic catalogue and integration preparation area. The existing fictional booking network is explicitly labelled and lives at `/demo`. Existing simulated itineraries, EUR bookings and Europe/Berlin demo timestamps are preserved. It does not sell tickets, make supplier requests, create reservations, or take payments.
 
 ## Implemented
 
@@ -59,3 +59,7 @@ City filters match all three language variants and region names regardless of se
 Share links whitelist only `origin`, `destination`, `date`, `time`, `passengers`, and `modes`. They contain no note, user ID or plan ID and do not grant access to saved plans. Recipients can open the filled form without an account. Invalid link values fall back to defaults with a warning; dates in the past remain visible so the traveller can change them. Clipboard failure leaves a selectable link for manual copying. The link uses the current deployment origin: links from localhost are only usable on that machine; public sharing needs a hosted deployment.
 
 Validation for this increment: 235 backend tests, 12 frontend unit tests and 23 existing browser scenarios passed. Browser checks additionally exercised multilingual city lookup, swaps, shared-link reloads, sign-in return to the form, plan persistence/edit/repeat/delete, guest privacy, RU/KK labels and mobile layout. Guest-page WCAG A/AA automated checks found no violations.
+
+## Main navigation (November 2026)
+
+Kazakhstan is now the default entry point. Demo search is a separate navigation item; old root links containing fictional stop codes redirect to `/demo` preserving their query. Saved Kazakhstan plans and parameter-only share links remain compatible. No historic booking was converted to KZT and no synthetic Kazakhstan ticket inventory was created.

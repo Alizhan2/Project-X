@@ -21,8 +21,8 @@ from apps.transport import demo_data
 from apps.transport.models import Departure
 
 
-def offers(c, ref):
-    r = c.get(f"/api/bookings/{ref}/replacements/")
+def offers(c, ref, **constraints):
+    r = c.get(f"/api/bookings/{ref}/replacements/", constraints)
     assert r.status_code == 200, r.content
     return r.json()
 
@@ -83,19 +83,22 @@ class DetectionTests(RecoveryBase, TestCase):
         ref = self.broken_chain()
         d = offers(self.c, ref)
         self.assertEqual(d["state"], "options")
-        self.assertEqual([l["route_code"] for l in d["retained_legs"]], ["VC1"])
-        self.assertEqual([l["route_code"] for l in d["affected_legs"]], ["DR1", "TAXI"])
+        self.assertEqual(d["retained_legs"], [])  # No service has started: recovery begins at the passenger's origin.
+        self.assertEqual([l["route_code"] for l in d["affected_legs"]], ["VC1", "DR1", "TAXI"])
+        self.assertEqual(d["constraints"]["origin"], "NG-BUS")
         for o in d["offers"]:
             self.assertFalse(o["reserves_capacity"])
             self.assertIn("not held", o["availability_warning"])
-            self.assertEqual(Decimal(o["difference"]), Decimal(o["replacement_price"]) - Decimal(o["replaced_value"]))
+            self.assertEqual(Decimal(o["difference"]), Decimal(o["payment_now"]) - Decimal(o["eligible_refund"]))
             self.assertTrue(o["legs"] and o["expires_at"])
             first = o["legs"][0]
-            self.assertGreaterEqual(first["departs_at"][11:16], "13:45")      # nothing the passenger already missed
+            self.assertGreaterEqual(timezone.datetime.fromisoformat(first["departs_at"]), timezone.now())
             self.assertNotEqual(first["status"], "cancelled")
             self.assertIn("accessibility", first)
-            self.assertLessEqual(len(o["legs"]) + 1, 3)                      # retained + replacement <= 3 legs
-        self.assertTrue(all(o["arrives_at"] <= f"{DAY + timedelta(days=1)}" for o in d["offers"]))
+            self.assertLessEqual(len(o["legs"]) + len(o["retained_legs"]), 3)                      # retained + replacement <= 3 legs
+        ranks = [(o["arrives_at"], Decimal(o["payment_now"]), tuple(l["route_code"] for l in o["legs"]), o["legs_param"]) for o in d["offers"]]
+        self.assertEqual(ranks, sorted(ranks))
+        self.assertTrue(all(timezone.datetime.fromisoformat(o["arrives_at"]) <= timezone.datetime.fromisoformat(d["constraints"]["latest_arrival"]) for o in d["offers"]))
 
     def test_cancelled_service_is_excluded_from_offers(self):
         ref = confirmed_booking(self.c, dep_at("VC1", "12:00"))
@@ -105,20 +108,21 @@ class DetectionTests(RecoveryBase, TestCase):
         used = {l["departure_id"] for o in d["offers"] for l in o["legs"]}
         self.assertNotIn(dep_at("VC1", "12:00").pk, used)
 
-    def test_no_alternative_explains_and_offers_full_refund_cancellation(self):
-        # Last Lakeside bus (VC2 19:30) can no longer be reached after a long train delay; nothing else gets there in time.
+    def test_zero_budget_no_alternative_preserves_policy_based_cancellation(self):
+        # A strict zero payment-now budget excludes all positive-price replacements; delay alone grants no refund exception.
         train, bus = dep_at("DR1", "18:10"), dep_at("VC2", "19:30")
         c = self.c
         sel = [{"departure_id": train.pk, "from_stop": "NG-RAIL", "to_stop": "RV-RAIL"}, {"departure_id": bus.pk, "from_stop": "RV-BUS", "to_stop": "LK-BUS"}]
         ref = checkout(c, {"passengers": 1, "legs": sel, "contact_email": "a@b.co", "travellers": ["a"]}).json()["reference"]
         pay(c, ref)
         change(self.rail, train, "delay", 60)
-        d = offers(c, ref)
+        BookingLeg.objects.filter(booking__reference=ref).update(policy_full_refund_hours=1000, policy_partial_refund_hours=0, policy_partial_percent=0)
+        d = offers(c, ref, max_payment_now=0)
         self.assertEqual((d["state"], d["offers"], d["reason"]), ("none", [], "connection_missed"))
         self.assertTrue(d["cancellation"]["disrupted"])
-        self.assertTrue(all(l["percent"] == 100 for l in d["cancellation"]["lines"]))
-        jobs.run_pending()
-        self.assertEqual(Notification.objects.filter(kind="no_replacement").count(), 1)
+        self.assertEqual(d["cancellation"]["total_refund"], "0.00")
+        self.assertEqual(Booking.objects.get(reference=ref).status, "confirmed")
+        self.assertTrue(all(l["percent"] == 0 for l in d["cancellation"]["lines"]))
         self.assertEqual(c.post(f"/api/bookings/{ref}/cancel/", {}, content_type="application/json").json()["status"], "cancelled")
 
     def test_recovery_job_retries_and_recovers_after_restart(self):
@@ -139,30 +143,32 @@ class DetectionTests(RecoveryBase, TestCase):
 
 
 class AcceptanceTests(RecoveryBase, TestCase):
-    def test_accept_equal_price_replacement_preserves_history(self):
+    def test_replacement_preserves_history_and_charges_full_price(self):
         ref = self.broken_chain()
         before = Booking.objects.get(reference=ref)
-        kept_leg = before.legs.get(sequence=0)
-        old_train_dep = dep_at("DR1", "13:10")
-        d = offers(self.c, ref)
-        offer = settlement(d, "none")
-        new_ids = [l["departure_id"] for l in offer["legs"] if l["departure_id"]]
+        originals = {leg.pk: leg for leg in before.legs.all()}
+        offer = offers(self.c, ref)["offers"][0]
+        removed_sequences = {leg["sequence"] for leg in offer["affected_legs"]}
         res = accept(self.c, ref, offer["id"])
         self.assertEqual(res.status_code, 200, res.content)
         b = Booking.objects.get(reference=ref)
-        legs = list(b.legs.order_by("sequence"))
-        self.assertEqual([l.status for l in legs[:3]], ["booked", "replaced", "replaced"])     # original history kept
-        self.assertEqual(legs[0].pk, kept_leg.pk)
-        self.assertEqual((legs[0].unit_price, legs[0].departs_at), (kept_leg.unit_price, kept_leg.departs_at))
-        self.assertEqual({l.status for l in legs[3:]}, {"booked"})
-        self.assertEqual(b.total_amount, before.total_amount)
-        self.assertEqual(Departure.objects.get(pk=old_train_dep.pk).places_taken, 0)           # old places released
-        for pk in new_ids:
-            self.assertEqual(Departure.objects.get(pk=pk).places_taken, 1)
-        self.assertEqual(self.c.get(f"/api/bookings/{ref}/").json()["disruption"]["status"], "delayed")  # no longer broken
+        for pk, original in originals.items():
+            preserved = b.legs.get(pk=pk)
+            self.assertEqual((preserved.unit_price, preserved.departs_at, preserved.arrives_at),
+                             (original.unit_price, original.departs_at, original.arrives_at))
+            self.assertEqual(preserved.status, "replaced" if original.sequence in removed_sequences else "booked")
+        self.assertLessEqual(b.legs.filter(status="booked").count(), 3)
+        self.assertEqual(b.total_amount, before.total_amount - Decimal(offer["replaced_value"]) + Decimal(offer["payment_now"]))
+        payment = PaymentAttempt.objects.get(booking=b, purpose="replacement", status="succeeded")
+        self.assertEqual(payment.amount, Decimal(offer["replacement_price"]))
+        refund = Refund.objects.get(booking=b, key=f"replacement:{offer['id']}")
+        self.assertEqual((refund.amount, refund.status), (Decimal(offer["eligible_refund"]), "requested"))
+        for dep in Departure.objects.filter(booking_legs__booking=b).distinct():
+            self.assertEqual(dep.places_taken, dep.baseline_places + live_places(dep))
+        self.assertNotEqual(self.c.get(f"/api/bookings/{ref}/").json()["disruption"]["status"], "broken")
         self.assertTrue(AuditRecord.objects.filter(action="booking.replacement_accepted", object_id=ref).exists())
         self.assertEqual(Notification.objects.filter(kind="replacement_confirmed").count(), 1)
-        self.assertEqual(ReplacementOffer.objects.filter(status="proposed").count(), 0)         # siblings superseded
+        self.assertEqual(ReplacementOffer.objects.filter(status="proposed").count(), 0)
 
     def test_duplicate_acceptance_changes_nothing_twice(self):
         ref = self.broken_chain()
@@ -178,10 +184,12 @@ class AcceptanceTests(RecoveryBase, TestCase):
         change(self.valley, dep_at("VC1", "12:00"), "cancel")
         return ref
 
-    def test_replacement_that_costs_more_needs_a_simulated_top_up(self):
+    def test_replacement_charges_full_new_fare_and_requests_old_refund(self):
         ref = self.cancelled_vc1()
         offer = settlement(offers(self.c, ref), "pay")
-        self.assertEqual(offer["difference"], "0.10")
+        new_fare = Decimal(offer["payment_now"])
+        self.assertGreater(new_fare, 0)
+        self.assertEqual(Decimal(offer["difference"]), new_fare - Decimal("7.00"))
         bad = accept(self.c, ref, offer["id"], "failure")
         self.assertEqual((bad.status_code, bad.json()["code"]), (409, "payment_failed"))
         b = Booking.objects.get(reference=ref)                       # coherent: nothing changed except the failed attempt
@@ -193,9 +201,11 @@ class AcceptanceTests(RecoveryBase, TestCase):
         self.assertEqual(ok.status_code, 200, ok.content)
         accept(self.c, ref, offer["id"], "success", key)              # repeat: no second charge
         top_ups = PaymentAttempt.objects.filter(purpose="replacement", status="succeeded")
-        self.assertEqual((top_ups.count(), top_ups.get().amount), (1, Decimal("0.10")))
-        self.assertEqual(Booking.objects.get(reference=ref).total_amount, Decimal("7.10"))
+        self.assertEqual((top_ups.count(), top_ups.get().amount), (1, new_fare))
+        self.assertEqual(Booking.objects.get(reference=ref).total_amount, new_fare)
         self.assertEqual(PaymentAttempt.objects.filter(purpose="initial", status="succeeded").count(), 1)
+        refund = Refund.objects.get(booking__reference=ref, key=f"replacement:{offer['id']}")
+        self.assertEqual((refund.amount, refund.status), (Decimal("7.00"), "requested"))
 
     def test_failed_payment_attempt_with_same_key_is_replayed_not_retried(self):
         ref = self.cancelled_vc1()
@@ -205,17 +215,18 @@ class AcceptanceTests(RecoveryBase, TestCase):
         self.assertEqual(accept(self.c, ref, offer["id"], "success", key).json()["code"], "payment_failed")
         self.assertEqual(PaymentAttempt.objects.filter(purpose="replacement").count(), 1)
 
-    def test_cheaper_replacement_refunds_the_difference_once(self):
+    def test_cheaper_replacement_charges_new_fare_and_refunds_old_fare_once(self):
         ref = confirmed_booking(self.c, dep_at("GL1", "12:30"))        # 7.10
         change(self.green, dep_at("GL1", "12:30"), "cancel")
-        offer = settlement(offers(self.c, ref), "refund")
+        offer = next(o for o in offers(self.c, ref)["offers"] if Decimal(o["net_extra_cost"]) < 0)
         self.assertEqual(offer["difference"], "-0.10")
         for _ in range(3):
             self.assertEqual(accept(self.c, ref, offer["id"]).status_code, 200)
         r = Refund.objects.get(booking__reference=ref)
-        self.assertEqual((r.amount, r.reason, r.status), (Decimal("0.10"), "replacement_difference", "completed"))
+        self.assertEqual((r.amount, r.reason, r.status), (Decimal("7.10"), "replaced_legs", "requested"))
         self.assertEqual(Booking.objects.get(reference=ref).total_amount, Decimal("7.00"))
-        # Cancelling afterwards refunds by the new legs' own policy; the earlier refund is untouched.
+        self.assertEqual(PaymentAttempt.objects.get(booking__reference=ref, purpose="replacement").amount, Decimal("7.00"))
+        # Cancelling afterwards requests a separate refund by the new legs' policy; the earlier request is untouched.
         self.c.post(f"/api/bookings/{ref}/cancel/", {}, content_type="application/json")
         self.assertEqual(Refund.objects.filter(booking__reference=ref).count(), 2)
 
@@ -328,16 +339,43 @@ class RecoveryConcurrencyTests(TransactionTestCase):
 
     def test_two_passengers_competing_for_the_last_replacement_place(self):
         users, refs = self.cancelled_vc1_bookings(2)
-        # Replacement service GL1 17:30 has exactly one place left; both passengers hold an offer for it.
-        gl = dep_at("GL1", "17:30")
+        # Choose an earliest ranked reachable replacement and leave exactly one place for both passengers.
+        first = offers(client_for(users[0]), refs[0])["offers"][0]
+        gl = Departure.objects.get(pk=next(leg["departure_id"] for leg in first["legs"] if leg["departure_id"]))
         Departure.objects.filter(pk=gl.pk).update(places_taken=gl.capacity - 1)
         chosen = []
         for u, ref in zip(users, refs):
             d = offers(client_for(u), ref)
             offer = next(o for o in d["offers"] if any(l["departure_id"] == gl.pk for l in o["legs"]))
             chosen.append(offer["id"])
-        codes = sorted(self.run_threads([lambda u=u, r=r, o=o: accept(client_for(u), r, o).status_code for u, r, o in zip(users, refs, chosen)]))
-        self.assertEqual(codes, [200, 409])
+        responses = self.run_threads([lambda u=u, r=r, o=o: accept(client_for(u), r, o) for u, r, o in zip(users, refs, chosen)])
+        winners = ReplacementOffer.objects.filter(pk__in=chosen, status="accepted")
+        self.assertEqual(winners.count(), 1)
+        winner = winners.get()
+        settled = PaymentAttempt.objects.get(offer=winner, status="succeeded")
+        self.assertFalse(settled.compensated)
+        compensated = Decimal("0")
+        captured = Decimal("0")
+        for ref, offer_id, response in zip(refs, chosen, responses):
+            payments = list(PaymentAttempt.objects.filter(offer_id=offer_id, status="succeeded"))
+            captured += sum((payment.amount for payment in payments), Decimal("0"))
+            if offer_id == winner.pk:
+                self.assertEqual((response.status_code, response.json()["offer"]["status"]), (200, "accepted"))
+                self.assertEqual(len(payments), 1)
+                continue
+            self.assertEqual(Booking.objects.get(reference=ref).legs.filter(status="booked", departure=dep_at("VC1", "12:00")).count(), 1)
+            self.assertEqual(ReplacementOffer.objects.get(pk=offer_id).status, "invalidated")
+            if response.status_code == 409:
+                self.assertEqual(response.json()["code"], "no_capacity")
+                self.assertEqual(payments, [])
+            else:
+                self.assertEqual((response.status_code, response.json()["offer"]["status"]), (200, "invalidated"))
+                self.assertEqual(len(payments), 1)
+                self.assertTrue(payments[0].compensated)
+                refund = Refund.objects.get(payment_attempt=payments[0], key=f"compensate:{payments[0].pk}")
+                self.assertEqual((refund.amount, refund.status), (payments[0].amount, "requested"))
+                compensated += refund.amount
+        self.assertEqual(captured-compensated, settled.amount)
         gl.refresh_from_db()
         self.assertEqual(gl.places_taken, gl.capacity)
         self.assertEqual(Booking.objects.filter(legs__status="booked", legs__departure=gl).distinct().count(), 1)
@@ -346,11 +384,12 @@ class RecoveryConcurrencyTests(TransactionTestCase):
         users, refs = self.cancelled_vc1_bookings(1)
         u, ref = users[0], refs[0]
         offer = settlement(offers(client_for(u), ref), "pay")
-        codes = self.run_threads([lambda: accept(client_for(u), ref, offer["id"]).status_code for _ in range(6)])
+        key = uuid.uuid4().hex
+        codes = self.run_threads([lambda: accept(client_for(u), ref, offer["id"], key=key).status_code for _ in range(6)])
         self.assertEqual(set(codes), {200})
         self.assertEqual(PaymentAttempt.objects.filter(purpose="replacement", status="succeeded").count(), 1)
         self.assertEqual(Booking.objects.get(reference=ref).legs.filter(status="booked").count(), len(offer["legs"]))
-        self.assertEqual(Booking.objects.get(reference=ref).total_amount, Decimal("7.10"))
+        self.assertEqual(Booking.objects.get(reference=ref).total_amount, Decimal(offer["payment_now"]))
 
     def test_acceptance_racing_with_cancellation_leaves_a_consistent_state(self):
         users, refs = self.cancelled_vc1_bookings(1)

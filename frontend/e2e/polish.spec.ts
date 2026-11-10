@@ -46,7 +46,7 @@ test('nearby days strip is not shown for arrive-by searches', async ({ page }) =
 for (const [name, viewport] of [['desktop', { width: 1100, height: 900 }], ['mobile', { width: 390, height: 800 }]] as const) {
   test(`dark theme (${name}): toggle persists across reload and passes the accessibility scan`, async ({ page }) => {
     await page.setViewportSize(viewport)
-    await page.goto('/')
+    await page.goto('/demo')
     await page.evaluate(() => localStorage.removeItem('doedu.theme'))
     await page.reload()
     const menu = page.getByRole('button', { name: 'Menu' })
@@ -89,7 +89,7 @@ test.describe('mobile layout regressions', () => {
       const [scroll, width] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth])
       expect(scroll, `horizontal overflow on ${where}`).toBeLessThanOrEqual(width)
     }
-    await page.goto('/'); await overflow('home')
+    await page.goto('/demo'); await overflow('home')
     await page.goto(results()); await expect(page.locator('.result').first()).toBeVisible(); await overflow('results')
     await page.locator('.result').first().getByRole('link', { name: /^Select/ }).click()
     await expect(page.getByRole('heading', { name: 'Journey details' })).toBeVisible(); await overflow('journey details')

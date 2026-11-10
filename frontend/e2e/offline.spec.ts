@@ -8,7 +8,7 @@ async function registerAndBook(page: Page) {
   await page.getByLabel('Email').fill(`off-${Date.now()}@example.com`)
   await page.getByLabel('Password').fill('correct-horse-42')
   await page.getByRole('button', { name: 'Create account' }).click()
-  await expect(page.getByRole('button', { name: /Sign out|Menu/ }).first()).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'My journeys', exact: true })).toBeVisible()
   await page.goto(`/?origin=NG-BUS&destination=RV-BUS&date=${demoDayIso()}&time=16:00&passengers=1&sort=departure`)
   await page.locator('.result').first().getByRole('link', { name: /^Select/ }).click()
   await page.getByRole('link', { name: 'Continue to traveller details' }).click()

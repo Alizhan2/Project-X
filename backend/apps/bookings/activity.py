@@ -15,7 +15,7 @@ def booking_activity(booking):
     events = [{"kind": "reserved", "title": "Places reserved", "at": booking.created_at}]
     for attempt in booking.payment_attempts.all():
         if attempt.status == "succeeded":
-            title = "Payment confirmed (simulated)" if attempt.purpose == "initial" else "Replacement top-up paid (simulated)"
+            title = "Payment confirmed (simulated)" if attempt.purpose == "initial" else "Replacement paid (simulated)"
             events.append({"kind": "payment", "title": title, "at": attempt.created_at, "amount": f"{attempt.amount:.2f}", "currency": attempt.currency})
         elif attempt.status == "failed":
             events.append({"kind": "payment_failed", "title": "Payment failed (simulated)", "at": attempt.created_at})
@@ -23,7 +23,7 @@ def booking_activity(booking):
         if note.kind in JOURNEY_NOTICE_KINDS:
             events.append({"kind": note.kind, "title": note.title, "at": note.created_at})
     for refund in booking.refunds.all():
-        events.append({"kind": "refund", "title": "Refund issued (simulated)", "at": refund.completed_at or refund.created_at,
+        events.append({"kind": "refund", "title": {"requested": "Refund requested (simulated)", "pending": "Refund pending (simulated)", "failed": "Refund failed (simulated)", "completed": "Refund issued (simulated)"}[refund.status], "at": refund.completed_at or refund.created_at,
                        "amount": f"{refund.amount:.2f}", "currency": refund.currency})
     if booking.cancelled_at:
         events.append({"kind": "cancelled", "title": "Booking cancelled", "at": booking.cancelled_at})

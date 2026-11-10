@@ -24,7 +24,7 @@ One repository, one PostgreSQL database, one Django project (modular monolith) p
 
 ## Disruption flow
 operator `apply_change` (one transaction: change, event row, notifications, audit, queued `recover_booking` jobs) → `ensure_offers` (planner search from the
-remaining journey, ≤3 offers, fingerprinted) → passenger `accept_offer` (revalidate everything, replace legs, settle money, all-or-nothing).
+remaining journey, ≤3 offers, fingerprinted) → passenger `accept_offer` (persist keyed full-price attempt → resolve/reconcile payment → revalidate and atomically replace legs → request eligible old-leg refund separately). Failed booking commits preserve the original and compensate the new charge; unknown outcomes block fresh charges.
 Rules: `docs/business-rules.md`. Data: `docs/demo-data.md`. API: `docs/openapi.yaml` (generated, validated) and `/api/docs/`.
 
 ## Regenerating API docs

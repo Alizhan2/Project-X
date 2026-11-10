@@ -1,71 +1,60 @@
 # Business rules and state machines
-Status legend: **[Stage N]** implemented in that stage. Refund rules and recovery are implemented (Stages 5–6); the tables below describe the code.
 
-## Core principles
-1. A search result is an *offer*; nothing is held. A booking exists only after checkout creates reservations.
-2. Booking status and payment status are separate state machines.
-3. Capacity: `Departure.places_taken` = held + consumed places. Changes only inside a transaction holding a row lock on the
-   departure (`SELECT … FOR UPDATE`), locks always acquired in ascending departure id. DB CHECK `places_taken <= capacity`.
-4. No transaction is held open across user interaction. Checkout (reserve) and payment are separate short transactions.
-5. Every mutating request that can be retried carries an idempotency key; repeats return the original outcome.
-6. Reservation lifetime: `RESERVATION_MINUTES` (default 10). Expiry is enforced three ways: lazily on access/payment,
-   by the worker's durable `expire_booking` job, and by a periodic sweep (restart safe).
+Current implementation rules for the November 2026 requirements alignment. All transport, charges and refunds remain simulated. This change addresses the three requested development areas; it is not a claim that every requirement in the review PDFs is complete.
 
-## Booking — [Stage 3]
-| From | Event | To | Side effects |
-|---|---|---|---|
-| (none) | checkout accepted | `pending_payment` | places held, expires_at set, expiry job queued |
-| pending_payment | payment succeeded | `confirmed` | reservations consumed |
-| pending_payment | passenger abandons | `cancelled` | reservations released, places returned |
-| pending_payment | now ≥ expires_at | `expired` | reservations expired, places returned |
-| confirmed | passenger cancels | `cancelled` | places returned; refund per policy (**[planned]** Stage 5) |
-| confirmed | operator cancels service | affected → recovery flow (**[planned]** Stage 6) |
-Terminal: cancelled, expired. Any other transition is rejected with 409.
+## Search, transfer time and accessibility
 
-## Reservation (one per booking leg) — [Stage 3]
-held → consumed (payment ok) · held → released (abandon / failed checkout) · held → expired (timeout) ·
-consumed → released (confirmed booking cancelled). Terminal: released, expired.
+- Search returns offers, not bookings. A journey has at most three transport legs. The bounded planner is not exhaustive.
+- Shared `planning/transfers.py` rules are used by forward search, arrive-by search, checkout and disruption assessment.
+- Connection margin = next departure − forecast arrival − walking time − boarding buffer, using timezone-aware full timestamps. Midnight crossings do not reset the calculation.
+- A negative margin is infeasible and cannot be selected. Zero to under five minutes is `at_risk`; at least five minutes is `feasible`. These are schedule calculations, not punctuality guarantees.
+- Same-stop connections have zero walking and the existing five-minute boarding minimum. Directed links between different stops store walking and boarding minutes separately. The additive migration preserves existing walking values, adds a zero boarding buffer, and marks path accessibility unknown until explicitly verified.
+- Connections into on-demand taxis report `on_demand`, with no claim of a fixed-service safety margin. Taxi pickup waiting and operating hours still apply.
+- `wheelchair_required=true` requires confirmed accessible vehicles, boarding/alighting stops and every walking transfer path. Unknown is excluded. The preference is rechecked at checkout, payment confirmation and recovery acceptance.
+- Administrators maintain transfer walking, boarding and accessibility metadata in Django Admin. Unknown data is not silently promoted to accessible.
 
-## Payment attempt — [Stage 3]
-created → succeeded | failed (both terminal). Unique key per attempt. At most one `succeeded` per booking (partial unique
-index). A failed attempt leaves the booking `pending_payment` so the passenger may retry before expiry. Paying a booking that is
-already confirmed with a different key is rejected (409), never charged twice. Repeating the same key returns the first result.
-The simulator accepts `outcome=success|failure`; no card data is ever collected.
+## Reservation and capacity
 
-## Refund — [Stage 5]
-pending → completed. Unique per (booking, reason) so repeated cancellation cannot create a second refund.
-Policy (snapshotted per leg at purchase): full refund if cancelled ≥ `full_refund_hours_before` before that leg departs;
-`partial_refund_percent` if ≥ `partial_refund_hours_before`; otherwise 0. Departed legs refund 0. Operator-cancelled legs refund
-100%. Refund = sum over legs, rounded half-up to cents. (Default policy values are an assumption awaiting product confirmation.)
+- Default hold lifetime is five minutes (`RESERVATION_MINUTES=5`), starting when checkout creates the booking. Previously issued expiry timestamps are not rewritten.
+- Expiry runs lazily on access/payment and through durable background jobs/sweeps. It releases capacity even while a payment outcome is unresolved.
+- Capacity writes use short transactions and departure row locks in ascending primary-key order. Where applicable lock booking → offer/attempt → departures. No transaction waits for passenger input or a provider response.
+- The database capacity constraint remains a second line of defence against overselling.
 
-## Disruption recovery — [Stage 6]
-**Leg classes** (derived from live times, nothing extra stored): a booked leg is *completed* once its live arrival is in the
-past; *affected* = the first booked leg that cannot be used (service cancelled, connection no longer possible, or taxi pickup
-outside service hours) **and every booked leg after it**; legs before it are *retained*. Retained legs are never touched, even if
-completed. Affected legs become `replaced` when an offer is accepted (their rows, prices and policies are kept as history).
-A disruption is **informational** when every connection still holds (passenger gets a "delayed" notice, no action); it is
-**actionable** when `assess()` reports `broken`.
+## Payment attempts
 
-**Offers are non-reserving.** They show an availability warning, expire after `REPLACEMENT_OFFER_MINUTES` (30) and are
-re-validated (schedule, price, capacity, connections, relevance) on acceptance.
+- An attempt with its idempotency key, purpose and amount is persisted before recording a simulated charge outcome.
+- Statuses: `created` → `pending` (outcome unknown) → `succeeded` or `failed`; created attempts may resolve directly. Terminal outcomes are immutable.
+- Repeating an ordinary payment request returns its existing result. Explicit reconciliation resolves the same pending attempt and key. A new key is refused while a created/pending attempt exists.
+- Reusing an attempt key for another offer or payment purpose is rejected.
+- There is at most one successful initial charge per booking. Replacement charges are separate full-price payments tied to their offers.
+- Success is followed by booking/replacement commit revalidation. An expired hold, invalidated offer or definitive commit failure triggers a full compensation refund of that new charge, independent of fare policy. Repeated reconciliation must neither confirm twice nor refund twice.
+- No payment details, wallet balance or real provider credentials are collected.
 
-Replacement offer: `proposed → accepted | declined | expired | invalidated`; only `proposed` can be accepted.
-| From | Event | To |
-|---|---|---|
-| proposed | passenger accepts, all checks pass | accepted |
-| proposed | passenger declines | declined |
-| proposed | now ≥ expires_at | expired |
-| proposed | disruption cleared / changed, price or times changed, capacity gone, another offer accepted | invalidated |
-accepted is idempotent (repeating returns the same result). Offers are recomputed whenever a service changes again; unchanged
-alternatives keep their offer, others are invalidated and new ones proposed (unique live fingerprint per booking).
+## Refunds
 
-**Price difference** = price of replacement legs − amount paid for the replaced legs. `> 0` → simulated top-up payment
-(`purpose=replacement`, one attempt per request key); `< 0` → simulated refund (`key=replacement:<offer id>`, unique); `= 0` → none.
-A failed simulated top-up records a failed attempt and changes nothing else. `Booking.total_amount` becomes net paid.
+- Refund operations have stable keys and visible `requested`, `pending`, `completed` (refunded) and `failed` states.
+- Background work completes ordinary simulator refunds; failed outcomes remain visible and can be retried as the same operation. A completed operation is terminal.
+- Completed and reserved requested/pending refunds count against captured money. Retrying a failure rechecks the cap. Financial histories are aggregated separately so multiple payments/refunds do not multiply one another through a database join.
+- Fare conditions come from the purchase snapshot. A delay or missed connection does not automatically grant a full refund of every unused leg. Operator cancellation grants the eligible unused cancelled leg a full refund; other legs retain their snapshot conditions.
+- A shared per-leg quote is reused for cancellation and replacement refunds. Already reserved/refunded leg value cannot be paid twice.
+- Cancelling a trip and completing its refund are separate events; the UI must not say money was returned while the refund is only requested/pending/failed.
 
-**Acceptance is one short transaction**: lock booking → lock offer → lock departures (new ∪ replaced, ascending id) → revalidate →
-acquire new places → mark old legs `replaced` and release their places → settle money → mark offer accepted. Any failure rolls
-the whole thing back, so the original booking, places and payments stay exactly as they were.
+## Recovery and replacement settlement
 
-**No alternative**: the passenger is told so, and cancellation is offered with a full refund of unused legs (existing
-`cancel` rules, `disrupted = true`).
+- Recovery preferences include a reachable current stop, earliest departure, latest acceptable arrival, nonnegative whole-currency-unit payment-now limit and optional strict accessibility.
+- The passenger cannot teleport to an unrelated stop. Search and acceptance validate location against the retained/affected journey and explicit transfer links. Used legs are protected from replacement.
+- Recovery preferences are persisted on the booking. Background refreshes and ordinary reloads preserve them, including zero budgets and searches with no offers. Advancing the clock alone does not replace an otherwise unchanged offer.
+- Deadline and payment-now limit are hard constraints. A zero budget is valid. They are never silently relaxed when no option matches.
+- Alternatives rank by final arrival time, full payment required now and deterministic service identifiers. At most three are shown.
+- Offers snapshot their constraints and expire. Browsing an offer does not reserve capacity; acceptance checks current times, accessibility, price, eligibility and capacity again.
+- Full new-leg price is payable now. Eligible old-leg refunds are requested separately after successful replacement. Conditional net extra cost = new charge − eligible old refund, labelled conditional until the refund completes.
+- Example: new price 1,800 ₸ and eligible old refund 400 ₸ mean pay 1,800 ₸ now and request 400 ₸ separately. A 1,500 ₸ payment-now limit excludes the offer. Conditional net extra cost is 1,400 ₸.
+- Failed or pending payment keeps the original booking intact. New places and leg replacement commit together after successful payment revalidation. Definitive failure after a successful charge requests full charge compensation.
+- No-match screens explain the constraints and show the actual cancellation quote, without promising an unconditional full refund.
+
+## Markets and existing data
+
+- `/` is Kazakhstan planning: real city names, KZT and `Asia/Almaty`. Without a supplier it supports private plans and shared search parameters, not fabricated inventory.
+- `/demo` is the fictional transport network, with EUR, `Europe/Berlin` and simulation labels. `/kazakhstan` remains compatible; historic root links containing fictional stop codes redirect to `/demo` preserving parameters.
+- Existing accounts, references, amounts, currencies, dates and policy snapshots are retained. This is not an exchange-rate conversion or reseed of historical data.
+- New database fields are additive. Historic rows without newer payment/offer linkage remain readable; their interpretation must not invent provider transactions.

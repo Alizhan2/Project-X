@@ -32,7 +32,7 @@ export default function WatchPrompt({ search, cheapest }: Props) {
   return (
     <section className="watch-prompt card" aria-labelledby="watch-h">
       <h2 id="watch-h">{t('Get notified')}</h2>
-      {!user ? <p><Link to="/login" state={{ from: `/?${new URLSearchParams({ ...search, passengers: String(search.passengers) })}` }}>{t('Sign in to get alerts')}</Link></p> : state.kind === 'saved' ? (
+      {!user ? <p><Link to="/login" state={{ from: `/demo?${new URLSearchParams({ ...search, passengers: String(search.passengers) })}` }}>{t('Sign in to get alerts')}</Link></p> : state.kind === 'saved' ? (
         <p role="status">{t('Alert saved.')} <Link to="/alerts">{t('See your alerts')}</Link></p>
       ) : (
         <>

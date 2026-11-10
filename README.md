@@ -7,7 +7,7 @@ Interface: **English · Русский · Қазақша**, including account em
 
 Handoff / current blockers: [docs/HANDOFF.md](docs/HANDOFF.md)
 
-Status: **MVP complete (Stages 0–7) and prepared for a hosted demonstration.** Production-readiness assessment: [docs/production-readiness.md](docs/production-readiness.md) · evidence: [docs/verification-report.md](docs/verification-report.md). Commercial operation is **not** ready: [docs/commercial-readiness.md](docs/commercial-readiness.md).
+Status: **Core demonstration MVP implemented; hosted deployment and remaining hardening require verification.** Production-readiness assessment: [docs/production-readiness.md](docs/production-readiness.md) · evidence: [docs/verification-report.md](docs/verification-report.md). Commercial operation is **not** ready: [docs/commercial-readiness.md](docs/commercial-readiness.md).
 
 ## Layout
 - `backend/` Django + DRF modular monolith (`apps/accounts, transport, planning, bookings, payments, disruptions, notifications, core`)
@@ -24,7 +24,7 @@ cp .env.example .env        # development values (DOEDU_ENV=development); never 
 docker compose up --build
 ```
 After start-up: `docker compose exec backend python manage.py seed_demo` (dev-only demo data).
-Open http://localhost:5173 (API docs: http://localhost:5173/api/docs/, health: /api/health/).
+Open http://localhost:5173 for Kazakhstan planning; `/demo` opens the fictional booking network (API docs: http://localhost:5173/api/docs/, health: /api/health/).
 
 ## Setup B — without Docker (what was verified on the author's machine)
 Needs Python 3.14, Node 24, and a running PostgreSQL 16+ with a `doedu` database/user.
@@ -42,7 +42,7 @@ cd ../frontend && npm ci && npm run dev                  # terminal 2
 `cd backend && .venv/bin/python manage.py seed_demo` (see [docs/demo-data.md](docs/demo-data.md)). Required before using search.
 
 ## Background worker
-`manage.py run_worker` expires unpaid reservations (default 10 min, `RESERVATION_MINUTES`). It is also a Compose service. Expiry additionally happens lazily on access/payment, so the app stays correct if the worker is down; the worker just releases places promptly.
+`manage.py run_worker` expires unpaid reservations (default 5 min, `RESERVATION_MINUTES`). It is also a Compose service. Expiry additionally happens lazily on access/payment, so the app stays correct if the worker is down; the worker just releases places promptly.
 
 ## Tests
 ```bash
@@ -91,7 +91,7 @@ Signed-in passengers see their next confirmed journey on the search page. Confir
 
 ### Kazakhstan preparation
 
-Open `/kazakhstan` for 20 Kazakhstan cities, three-language region names, KZT and local time (Asia/Almaty). Real supplier access and ticket sales are not enabled. See [Kazakhstan integration and 1TR.kz access](docs/kazakhstan.md).
+The home page `/` (also `/kazakhstan`) provides 20 Kazakhstan cities, three-language region names, KZT and local time (Asia/Almaty). Real supplier access and ticket sales are not enabled. See [Kazakhstan integration and 1TR.kz access](docs/kazakhstan.md).
 
 ## Installable app (PWA)
 Production builds register a service worker (`frontend/public/sw.js`): it caches only static, content-hashed files and the last good `index.html`, never `/api/` or `/admin/`.
@@ -100,3 +100,7 @@ Confirmed upcoming bookings are also kept as an on-device copy (see docs/privacy
 
 ## Alerts (watches)
 Passengers can ask to be told when a searched price drops or a journey becomes available (`/alerts`). The worker (`manage.py run_worker`) checks them every 5 minutes and right after relevant changes; opening the Alerts page also checks them, so the feature works without a worker, only less promptly. Alerts only notify: nothing is reserved.
+
+## November requirements alignment
+
+Kazakhstan planning is the home page; fictional bookings remain under `/demo` with historic-link compatibility. Five-minute holds, shared walking/boarding connection margins, strict accessibility, constrained recovery, full replacement payments and separate refund/reconciliation states are described in [business rules](docs/business-rules.md). Current verification and remaining scope: [requirements alignment](docs/requirements-alignment-2026-11-10.md).

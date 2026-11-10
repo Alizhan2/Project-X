@@ -1,4 +1,4 @@
-import { demoDayLabel } from './demo-day'
+import { demoDayIso, demoDayLabel } from './demo-day'
 import { expect, test, type Browser, type Page } from '@playwright/test'
 
 // Requires `manage.py seed_demo` (synthetic demo accounts + pre-booked journeys). Each scenario is consumed once per seed.
@@ -47,16 +47,23 @@ test('delay breaks the connection; an offer made stale by another service change
   const page = await ctx.newPage()
   await openDisruptedBooking(page, 'demo.passenger@doedu.test')
 
-  await expect(page.getByText('Kept as booked')).toBeVisible()
+  // Ask for a future replacement starting at the original origin; this fixture needs a
+  // scheduled service to exercise an operator invalidating an already displayed offer.
+  await page.getByLabel('Earliest departure', { exact: true }).fill(`${demoDayIso()}T14:00`)
+  await page.getByLabel('Latest acceptable arrival').fill(`${demoDayIso()}T23:30`)
+  await page.getByLabel('Maximum payment now', { exact: false }).fill('30')
+  const optionsResponse = page.waitForResponse(r => new URL(r.url()).pathname.endsWith('/replacements/') && new URL(r.url()).searchParams.has('max_payment_now') && r.ok())
+  await page.getByRole('button', { name: 'Find replacement journeys' }).click()
+  const data = await (await optionsResponse).json()
+  const serviceOffer = data.offers.find((o: { legs: { departure_id: number | null }[] }) => o.legs.some(l => l.departure_id))
+  expect(serviceOffer, 'fixture must offer a scheduled service for operator invalidation').toBeTruthy()
   const offers = page.getByTestId('offer')
   await expect(offers.first()).toBeVisible()
   await expect(offers.first()).toContainText('Places are not held until you accept')
   await expect(offers.first()).toContainText(/wheelchair vehicle/i)
 
   // The first offered service gets cancelled by its operator behind the passenger's back.
-  const ref = (await page.locator('[data-testid="reference"]').innerText()).trim()
-  const data = await (await page.request.get(`/api/bookings/${ref}/replacements/`)).json()
-  const svc = data.offers[0].legs.find((l: { departure_id: number | null }) => l.departure_id)
+  const svc = serviceOffer.legs.find((l: { departure_id: number | null }) => l.departure_id)
   const opEmail = svc.route_code.startsWith('DR') ? 'ops.rail@doedu.test' : svc.route_code.startsWith('GL') ? 'ops.greenline@doedu.test' : 'ops.valley@doedu.test'
   const octx = await browser.newContext()
   const op = await octx.newPage()
@@ -66,61 +73,63 @@ test('delay breaks the connection; an offer made stale by another service change
   expect(res.ok()).toBeTruthy()
   await octx.close()
 
-  await offers.first().getByRole('button', { name: 'Choose this journey' }).click()
-  await page.getByRole('group', { name: 'Confirm replacement' }).getByRole('button', { name: /Confirm replacement|and confirm/ }).click()
+  await page.locator(`[data-offer-id="${serviceOffer.id}"]`).getByRole('button', { name: 'Choose this journey' }).click()
+  await page.getByRole('group', { name: 'Confirm replacement' }).getByRole('button', { name: /Pay full replacement price and confirm/ }).click()
   await expect(page.getByRole('alert').filter({ hasText: 'Options were refreshed' })).toBeVisible()
 
   // A fresh option works.
   await page.getByTestId('offer').first().getByRole('button', { name: 'Choose this journey' }).click()
-  await page.getByRole('group', { name: 'Confirm replacement' }).getByRole('button', { name: /Confirm replacement|and confirm/ }).click()
+  await page.getByRole('group', { name: 'Confirm replacement' }).getByRole('button', { name: /Pay full replacement price and confirm/ }).click()
   await expect(page.getByText('Your replacement journey is booked (simulated).')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Replacement options' })).toHaveCount(0)
   await expect(page.getByText('Original legs that were replaced (history)')).toBeVisible()
   await ctx.close()
 })
 
-test('replacement that costs more: failed simulated top-up changes nothing, retry succeeds', async ({ browser }) => {
+test('replacement charges full price: failed payment preserves original, retry succeeds', async ({ browser }) => {
   await operatorChange(browser, 'ops.valley@doedu.test', 'VC1', '12:00', 'cancel')
   const ctx = await browser.newContext()
   const page = await ctx.newPage()
   await openDisruptedBooking(page, 'demo.pay@doedu.test')
-  const pay = page.getByTestId('offer').filter({ hasText: 'Extra to pay' }).first()
-  await expect(pay).toContainText('EUR 0.10')
+  const pay = page.getByTestId('offer').filter({ hasText: 'Pay now:' }).first()
+  await expect(pay).toContainText('Eligible old-leg refund (separate):')
   await pay.getByRole('button', { name: 'Choose this journey' }).click()
   await page.getByRole('button', { name: 'Simulate failed payment' }).click()
   await expect(page.getByRole('alert').filter({ hasText: 'Nothing was changed' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Your journey is disrupted' })).toBeVisible() // original still intact
-  await page.getByRole('button', { name: /Pay EUR 0.10 \(simulated\) and confirm/ }).click()
+  await page.getByRole('button', { name: /Pay full replacement price and confirm/ }).click()
   await expect(page.getByText('Your replacement journey is booked (simulated).')).toBeVisible()
-  await expect(page.getByText(/Replacement top-up: succeeded/)).toBeVisible()
+  await expect(page.getByText(/Replacement payment: succeeded/)).toBeVisible()
   await ctx.close()
 })
 
-test('cheaper replacement: simulated refund of the difference', async ({ browser }) => {
+test('replacement payment and old-leg refund are recorded separately', async ({ browser }) => {
   await operatorChange(browser, 'ops.greenline@doedu.test', 'GL1', '12:30', 'cancel')
   const ctx = await browser.newContext()
   const page = await ctx.newPage()
   await openDisruptedBooking(page, 'demo.refund@doedu.test')
-  const cheaper = page.getByTestId('offer').filter({ hasText: 'You get back' }).first()
-  await expect(cheaper).toContainText('EUR 0.10')
+  const cheaper = page.getByTestId('offer').filter({ hasText: 'Eligible old-leg refund (separate):' }).first()
+  await expect(cheaper).toContainText('Pay now:')
   await cheaper.getByRole('button', { name: 'Choose this journey' }).click()
-  await page.getByRole('button', { name: /Confirm replacement and receive refund/ }).click()
+  await page.getByRole('button', { name: /Pay full replacement price and confirm/ }).click()
   await expect(page.getByText('Your replacement journey is booked (simulated).')).toBeVisible()
-  await expect(page.getByTestId('refund')).toContainText('Cheaper replacement journey')
+  await expect(page.getByTestId('refund')).toContainText('Refund for replaced legs')
   await ctx.close()
 })
 
-test('no alternative: clear explanation and full-refund cancellation', async ({ browser }) => {
+test('no alternative: constraints are explained and policy-based cancellation is available', async ({ browser }) => {
   await operatorChange(browser, 'ops.rail@doedu.test', 'DR1', '18:10', 'delay', 60)
   const ctx = await browser.newContext()
   const page = await ctx.newPage()
   await signIn(page, 'demo.noalt@doedu.test')
   await page.goto('/notifications')
   await page.getByRole('link', { name: /Open booking/ }).first().click()
+  await page.getByLabel('Maximum payment now', { exact: false }).fill('0')
+  await page.getByRole('button', { name: 'Find replacement journeys' }).click()
   await expect(page.getByRole('heading', { name: 'No replacement found' })).toBeVisible()
   await expect(page.getByTestId('offer')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Review cancellation and refund' }).click()
-  await expect(page.getByText('refunded in full')).toBeVisible()
+  await page.getByRole('button', { name: 'Review cancellation policy' }).click()
+  await expect(page.getByRole('region', { name: 'Cancellation and refund' }).getByText('A delay alone does not guarantee a full refund. The cancellation policy saved at purchase applies.')).toBeVisible()
   await page.getByRole('button', { name: 'Confirm cancellation' }).click()
   await expect(page.getByTestId('refund')).toContainText('Cancelled after disruption')
   await expect(page.getByTestId('status')).toContainText('Cancelled')

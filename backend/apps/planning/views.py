@@ -15,6 +15,13 @@ from . import services
 from .serializers import StopSerializer, serialize_itinerary
 
 
+def _wheelchair_required(query):
+    try:
+        return serializers.BooleanField().run_validation(query.get("wheelchair_required", False))
+    except serializers.ValidationError as exc:
+        raise ValidationError({"wheelchair_required": exc.detail}) from exc
+
+
 @extend_schema(responses=StopSerializer(many=True))
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -37,6 +44,7 @@ def stops(request):
         OpenApiParameter("depart_after", str, description="ISO datetime. Provide exactly one of depart_after or arrive_by; naive values use Europe/Berlin."),
         OpenApiParameter("arrive_by", str, description="Arrival deadline (inclusive); searches departures in the preceding 24 hours. Defaults to latest_departure sorting."),
         OpenApiParameter("passengers", int, description="1-9, default 1"),
+        OpenApiParameter("wheelchair_required", bool, description="Require confirmed accessible vehicles, stops and transfer paths; excludes unknown."),
         OpenApiParameter("modes", str, description="Comma-separated allowed modes: bus,train,taxi. Default all; every leg must match."),
         OpenApiParameter("max_transfers", str, enum=["any", "0", "1", "2"], description="Maximum changes; any defaults to 2."),
         OpenApiParameter("max_connection_minutes", int, description="Optional 5-180 minute cap from arrival to the next departure, including walking."),
@@ -49,6 +57,7 @@ def stops(request):
 def search(request):
     """Search direct and multi-leg (up to 3) journeys. Results are offers, not bookings; nothing is reserved."""
     q = request.query_params
+    wheelchair_required = _wheelchair_required(q)
     errors = {}
     try:
         passengers = int(q.get("passengers", 1))
@@ -101,14 +110,14 @@ def search(request):
     planner = services.search_arrive_by if time_field == "arrive_by" else services.search
     results = planner(found["origin"], found["destination"], search_time, passengers, sort,
                               max_legs=3 if transfers == "any" else int(transfers) + 1,
-                              modes=modes, max_connection_minutes=connection)
+                              modes=modes, max_connection_minutes=connection, wheelchair_required=wheelchair_required)
     nxt = None
     if not results and planner is services.search:
         # Empty window: look at the following days (same planner and filters) so the page can say when service resumes.
         for day in range(1, 4):
             later = planner(found["origin"], found["destination"], search_time + timedelta(days=day), passengers, "departure",
                             max_legs=3 if transfers == "any" else int(transfers) + 1,
-                            modes=modes, max_connection_minutes=connection)
+                            modes=modes, max_connection_minutes=connection, wheelchair_required=wheelchair_required)
             if later:
                 nxt = {"departs_at": later[0].departs_at.isoformat(), "total_price": str(later[0].total_price),
                        "currency": later[0].currency}
@@ -151,6 +160,7 @@ def parse_legs(raw):
     parameters=[
         OpenApiParameter("legs", str, required=True, description="departure_id:from_stop:to_stop, comma separated"),
         OpenApiParameter("passengers", int),
+        OpenApiParameter("wheelchair_required", bool, description="Recheck strict accessibility against current data."),
         OpenApiParameter("arrive_by", str, description="Optional arrival deadline to revalidate against current times."),
     ],
     responses={200: dict, 409: dict},
@@ -165,9 +175,10 @@ def itinerary(request):
         assert 1 <= passengers <= services.MAX_PASSENGERS
     except (ValueError, AssertionError):
         raise ValidationError({"passengers": f"Must be a whole number from 1 to {services.MAX_PASSENGERS}."})
+    wheelchair_required = _wheelchair_required(request.query_params)
     selection = parse_legs(request.query_params.get("legs", ""))
     try:
-        it = services.build_itinerary(selection, passengers, timezone.now())
+        it = services.build_itinerary(selection, passengers, timezone.now(), wheelchair_required=wheelchair_required)
     except services.OfferError as e:
         return Response({"code": e.code, "message": e.message}, status=409)
     if it.min_places_left is not None and it.min_places_left < passengers:
@@ -190,6 +201,7 @@ def itinerary(request):
         OpenApiParameter("date", str, required=True, description="Centre day, YYYY-MM-DD (demo timezone)"),
         OpenApiParameter("time", str, description="Earliest departure each day, HH:MM (default 00:00)"),
         OpenApiParameter("passengers", int, description="1-9, default 1"),
+        OpenApiParameter("wheelchair_required", bool, description="Require confirmed accessible vehicles, stops and transfer paths; excludes unknown."),
         OpenApiParameter("modes", str, description="Comma-separated allowed modes: bus,train,taxi"),
         OpenApiParameter("span", int, description="Days either side of `date`, 0-3 (default 3)"),
     ],
@@ -204,6 +216,7 @@ def search_days(request):
     from datetime import date as date_type, time as time_type, timedelta
 
     q = request.query_params
+    wheelchair_required = _wheelchair_required(q)
     errors = {}
     try:
         passengers = int(q.get("passengers", 1))
@@ -242,7 +255,7 @@ def search_days(request):
     for offset in range(-span, span + 1):
         day = centre + timedelta(days=offset)
         start = timezone.make_aware(datetime.combine(day, start_time))
-        results = services.search(found["origin"], found["destination"], start, passengers, "price", now=now, modes=modes)
+        results = services.search(found["origin"], found["destination"], start, passengers, "price", now=now, modes=modes, wheelchair_required=wheelchair_required)
         days.append({
             "date": day.isoformat(),
             "count": len(results),

@@ -2,7 +2,7 @@ import { placeName, t } from '../i18n'
 import { useLanguage } from '../useLanguage'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ApiError, cancelBooking, fetchBooking, fetchQuote, type Booking, type CancellationQuote } from '../api'
+import { ApiError, cancelBooking, fetchBooking, fetchQuote, retryRefund, type Booking, type CancellationQuote } from '../api'
 import RecoveryPanel from '../components/RecoveryPanel'
 import ActivityTimeline from '../components/ActivityTimeline'
 import ConnectionProtection from '../components/ConnectionProtection'
@@ -34,7 +34,7 @@ export default function BookingDetail() {
   const userId = user?.id
 
   const show = useCallback((data: Booking) => {
-    setB(data); setOfflineAt(null)
+    setB(data); setOfflineAt(null); setErr(null)
     if (userId !== undefined) saveOfflineCopy(userId, data)       // keeps an on-device copy of confirmed, upcoming journeys
   }, [userId])
   const load = useCallback((signal?: AbortSignal) =>
@@ -47,11 +47,13 @@ export default function BookingDetail() {
   useEffect(() => {
     const ctrl = new AbortController()
     load(ctrl.signal)
-    const timer = setInterval(() => {
-      // Refresh quietly; transient network failures do not hide an already loaded booking.
+    const refresh = () => {
+      // Reconnect immediately; background browser tabs can throttle polling timers.
       fetchBooking(ref, ctrl.signal).then(data => { if (!ctrl.signal.aborted) show(data) }).catch(() => undefined)
-    }, 15000)
-    return () => { ctrl.abort(); clearInterval(timer) }
+    }
+    const timer = setInterval(refresh, 15000)
+    window.addEventListener('online', refresh)
+    return () => { ctrl.abort(); clearInterval(timer); window.removeEventListener('online', refresh) }
   }, [load, ref, show])
 
   async function startCancel() {
@@ -69,6 +71,13 @@ export default function BookingDetail() {
         setQuote(await fetchQuote(ref))
       } else setMsg(e instanceof ApiError ? e.message : t("Unexpected error."))
     } finally { setBusy(false) }
+  }
+
+  async function retry(id: number) {
+    setBusy(true); setMsg(null)
+    try { show(await retryRefund(ref, id)) }
+    catch (e) { setMsg(e instanceof ApiError ? e.message : t('Unexpected error.')) }
+    finally { setBusy(false) }
   }
 
   if (err) return <p className="status-bad" role="alert">{err.status === 404 ? t("Booking not found.") : t(err.message)}</p>
@@ -89,7 +98,7 @@ export default function BookingDetail() {
         <div className="card disruption-banner" role="alert">
           <h2>{t("Your journey is disrupted")}</h2>
           <p>{t("Leg")} {(b.disruption.problem_sequence ?? 0) + 1}  {t("cannot be used:")} {t(REASONS[b.disruption.reason] ?? "a service changed")}.</p>
-          <p>{t("You can cancel below for a full refund of every unused leg.")}</p>
+          <p>{t("Review cancellation below. Refund eligibility depends on each saved fare policy and operator cancellations.")}</p>
         </div>
       )}
       {b.disruption?.status === 'delayed' && (
@@ -106,9 +115,9 @@ export default function BookingDetail() {
       <section className="card">
         <p>{t("Status:")} <span className="badge" data-testid="status">{t(b.status_label)}</span></p>
         {!offlineAt && b.status === 'pending_payment' && <p><Link to={`/booking/${b.reference}/pay`}>{t("Continue to payment")}</Link></p>}
-        {b.status === 'expired' && <p className="warn">{t("The reservation expired and the places were released. Nothing was charged.")}</p>}
+        {b.status === 'expired' && <p className="warn">{t("The reservation ended. Check payment and refund history for the final settlement.")}</p>}
         {b.travel_plan && <p className="muted small">{t("Current timetable · checked at")} {clock(b.travel_plan.generated_at)}  {t("(Europe/Berlin). Progress is estimated, not GPS tracking.")}</p>}
-        <Timeline legs={b.travel_plan ? b.travel_plan.legs.map(l => ({ ...l, note: l.state === 'unavailable' ? t("Service unavailable") : l.departs_at !== l.scheduled_departs_at ? t("Originally booked departure: {0}", {0: clock(l.scheduled_departs_at)}) : undefined })) : b.legs.filter((l) => l.status === 'booked')} />
+        <Timeline connections={b.disruption?.connections} legs={b.travel_plan ? b.travel_plan.legs.map(l => ({ ...l, note: l.state === 'unavailable' ? t("Service unavailable") : l.departs_at !== l.scheduled_departs_at ? t("Originally booked departure: {0}", {0: clock(l.scheduled_departs_at)}) : undefined })) : b.legs.filter((l) => l.status === 'booked')} />
         {!offlineAt && b.status === 'confirmed' && <JourneyDownloads reference={b.reference} disrupted={b.disruption?.status === 'broken'} />}
         {b.legs.some((l) => l.status === 'replaced') && (
           <details>
@@ -121,8 +130,11 @@ export default function BookingDetail() {
         <ul className="muted small">{b.legs.map((l) => <li key={l.sequence}>{l.route_code}: {t(l.cancellation_policy)}</li>)}</ul>
 
         {b.refunds.map((r, i) => (
-          <p key={i} className="success card" role="status" data-testid="refund">
-             {t("Refund:")} <strong>{money(r.amount, b.currency)}</strong> — {t(r.reason)} ({t(r.status)}{t(", simulated).")} </p>
+          <div key={r.id ?? i} className={`card ${r.status === 'failed' ? 'warn-card' : ''}`} role="status" data-testid="refund">
+            <p>{t("Refund:")} <strong>{money(r.amount, b.currency)}</strong> — {t(r.reason)} ({t(r.status === 'completed' ? 'Refunded' : r.status)}{t(", simulated).")}</p>
+            {r.failure_reason && <p className="status-bad">{t(r.failure_reason)}</p>}
+            {!offlineAt && r.status === 'failed' && <button className="secondary" disabled={busy} onClick={() => retry(r.id)}>{t('Retry failed refund (simulated)')}</button>}
+          </div>
         ))}
 
         {!offlineAt && b.cancellable && b.status === 'confirmed' && !quote && (
@@ -132,7 +144,7 @@ export default function BookingDetail() {
         {quote && (
           <div className="card" role="region" aria-label={t("Cancellation and refund")}>
             <h2>{t("Cancel and refund")}</h2>
-            {quote.disrupted && <p className="warn">{t("Because your journey is disrupted, unused legs are refunded in full.")}</p>}
+            <p className="muted">{t('A delay alone does not guarantee a full refund. The cancellation policy saved at purchase applies.')}</p>
             <ScrollTable label={t("Refund per leg")}>
             <table className="legs">
               <thead><tr><th scope="col">{t("Leg")}</th><th scope="col">{t("Paid")}</th><th scope="col">{t("Refund")}</th><th scope="col">{t("Why")}</th></tr></thead>
@@ -143,7 +155,7 @@ export default function BookingDetail() {
               </tbody>
             </table>
             </ScrollTable>
-            <p className="price-line">{t("You will receive:")} <strong data-testid="quote-total">{money(quote.total_refund, b.currency)}</strong>  {t("(simulated refund)")}</p>
+            <p className="price-line">{t("Eligible refund:")} <strong data-testid="quote-total">{money(quote.total_refund, b.currency)}</strong>  {t("(simulated refund)")}</p>
             <div className="actions">
               <button className="primary danger" disabled={busy} onClick={confirmCancel}>{t("Confirm cancellation")}</button>
               <button className="secondary" disabled={busy} onClick={() => setQuote(null)}>{t("Keep my booking")}</button>
@@ -151,10 +163,11 @@ export default function BookingDetail() {
           </div>
         )}
 
+        {!offlineAt && b.payments.some(p => p.purpose === 'initial' && ['pending', 'created'].includes(p.status)) && <p className="warn-card"><strong>{t('Payment result pending')}</strong> <Link to={`/booking/${ref}/pay`}>{t('Check original payment result')}</Link></p>}
         {b.payments.length > 0 && (
           <>
             <h2>{t("Payment attempts (simulated)")}</h2>
-            <ul>{b.payments.map((p, i) => <li key={i}>{p.purpose === 'replacement' ? t("Replacement top-up: ") : ''}{t(p.status)} — {money(p.amount, b.currency)}{p.failure_reason && ` — ${t(p.failure_reason)}`}</li>)}</ul>
+            <ul>{b.payments.map((p, i) => <li key={i}>{p.purpose === 'replacement' ? t("Replacement payment: ") : ''}{t(p.status)} — {money(p.amount, b.currency)}{p.failure_reason && ` — ${t(p.failure_reason)}`}</li>)}</ul>
           </>
         )}
       </section>

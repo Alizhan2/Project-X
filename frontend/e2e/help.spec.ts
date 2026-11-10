@@ -5,7 +5,7 @@ test.describe('help centre', () => {
   for (const [name, size] of Object.entries({ desktop: { width: 1100, height: 900 }, mobile: { width: 390, height: 800 } })) {
     test(`opens, expands and is accessible (${name})`, async ({ page }) => {
       await page.setViewportSize(size)
-      await page.goto('/')
+      await page.goto('/demo')
       const menu = page.getByRole('button', { name: 'Menu' })
       if (await menu.isVisible()) await menu.click()
       await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Help' }).click()

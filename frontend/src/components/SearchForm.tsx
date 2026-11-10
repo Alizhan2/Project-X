@@ -13,12 +13,13 @@ export default function SearchForm({ params, setParams, stops, fieldErr }: { par
   const [time, setTime] = useState(params.get('time') ?? '06:00')
   const [passengers, setPassengers] = useState(params.get('passengers') ?? '1')
   const [timeMode, setTimeMode] = useState(params.get('time_mode') === 'arrival' ? 'arrival' : 'departure')
+  const [wheelchairRequired, setWheelchairRequired] = useState(params.get('wheelchair_required') === 'true')
   const timeField = timeMode === 'arrival' ? 'arrive_by' : 'depart_after'
 
   function submit(e: FormEvent) {
     e.preventDefault()
     const next = new URLSearchParams(params)
-    for (const [key, value] of Object.entries({ origin, destination, date, time, passengers, time_mode: timeMode })) next.set(key, value)
+    for (const [key, value] of Object.entries({ origin, destination, date, time, passengers, time_mode: timeMode, wheelchair_required: String(wheelchairRequired) })) next.set(key, value)
     if ((params.get('time_mode') ?? 'departure') !== timeMode) next.delete('sort')
     next.delete('repeat')
     setParams(next)
@@ -65,6 +66,7 @@ export default function SearchForm({ params, setParams, stops, fieldErr }: { par
           <input id="passengers" type="number" min={1} max={9} required value={passengers} onChange={(e) => setPassengers(e.target.value)} {...aria('passengers')} />
           {err('passengers')}
         </div>
+        <label className="check"><input type="checkbox" checked={wheelchairRequired} onChange={e => setWheelchairRequired(e.target.checked)} />{t("Require a fully step-free journey")}</label>
         <button type="submit" className="primary" disabled={!origin || !destination}>{t("Search journeys")}</button>
       </form>
   )

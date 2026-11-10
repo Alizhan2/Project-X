@@ -1,6 +1,6 @@
 import { t } from './i18n'
 import { useLanguage } from './useLanguage'
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import Help from './pages/Help'
 import Layout from './components/Layout'
 import RequireAuth from './components/RequireAuth'
@@ -21,12 +21,22 @@ import Kazakhstan from './pages/Kazakhstan'
 import Status from './pages/Status'
 import EmailAccount from './pages/EmailAccount'
 
+function Home() {
+  const location = useLocation()
+  const origin = new URLSearchParams(location.search).get('origin')
+  // Preserve shared links created before Kazakhstan became the home page.
+  return origin && /^(NG|RV|LK|MF|OB|PM)-(BUS|RAIL|MARINA)$/.test(origin)
+    ? <Navigate replace to={`/demo${location.search}`} />
+    : <Kazakhstan />
+}
+
 export default function App() {
   useLanguage()
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Search />} />
+        <Route index element={<Home />} />
+        <Route path="demo" element={<Search />} />
         <Route path="kazakhstan" element={<Kazakhstan />} />
         <Route path="journey" element={<Journey />} />
         <Route path="forgot-password" element={<EmailAccount key="forgot" mode="forgot" />} />

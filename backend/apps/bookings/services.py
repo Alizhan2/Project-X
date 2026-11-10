@@ -40,7 +40,7 @@ def _lock_departures(ids):
     return {d.pk: d for d in Departure.objects.select_for_update().filter(pk__in=ids).order_by("pk")}
 
 
-def create_booking(*, user, selection, passengers, traveller_names, contact_email, idempotency_key, expected_total, arrive_by=None):
+def create_booking(*, user, selection, passengers, traveller_names, contact_email, idempotency_key, expected_total, arrive_by=None, wheelchair_required=False):
     """Revalidate every leg, hold capacity for all legs atomically, create a pending booking.
 
     Idempotent per (user, idempotency_key): a replay returns the original booking with created=False.
@@ -53,7 +53,7 @@ def create_booking(*, user, selection, passengers, traveller_names, contact_emai
             now = timezone.now()
             locked = _lock_departures({s["departure_id"] for s in selection if s.get("departure_id") is not None})
             try:
-                it = build_itinerary(selection, passengers, now)
+                it = build_itinerary(selection, passengers, now, wheelchair_required=wheelchair_required)
             except OfferError as e:
                 raise BookingError(e.code, e.message) from e
             if arrive_by is not None and it.arrives_at > arrive_by:
@@ -74,7 +74,7 @@ def create_booking(*, user, selection, passengers, traveller_names, contact_emai
             for pk, places in needed.items():
                 Departure.objects.filter(pk=pk).update(places_taken=F("places_taken") + places)
             booking = Booking.objects.create(
-                user=user, passengers=passengers, total_amount=it.total_price, currency=it.currency,
+                user=user, passengers=passengers, wheelchair_required=wheelchair_required, total_amount=it.total_price, currency=it.currency,
                 contact_email=contact_email, idempotency_key=idempotency_key,
                 expires_at=now + timedelta(minutes=settings.RESERVATION_MINUTES),
             )
@@ -202,39 +202,35 @@ def leg_gross(leg):
     return leg.unit_price if leg.price_basis == "vehicle" else leg.unit_price * leg.booking.passengers
 
 
+def leg_refund_line(leg, now, live=None):
+    """Purchase policy at the latest published cutoff; a delay never grants a refund exception."""
+    from apps.disruptions.services import live_legs
+    if live is None:
+        live = next((item for item in live_legs(leg.booking) if item.leg.pk == leg.pk), None)
+    cutoff = leg.boarded_at or (live.departs_at if live else leg.departs_at)
+    gross = leg_gross(leg)
+    hours = (cutoff - now).total_seconds() / 3600
+    if leg.boarded_at or leg.completed_at or cutoff <= now:
+        pct, why = 0, "already departed"
+    elif live is not None and live.cancelled:
+        pct, why = 100, "operator cancelled this unused leg"
+    elif hours >= leg.policy_full_refund_hours:
+        pct, why = 100, f"cancelled at least {leg.policy_full_refund_hours}h before departure"
+    elif hours >= leg.policy_partial_refund_hours:
+        pct, why = leg.policy_partial_percent, f"cancelled at least {leg.policy_partial_refund_hours}h before departure"
+    else:
+        pct, why = 0, "too close to departure for a refund"
+    return {"sequence": leg.sequence, "route_code": leg.route_code, "paid": gross, "percent": pct,
+            "reason": why, "refund": (gross * pct / 100).quantize(CENT, rounding=ROUND_HALF_UP)}
+
+
 def refund_quote(booking, now=None):
-    """Explicit, deterministic refund rules (docs/business-rules.md):
-
-    per not-yet-departed leg, using the policy *snapshotted at purchase*:
-      hours before departure >= full window  -> 100%;  >= partial window -> partial %;  otherwise 0%.
-    Legs that already departed refund 0. If the journey is disrupted (a leg cancelled by the operator or a
-    connection no longer possible), every not-yet-departed leg is refunded 100%.
-    """
-    from apps.disruptions.services import assess  # local import: disruptions depends on bookings
-
+    from apps.disruptions.services import assess
     now = now or timezone.now()
-    disrupted = assess(booking).status == "broken"
-    lines = []
-    for leg in booking.legs.order_by("sequence"):
-        if leg.status != leg.Status.BOOKED:
-            continue
-        gross = leg_gross(leg)
-        hours = (leg.departs_at - now).total_seconds() / 3600
-        if leg.departs_at <= now:
-            pct, why = 0, "already departed"
-        elif disrupted:
-            pct, why = 100, "journey disrupted: full refund of unused legs"
-        elif hours >= leg.policy_full_refund_hours:
-            pct, why = 100, f"cancelled at least {leg.policy_full_refund_hours}h before departure"
-        elif hours >= leg.policy_partial_refund_hours:
-            pct, why = leg.policy_partial_percent, f"cancelled at least {leg.policy_partial_refund_hours}h before departure"
-        else:
-            pct, why = 0, "too close to departure for a refund"
-        lines.append({
-            "sequence": leg.sequence, "route_code": leg.route_code, "paid": gross, "percent": pct, "reason": why,
-            "refund": (gross * pct / 100).quantize(CENT, rounding=ROUND_HALF_UP),
-        })
-    return {"disrupted": disrupted, "lines": lines, "total": sum((l["refund"] for l in lines), Decimal("0.00"))}
+    assessment = assess(booking)
+    lines = [leg_refund_line(item.leg, now, item) for item in assessment.legs if item.leg.status == "booked"]
+    return {"disrupted": assessment.status == "broken", "lines": lines,
+            "total": sum((line["refund"] for line in lines), Decimal("0.00"))}
 
 
 def cancel_booking(booking_id, actor, expected_refund=None):
@@ -258,14 +254,11 @@ def cancel_booking(booking_id, actor, expected_refund=None):
         if expected_refund is not None and Decimal(expected_refund) != quote["total"]:
             raise BookingError("refund_changed", "The refund amount changed since you looked.", new_refund=f"{quote['total']:.2f}")
         reason = Refund.Reason.DISRUPTION_CANCEL if quote["disrupted"] else Refund.Reason.PASSENGER_CANCEL
-        refund = Refund.objects.create(
-            booking=booking, key="cancel", reason=reason, amount=quote["total"], currency=booking.currency,
-            detail={"lines": [{**l, "paid": str(l["paid"]), "refund": str(l["refund"])} for l in quote["lines"]]},
-        )
-        refund.status, refund.completed_at = Refund.Status.COMPLETED, now  # simulated instant refund
-        refund.save(update_fields=["status", "completed_at"])
+        from apps.payments.services import request_refund
+        refund = request_refund(booking, key="cancel", reason=reason, amount=quote["total"],
+                                detail={"lines": [{**l, "paid": str(l["paid"]), "refund": str(l["refund"])} for l in quote["lines"]]})
         _free_places(booking, Reservation.Status.RELEASED, Booking.Status.CANCELLED, now=now, actor=actor, action="booking.cancelled")
         from apps.notifications.services import notify
         notify(booking.user, "booking_cancelled", f"Booking {booking.reference} cancelled",
-               f"Simulated refund of {booking.currency} {refund.amount:.2f} issued.", booking, f"cancel:{booking.pk}")
+               f"Simulated refund of {booking.currency} {refund.amount:.2f} requested separately.", booking, f"cancel:{booking.pk}")
         return booking, refund
