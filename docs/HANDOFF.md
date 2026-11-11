@@ -17,18 +17,18 @@ Additive migrations are required for transport transfer metadata, booking access
 
 For the earlier requirements increment, local checks passed: 315 backend tests, 27 frontend unit tests, build/lint/schema checks, 51 standard browser scenarios and 2 separately enabled PWA scenarios. Combined evidence is recorded in requirements-alignment-2026-11-10.md; those counts are not a rerun of the current hosting changes.
 
-For the Render preparation, eleven focused local runtime/bootstrap tests passed. The native ten-user rehearsal is still pending, as are the Render image build, public HTTPS/phone walkthrough, worker and restart checks. These local tests do not establish a public deployment or a CI result for this hosting increment.
+For the Render preparation, all 326 backend tests passed, including eleven focused runtime/bootstrap tests. The native production-mode rehearsal completed ten concurrent purchases, passed the integrity check, and preserved all 18 users' password hashes and 14 bookings across a launcher restart; its temporary database and role were removed. Render then built and deployed the image. Public HTTPS, worker readiness, a 390px mobile browser walkthrough, registration/booking/payment/downloads, Kazakhstan plan/sharing and repeat-deployment persistence passed. See [hosted evidence and release CI](render-free-test.md); physical-phone and hosted ten-user performance checks remain for the session.
 
 ## Remaining boundaries
 
 - All booking inventory, payments, refunds and confirmations remain simulated; commercial mode is still refused.
 - Recorded used markers and recovery preserve used legs, but general per-leg cancellation/amendment is not implemented; whole cancellation retains its documented capacity-counter simplification.
-- Actual mail delivery, verified public deployment/HTTPS, off-host backup scheduling, full container/read-only runtime and manual screen-reader/user studies remain separate work. Render Free blocks normal SMTP ports; email delivery is excluded from the temporary study.
+- Actual mail delivery, off-host backup scheduling, full Compose/read-only runtime and manual screen-reader/user studies remain separate work. The Render app container with managed PostgreSQL is running, but that does not verify the full local Compose topology or a read-only filesystem. Render Free blocks normal SMTP ports; email delivery is excluded from the temporary study.
 - Process-plan activities, team hours/approvals and usability participant responses must be recorded from real events, not generated from software state.
 
 ## Deployment
 
-Repository: https://github.com/Alizhan2/Project-X. A temporary free Render plan is prepared for ten participants on 12 November: one Docker web service with a cohosted worker and a dedicated synthetic PostgreSQL 17 database, both explicitly free. The Render account is connected, but no Doedu resources or public URL have been created or verified. The unrelated `sanapath-ai` service already in that workspace must not be changed.
+Repository: https://github.com/Alizhan2/Project-X. The temporary Render study deployment is live at https://doedu-kazakhstan-test-x3wv.onrender.com/ (`/demo` for fictional booking), release `7c2d4bc6cd5e`: one Docker web service with a cohosted worker and a dedicated synthetic PostgreSQL 17 database, both free. The plan was reviewed and explicitly approved by the user. The unrelated `sanapath-ai` service was not changed.
 
 Review the Blueprint before approving resource creation, leave automatic deployment off, and follow [render-free-test.md](render-free-test.md). Never transfer the user's local database. Guarded bootstrap seeds only a new empty study database once; generated passenger/operator credentials stay private in Render Dashboard, and the administrator has a separate password. The normal ten-account booking task uses NG-BUS → RV-BUS tomorrow at 16:00; shared recovery/operator fixtures require moderation.
 

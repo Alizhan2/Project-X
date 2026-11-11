@@ -4,9 +4,13 @@ Prepared for **12 November 2026, ten participants**. This is a temporary hosted 
 
 ## Current status and evidence
 
-The Render account is connected. **No Doedu web service, database or public URL has been created or verified yet.** The workspace already contains an unrelated `sanapath-ai` free web service; do not alter, restart or delete it.
+The dedicated study deployment is **live**: [Kazakhstan planning](https://doedu-kazakhstan-test-x3wv.onrender.com/) and [fictional booking](https://doedu-kazakhstan-test-x3wv.onrender.com/demo). Render built and deployed revision `7c2d4bc6cd5ef25ab03f1fba6738f336b68b1b5d`. Initial deployment became live on 11 November at 15:01 UTC; a repeat deployment became live at 15:08 UTC. Both resources are free in the confirmed My Workspace. The unrelated `sanapath-ai` service was not changed.
 
-The deployment files are prepared: root `render.yaml`, `backend/render_start.py` and the guarded `bootstrap_hosted_demo` command. Eleven focused local runtime/bootstrap tests passed. A native ten-user rehearsal, Render image build, public HTTPS checks and phone checks are still pending. Earlier application/CI evidence does not establish that this deployment works.
+Public checks passed: HTTPS 200, HTTP-to-HTTPS 301, staged HSTS and CSP, ready JSON with database/migrations/worker all `ok`, EN/RU/KK home pages, a 390px mobile viewport without horizontal overflow, independent registration, search, five-minute reservation, simulated payment, valid PDF/calendar downloads, Kazakhstan plan saving and parameter-only sharing. Anonymous booking access returned 403. After repeat deployment, the same authenticated session could read its confirmed booking, the saved Kazakhstan plan survived reload, and the worker was fresh. Logs confirmed the bootstrap was a no-op. The single synthetic smoke account/booking/plan are verification records, not participant observations.
+
+These are browser-emulation checks, not a physical-phone/mobile-data study. Hosted ten-user performance and moderated recovery scenarios remain to check before the session. The [release CI run](https://github.com/Alizhan2/Project-X/actions/runs/43043422451) records checks for the deployed revision; later documentation-only commits do not change that release.
+
+The deployment files are prepared: root `render.yaml`, `backend/render_start.py` and the guarded `bootstrap_hosted_demo` command. All 326 backend tests passed, including eleven focused runtime/bootstrap tests. A disposable native rehearsal using production settings completed ten simultaneous register/search/reserve/pay flows (10/10), passed the integrity check, and preserved all 18 account password hashes and 14 bookings after a full launcher restart. Only the documented staged-HSTS warnings W005/W021 remained. The temporary database and role were removed. These results establish local behaviour, not free-instance latency or public HTTPS/phone behaviour.
 
 ## Resources and startup
 
@@ -66,14 +70,16 @@ Render Free blocks outbound SMTP ports 25, 465 and 587. This deployment does not
 
 Capacity and response time on the free instance remain to be measured. Do not promise ten simultaneous users a particular latency before the hosted checks. No real supplier API, charge, refund or valid ticket is enabled by this deployment.
 
-## Deployment record — pending
+## Deployment record — 11 November 2026
 
 | Check | Observed result |
 | --- | --- |
-| Public HTTPS URL / deployed commit | Not deployed yet |
-| Ready response / worker freshness | Pending |
-| Ten-user disposable rehearsal | Pending |
-| Public phone walkthrough | Pending |
-| Restart persistence | Pending |
-| PostgreSQL creation / expiry date | Pending |
-| Moderator and participant data preparation | Pending |
+| Public HTTPS URL / deployed commit | https://doedu-kazakhstan-test-x3wv.onrender.com/ · `7c2d4bc6cd5e` |
+| Ready response / worker freshness | HTTP 200 JSON; database, migrations and worker all `ok` |
+| Ten-user disposable rehearsal | 10/10 concurrent purchases; integrity passed; scratch database removed |
+| Mobile browser walkthrough | 390px emulation passed; physical phone/mobile-data check remains for moderator |
+| Restart persistence | Authenticated session, confirmed smoke booking and saved Kazakhstan plan preserved after repeat deployment |
+| PostgreSQL creation / expiry date | Created 11 November 2026 14:57 UTC; expires 11 December 2026 14:57 UTC |
+| Moderator and participant data preparation | Private moderator credentials stay in Render; participants register independently; shared recovery tasks require preparation |
+
+Render identifiers for operations: Blueprint `exs-dbq848afngtc73cv80p0`, web service `srv-dbq85cgu01pc73a3leq0`, PostgreSQL `dpg-dbq84ngu01pc73a3im00-a`. Both Blueprint Auto Sync and web auto-deployment are off. [Service dashboard](https://dashboard.render.com/web/srv-dbq85cgu01pc73a3leq0). No custom domain or paid service was added.

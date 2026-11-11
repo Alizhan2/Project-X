@@ -7,9 +7,9 @@ Interface: **English · Русский · Қазақша**, including account em
 
 Handoff / current blockers: [docs/HANDOFF.md](docs/HANDOFF.md)
 
-Temporary free hosting for the ten-person November usability test: [Render study deployment](docs/render-free-test.md). Configuration is prepared; a public deployment is not yet verified.
+Temporary hosted demo: [Doedu Kazakhstan](https://doedu-kazakhstan-test-x3wv.onrender.com/) · [fictional booking demo](https://doedu-kazakhstan-test-x3wv.onrender.com/demo). Public HTTPS, mobile viewport, booking/download and restart checks passed on 11 November. Study setup and free-tier limits: [Render study deployment](docs/render-free-test.md).
 
-Status: **Core demonstration MVP implemented; hosted deployment and remaining hardening require verification.** Production-readiness assessment: [docs/production-readiness.md](docs/production-readiness.md) · evidence: [docs/verification-report.md](docs/verification-report.md). Commercial operation is **not** ready: [docs/commercial-readiness.md](docs/commercial-readiness.md).
+Status: **Core demonstration MVP and temporary hosted demo available; production hardening incomplete.** Production-readiness assessment: [docs/production-readiness.md](docs/production-readiness.md) · current hosted evidence: [docs/render-free-test.md](docs/render-free-test.md). Commercial operation is **not** ready: [docs/commercial-readiness.md](docs/commercial-readiness.md).
 
 ## Layout
 - `backend/` Django + DRF modular monolith (`apps/accounts, transport, planning, bookings, payments, disruptions, notifications, core`)

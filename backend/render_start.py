@@ -9,6 +9,7 @@ import sys
 import time
 
 BACKEND = Path(__file__).resolve().parent
+# shortcut: web idle sleep pauses the cohosted worker; use an always-on worker beyond this short study.
 
 
 def render_environment(source):
