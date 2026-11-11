@@ -83,6 +83,11 @@ test('delay breaks the connection; an offer made stale by another service change
   await expect(page.getByText('Your replacement journey is booked (simulated).')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Replacement options' })).toHaveCount(0)
   await expect(page.getByText('Original legs that were replaced (history)')).toBeVisible()
+  const ref = await page.getByTestId('reference').innerText()
+  const current = await (await page.request.get(`/api/bookings/${ref}/`)).json()
+  const cached = await page.evaluate(reference => JSON.parse(localStorage.getItem('doedu.offline.v1')!).items.find((item: { booking: { reference: string } }) => item.booking.reference === reference).booking, ref)
+  expect(cached.legs).toEqual(current.legs)
+  expect(cached.legs.some((leg: { status: string }) => leg.status === 'replaced')).toBe(true)
   await ctx.close()
 })
 

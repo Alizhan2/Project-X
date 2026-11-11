@@ -1,6 +1,6 @@
 import { placeName, t } from '../i18n'
 import { useLanguage } from '../useLanguage'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, cancelBooking, fetchBooking, fetchQuote, retryRefund, type Booking, type CancellationQuote } from '../api'
 import RecoveryPanel from '../components/RecoveryPanel'
@@ -32,8 +32,10 @@ export default function BookingDetail() {
   const { user } = useAuth()
   const [offlineAt, setOfflineAt] = useState<string | null>(null)
   const userId = user?.id
+  const revision = useRef(0)
 
   const show = useCallback((data: Booking) => {
+    revision.current += 1
     setB(data); setOfflineAt(null); setErr(null)
     if (userId !== undefined) saveOfflineCopy(userId, data)       // keeps an on-device copy of confirmed, upcoming journeys
   }, [userId])
@@ -49,7 +51,8 @@ export default function BookingDetail() {
     load(ctrl.signal)
     const refresh = () => {
       // Reconnect immediately; background browser tabs can throttle polling timers.
-      fetchBooking(ref, ctrl.signal).then(data => { if (!ctrl.signal.aborted) show(data) }).catch(() => undefined)
+      const requestedRevision = revision.current
+      fetchBooking(ref, ctrl.signal).then(data => { if (!ctrl.signal.aborted && requestedRevision === revision.current) show(data) }).catch(() => undefined)
     }
     const timer = setInterval(refresh, 15000)
     window.addEventListener('online', refresh)
@@ -64,7 +67,7 @@ export default function BookingDetail() {
     if (!quote) return
     setBusy(true); setMsg(null)
     try {
-      setB(await cancelBooking(ref, quote.total_refund)); setQuote(null)
+      show(await cancelBooking(ref, quote.total_refund)); setQuote(null)
     } catch (e) {
       if (e instanceof ApiError && e.code === 'refund_changed') {
         setMsg(t("The refund changed to {0} since you looked. Please review it again.", {0: money(String(e.data.new_refund), b?.currency ?? 'EUR')}))
@@ -109,7 +112,7 @@ export default function BookingDetail() {
       )}
 
       {!offlineAt && b.status === 'confirmed' && b.disruption?.status === 'broken' && (
-        <RecoveryPanel booking={b} onChanged={(nb, m) => { setB(nb); setQuote(null); setRecovered(m) }} onCancel={startCancel} />
+        <RecoveryPanel booking={b} onChanged={(nb, m) => { show(nb); setQuote(null); setRecovered(m) }} onCancel={startCancel} />
       )}
 
       <section className="card">

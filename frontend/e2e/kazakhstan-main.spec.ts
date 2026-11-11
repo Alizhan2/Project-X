@@ -1,8 +1,51 @@
 import { readFileSync } from 'node:fs'
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { demoDayIso } from './demo-day'
 
 const messages = JSON.parse(readFileSync(new URL('../src/messages.json', import.meta.url), 'utf8')) as Record<string, { ru: string; kk: string }>
+
+for (const language of ['en', 'ru', 'kk'] as const) {
+  test(`Kazakhstan ${language}: an unconfirmed city cannot search or share the previous selection`, async ({ page }) => {
+    const label = (key: string) => language === 'en' ? key : messages[key][language]
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(`/?lang=${language}`)
+    const input = page.getByRole('combobox', { name: label('From'), exact: true })
+    await input.click()
+    for (let index = 0; index < 8; index += 1) await input.press('ArrowDown')
+    const activeId = await input.getAttribute('aria-activedescendant')
+    await expect(page.locator(`[id="${activeId}"]`)).toBeInViewport()
+    const requests: string[] = []
+    page.on('request', request => { if (new URL(request.url()).pathname === '/api/kazakhstan/search/') requests.push(request.url()) })
+    await input.fill('Актобе')
+    if (language === 'en') {
+      const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+      expect(accessibility.violations.map(violation => violation.id)).toEqual([])
+    }
+    await page.locator('button[value="search"]').click()
+    await expect(input).toHaveAttribute('aria-invalid', 'true')
+    await expect(input).toBeFocused()
+    await page.locator('button[value="share"]').click()
+    await expect(page.getByLabel(label('Journey link'))).toHaveCount(0)
+    expect(requests).toEqual([])
+    await input.press('ArrowDown')
+    await input.press('Enter')
+    const selected = language === 'en' ? 'Aktobe' : language === 'ru' ? 'Актобе' : 'Ақтөбе'
+    await expect(input).toHaveValue(selected)
+    const response = page.waitForResponse(r => new URL(r.url()).pathname === '/api/kazakhstan/search/' && r.ok())
+    await page.locator('button[value="search"]').click()
+    await response
+    await expect(page).toHaveURL(/origin=kz-aktobe/)
+    await expect(page.locator('.result').first()).toContainText(selected)
+    await input.fill('zzzzzz')
+    await expect(page.getByRole('status').filter({ hasText: label('No matching cities. Try another spelling or region.') })).toBeVisible()
+    await input.press('Escape')
+    await expect(input).toHaveAttribute('aria-expanded', 'false')
+    await page.locator('button[value="search"]').click()
+    await expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(requests).toHaveLength(1)
+  })
+}
 
 test('Kazakhstan demo covers the official city directory and keeps the fictional region separate', async ({ page, request }) => {
   const response = await request.get('/api/kazakhstan/catalog/')
@@ -16,8 +59,8 @@ test('Kazakhstan demo covers the official city directory and keeps the fictional
   await expect(page.getByRole('heading', { name: 'Doedu Kazakhstan', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Kazakhstan booking demo' })).toBeVisible()
   await expect(page.getByText('Real cities · saved plans · KZT · Kazakhstan time')).toBeVisible()
-  await page.locator('#kz-filter-origin').fill('Капчагай')
-  await expect(page.locator('#kz-select-origin option[value="kz-konaev"]')).toHaveCount(1)
+  await page.locator('#kz-city-origin').fill('Капчагай')
+  await expect(page.getByRole('option', { name: /Konaev/ })).toBeVisible()
   await page.getByRole('link', { name: 'Other demo scenarios (fictional region, EUR)' }).click()
   await expect(page).toHaveURL(/\/demo$/)
   await expect(page.getByText('Fictional stops, EUR and Europe/Berlin time. No real tickets.')).toBeVisible()
@@ -31,8 +74,8 @@ for (const language of ['en', 'ru', 'kk'] as const) {
     const label = (key: string) => language === 'en' ? key : messages[key][language]
     const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Almaty' })
     await page.goto(`/?lang=${language}`)
-    await page.locator('#kz-select-origin').selectOption('kz-almaty')
-    await page.locator('#kz-select-destination').selectOption('kz-kosshy')
+    await page.locator('#kz-city-destination').fill('Косшы')
+    await page.locator('#kz-city-destination').press('Enter')
     const form = page.locator('form').first()
     await form.locator('input[name="date"]').fill(tomorrow)
     await form.locator('select[name="time_mode"]').selectOption('arrival')
@@ -129,7 +172,7 @@ for (const language of ['en', 'ru', 'kk'] as const) {
     await page.getByRole('link', { name: label('My journeys'), exact: true }).click()
     await page.getByRole('link', { name: label('Repeat journey') }).first().click()
     await expect(page).toHaveURL(/\/?\?origin=kz-almaty&destination=kz-kosshy/)
-    await expect(page.locator('#kz-select-destination')).toHaveValue('kz-kosshy')
+    await expect(page.locator('#kz-city-destination')).toHaveValue(translatedPlace('Kosshy'))
     await expect(page.locator('input[name="wheelchair_required"]')).toBeChecked()
     await expect(page.locator('select[name="time_mode"]')).toHaveValue('departure')
   })
@@ -164,7 +207,8 @@ test('Kazakhstan total budget, saved preferences, shared search and Back/reload 
   await expect(page.getByRole('button', { name: /^Sign out/ })).toBeVisible()
   await page.goto('/?lang=en')
   const form = page.getByRole('form', { name: 'Kazakhstan journey search' })
-  await form.locator('select[name="destination"]').selectOption('kz-kosshy')
+  await form.locator('input[name="destination"]').fill('Косшы')
+  await form.locator('input[name="destination"]').press('Enter')
   await form.locator('input[name="date"]').fill(tomorrow)
   await form.locator('input[name="passengers"]').fill('2')
   await form.locator('input[name="wheelchair_required"]').check()

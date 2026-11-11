@@ -180,4 +180,11 @@ button.primary:not(:disabled):hover, a.button.primary:hover { background: #103c6
 .kz-actions button, .kz-fields button { font: inherit; padding: .6rem 1rem; cursor: pointer; min-height: 2.9rem; }
 .kz-plans { margin-top: 2rem; }
 .kz-private-note { white-space: pre-wrap; overflow-wrap: anywhere; }
+.city-picker { position: relative; }
+.city-options { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; max-height: 18rem; overflow-y: auto; margin: 0; padding: .25rem; list-style: none; background: var(--bg); color: var(--ink); border: 1px solid var(--border); border-radius: .5rem; box-shadow: 0 8px 24px #0002; }
+.city-options ul { list-style: none; margin: 0; padding: 0; }
+.city-options p { margin: .5rem; }
+.city-options li { display: grid; gap: .15rem; padding: .6rem; min-height: 44px; cursor: pointer; border-radius: .25rem; }
+.city-options li span { font-size: .85rem; color: var(--muted); }
+.city-options li:hover, .city-options li[data-active=true] { background: var(--soft); outline: 2px solid var(--ink); outline-offset: -2px; }
 @media (max-width: 650px) { .kz-note { grid-column: auto; } }

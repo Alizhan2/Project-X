@@ -6,10 +6,12 @@ Implemented 2026-10-20. All services, bookings and payments remain simulated.
 - The signed-in search page shows the next confirmed journey, or an explicit empty state. An already-started journey stays visible until its current arrival time passes. Unpaid, expired and cancelled bookings are excluded.
 - The card uses current timetable estimates, shows the next/current leg and links to the booking. Disruptions remain visible with a link to review replacement/cancellation. This is not GPS or proof of boarding.
 - The card and open booking refresh every 15 seconds. The card reports refresh failures rather than silently presenting an old timetable as current.
-- The booking timeline now shows current times, preserving the original purchase snapshots separately. All displayed times use Europe/Berlin.
+- The booking timeline now shows current times, preserving the original purchase snapshots separately. Displayed times follow the booking market, Asia/Almaty (UTC+5) for Kazakhstan and Europe/Berlin for the fictional region.
 - Confirmed bookings have **Add to calendar (.ics)** and **Download journey PDF** buttons. Download errors stay in the page. Downloading never changes a booking, payment or capacity.
 
 ## Backend and data rules
+
+Booking changes update on-device copies immediately. Successful cancellation removes the prior confirmation, and replacement results update the stored route. Background refresh replies started before a newer update are ignored. If an unpaid-reservation cancellation loses its reply, the payment screen checks the reservation again. An active reservation shows a retry message. An unreachable status blocks another payment and provides a status-check action until the outcome is known.
 - `GET /api/bookings/upcoming/` returns `journey: null` or a current travel plan, scoped to the signed-in user.
 - Booking payloads add `travel_plan` for confirmed bookings. The shared projection uses the existing disruption assessment, including retimed taxis, and excludes replaced legs.
 - Upcoming selection orders by first current departure, not purchase time; in-progress journeys take precedence over future departures. Candidates include recent past snapshots to account for the operator delay limit.

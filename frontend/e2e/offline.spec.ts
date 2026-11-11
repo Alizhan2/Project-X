@@ -48,3 +48,37 @@ test('signing out removes the on-device copies', async ({ page }) => {
   await page.getByRole('button', { name: /Sign out/ }).click()
   await expect.poll(() => page.evaluate(() => localStorage.getItem('doedu.offline.v1'))).toBeNull()
 })
+
+test('cancellation immediately removes the old offline confirmation', async ({ page }) => {
+  const ref = await registerAndBook(page)
+  let releaseRefresh!: () => void
+  let refreshStarted!: () => void
+  const refreshReady = new Promise<void>(resolve => { refreshStarted = resolve })
+  const refreshGate = new Promise<void>(resolve => { releaseRefresh = resolve })
+  let holdRefresh = true
+  await page.route(`**/api/bookings/${ref}/`, async route => {
+    if (!holdRefresh) return route.continue()
+    holdRefresh = false
+    const stale = await route.fetch()
+    refreshStarted()
+    await refreshGate
+    await route.fulfill({ response: stale })
+  })
+  await page.evaluate(() => window.dispatchEvent(new Event('online')))
+  await refreshReady
+  await page.getByRole('button', { name: 'Cancel this journey…' }).click()
+  await page.getByRole('button', { name: 'Confirm cancellation', exact: true }).click()
+  await expect(page.getByTestId('status')).toContainText('Cancelled')
+  const oldReply = page.waitForResponse(response => response.request().method() === 'GET' && new URL(response.url()).pathname === `/api/bookings/${ref}/`)
+  releaseRefresh()
+  await oldReply
+  await expect(page.getByTestId('status')).toContainText('Cancelled')
+  const copies = await page.evaluate(() => JSON.parse(localStorage.getItem('doedu.offline.v1') ?? '{"items":[]}').items)
+  expect(copies.some((copy: { booking: { reference: string } }) => copy.booking.reference === ref)).toBe(false)
+  await page.unroute(`**/api/bookings/${ref}/`)
+  await page.route(`**/api/bookings/${ref}/`, route => route.abort('internetdisconnected'))
+  await page.reload()
+  await expect(page.getByRole('alert')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Booking confirmed (simulated)' })).toHaveCount(0)
+  await expect(page.getByTestId('offline-copy')).toHaveCount(0)
+})

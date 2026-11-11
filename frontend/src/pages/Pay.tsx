@@ -14,6 +14,7 @@ export default function Pay() {
   const [err, setErr] = useState<ApiError | null>(null)
   const [busy, setBusy] = useState(false)
   const [declined, setDeclined] = useState<string | null>(null)
+  const [cancelUncertain, setCancelUncertain] = useState(false)
   const key = useRef(crypto.randomUUID())
   const now = useNow()
 
@@ -51,6 +52,30 @@ export default function Pay() {
     } finally { setBusy(false) }
   }
 
+  async function checkCancellation() {
+    setBusy(true); setErr(null)
+    try {
+      const current = await fetchBooking(ref)
+      setBooking(current); setCancelUncertain(false)
+      if (current.status === 'cancelled') nav('/journeys')
+      else if (current.status === 'pending_payment') setErr(new ApiError('The reservation is still active. You can try cancelling again.'))
+    } catch {
+      setCancelUncertain(true)
+      setErr(new ApiError('We could not confirm the cancellation. Check the reservation status before paying.'))
+    } finally { setBusy(false) }
+  }
+
+  async function cancelReservation() {
+    setBusy(true); setErr(null)
+    try {
+      await abandonBooking(ref)
+      nav('/journeys')
+    } catch {
+      // A lost response can mean the server already cancelled the reservation.
+      await checkCancellation()
+    } finally { setBusy(false) }
+  }
+
   if (expired && !pending) return <section className="card" role="alert">
     <h1>{t('Reservation expired')}</h1>
     <p>{t('The reservation ended. Check payment and refund history for the final settlement.')}</p>
@@ -70,6 +95,7 @@ export default function Pay() {
         <p>{t('This is a demonstration. No real payment is taken and no card details are requested. Choose an outcome to see how the booking behaves.')}</p>
         {declined && <p className="status-bad" role="alert">{t('Payment failed:')} {t(declined)} {t('Your places are still held — you can try again.')}</p>}
         {err && <p className="status-bad" role="alert">{t(err.message)}</p>}
+        {cancelUncertain && <p><button className="secondary" disabled={busy} onClick={checkCancellation}>{t('Check reservation status')}</button></p>}
         {pending ? <div role="status" className="warn-card">
           <p><strong>{t('Payment result pending')}</strong></p>
           <p>{t('We are checking the original payment. A new payment is blocked until its result is known.')}</p>
@@ -79,12 +105,12 @@ export default function Pay() {
             <button className="secondary" disabled={busy} onClick={() => run('failure', true)}>{t('Reconcile as failed (simulated)')}</button>
           </div>
         </div> : <div className="actions">
-          <button className="primary" disabled={busy || expired} onClick={() => run('success')}>{t('Simulate successful payment')}</button>
-          <button className="secondary" disabled={busy || expired} onClick={() => run('failure')}>{t('Simulate failed payment')}</button>
-          <button className="secondary" disabled={busy || expired} onClick={() => run('pending')}>{t('Simulate unknown payment result')}</button>
+          <button className="primary" disabled={busy || expired || cancelUncertain} onClick={() => run('success')}>{t('Simulate successful payment')}</button>
+          <button className="secondary" disabled={busy || expired || cancelUncertain} onClick={() => run('failure')}>{t('Simulate failed payment')}</button>
+          <button className="secondary" disabled={busy || expired || cancelUncertain} onClick={() => run('pending')}>{t('Simulate unknown payment result')}</button>
         </div>}
       </div>
-      {!pending && <p><button className="link" disabled={busy} onClick={async () => { await abandonBooking(ref).catch(() => undefined); nav('/journeys') }}>{t('Cancel this reservation')}</button></p>}
+      {!pending && <p><button className="link" disabled={busy || cancelUncertain} onClick={cancelReservation}>{t('Cancel this reservation')}</button></p>}
     </section>
   </>
 }

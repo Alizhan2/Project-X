@@ -4,7 +4,8 @@ import { ApiError, request, type SearchResponse } from '../api'
 import { useAuth } from '../authContext'
 import { t } from '../i18n'
 import { useLanguage } from '../useLanguage'
-import { cityMatches, defaultSort, normalizePrice, readShared, sharePath, type City, type Plan, type PlanValues, type Sort } from '../kazakhstan'
+import { defaultSort, normalizePrice, readShared, sharePath, type City, type Plan, type PlanValues, type Sort } from '../kazakhstan'
+import CityPicker from './CityPicker'
 import ResultCard from './ResultCard'
 import JourneyComparison from './JourneyComparison'
 
@@ -14,7 +15,7 @@ export default function KazakhstanPlanner({ cities, search, today, demo = false 
   const navigate = useNavigate()
   const [initial] = useState(() => readShared(search, cities))
   const [values, setValues] = useState(initial.values)
-  const [queries, setQueries] = useState({ origin: '', destination: '' })
+  const [queries, setQueries] = useState<{ origin: string | null; destination: string | null }>({ origin: null, destination: null })
   const [note, setNote] = useState('')
   const [editing, setEditing] = useState<number | null>(null)
   const [plans, setPlans] = useState<Plan[]>([])
@@ -62,9 +63,15 @@ export default function KazakhstanPlanner({ cities, search, today, demo = false 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const action = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') ?? (demo ? 'search' : 'save')
+    const missingCity = (['origin', 'destination'] as const).find(name => !cities.some(city => city.id === values[name]))
+    if (missingCity) {
+      setFields({ [missingCity]: 'Choose a city from the suggestions before continuing.' }); setMessage('Please check the highlighted fields.')
+      form.current?.querySelector<HTMLInputElement>(`input[name="${missingCity}"]`)?.focus()
+      return
+    }
     if (values.origin === values.destination) {
       setFields({ destination: 'Origin and destination must differ.' }); setMessage('Please check the highlighted fields.')
-      form.current?.querySelector<HTMLSelectElement>('select[name="destination"]')?.focus()
+      form.current?.querySelector<HTMLInputElement>('input[name="destination"]')?.focus()
       return
     }
     setFields({}); setMessage(''); setShared('')
@@ -100,7 +107,7 @@ export default function KazakhstanPlanner({ cities, search, today, demo = false 
   function load(plan: Plan, edit: boolean) {
     setValues({ origin: plan.origin, destination: plan.destination, date: plan.date, time: plan.time.slice(0, 5), passengers: String(plan.passengers), modes: plan.modes, time_mode: plan.time_mode ?? 'departure', wheelchair_required: String(plan.wheelchair_required ?? false), max_price: plan.max_price ?? '' })
     setNote(edit ? plan.note : ''); setEditing(edit ? plan.id : null)
-    setQueries({ origin: '', destination: '' }); setFields({}); setShared('')
+    setQueries({ origin: null, destination: null }); setFields({}); setShared('')
     setResults(null); setCompared([])
     setMessage(edit ? 'Editing your plan. Update the date if it has passed.' : 'Choose a new date before saving another plan.')
     form.current?.scrollIntoView({ behavior: 'instant', block: 'start' })
@@ -128,20 +135,10 @@ export default function KazakhstanPlanner({ cities, search, today, demo = false 
       <h2>{t(editing ? 'Edit plan' : 'Plan a journey')}</h2>
       <p>{t(demo ? 'Search simulated journeys between Kazakhstan cities, then reserve and try the payment simulator. A saved plan does not hold a place.' : 'A plan is not a booking. No seats, fares or departure times are confirmed.')}</p>
       <fieldset disabled={pending} className="kz-fields search-form">
-        {(['origin', 'destination'] as const).map((name, index) => {
-          const matches = cities.filter(city => cityMatches(city, queries[name]))
-          const options = cities.filter(city => city.id === values[name] || matches.includes(city))
-          return <div className="field" key={name}>
-            <label htmlFor={`kz-filter-${name}`}>{t(index === 0 ? 'Find departure city' : 'Find arrival city')}</label>
-            <input id={`kz-filter-${name}`} type="search" value={queries[name]} placeholder={t('City or region in any of three languages')} onChange={e => setQueries(q => ({ ...q, [name]: e.target.value }))} />
-            {queries[name] && <span className="small muted" role="status">{t('{0} matching cities. Your selection stays until you change it.', { 0: matches.length })}</span>}
-            <label htmlFor={`kz-select-${name}`}>{t(index === 0 ? 'From' : 'To')}</label>
-            <select id={`kz-select-${name}`} name={name} value={values[name]} onChange={e => change(name, e.target.value)} {...fieldProps(name)}>
-              {options.map(city => <option value={city.id} key={city.id}>{city.name[language]} — {city.region[language]}</option>)}
-            </select>{errorFor(name)}
-          </div>
-        })}
-        <button type="button" className="button" onClick={() => { setValues(v => ({ ...v, origin: v.destination, destination: v.origin })); setQueries({ origin: '', destination: '' }); setFields({}); setShared(''); setResults(null); setCompared([]) }}>{t('Swap cities')}</button>
+        {(['origin', 'destination'] as const).map(name => <CityPicker key={name} name={name} cities={cities} value={values[name]} query={queries[name]} error={fields[name]}
+          onQuery={query => { setQueries(old => ({ ...old, [name]: query })); change(name, '') }}
+          onSelect={id => { setQueries(old => ({ ...old, [name]: null })); change(name, id) }} />)}
+        <button type="button" className="button" onClick={() => { setValues(v => ({ ...v, origin: v.destination, destination: v.origin })); setQueries({ origin: queries.destination, destination: queries.origin }); setFields({}); setShared(''); setResults(null); setCompared([]) }}>{t('Swap cities')}</button>
         <label className="field">{t('Time preference')}<select name="time_mode" value={values.time_mode} onChange={e => change('time_mode', e.target.value)} {...fieldProps('time_mode')}><option value="departure">{t('Depart after')}</option><option value="arrival">{t('Arrive by')}</option></select>{errorFor('time_mode')}</label>
         <label className="field">{t('Date')}<input name="date" type="date" required value={values.date} onChange={e => change('date', e.target.value)} {...fieldProps('date')} />{errorFor('date')}</label>
         <label className="field">{t(values.time_mode === 'arrival' ? 'Arrival deadline (UTC+5)' : 'Departure time (UTC+5)')}<input name="time" type="time" required value={values.time} onChange={e => change('time', e.target.value)} {...fieldProps('time')} />{errorFor('time')}</label>

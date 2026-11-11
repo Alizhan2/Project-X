@@ -12,7 +12,7 @@ export default function JourneyComparison({ options, remove, clear, arriveBy, wh
     <div className="saved-heading"><h2 id="comparison-heading">{t("Compare journeys (")}{options.length}/3)</h2><button className="link" onClick={clear}>{t("Clear comparison")}</button></div>
     <p className="muted">{options.length === 1 ? t("Choose one or two more journeys below to compare.") : t("Differences are relative to the first selected journey. Prices cover everyone in your search.")}</p>
     <div className="comparison-grid">{options.map((it, index) => <article className="comparison-option" key={it.legs_param}>
-      <h3>{t("Option")} {index + 1}{index === 0 ? t(" · Reference") : ''}</h3>
+      <h3>{t("Option")} {index + 1}{index === 0 ? ` · ${t('Comparison baseline')}` : ''}</h3>
       <p className="comparison-price">{money(it.total_price, it.currency)}</p>
       <dl>
         <dt>{t("Departure")}</dt><dd>{dayLabel(it.departs_at)}, {clock(it.departs_at)}</dd>

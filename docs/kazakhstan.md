@@ -6,6 +6,10 @@ The earlier 90-city increment passed combined local verification and all five [C
 
 ## Geography and language
 
+City selection uses one editable combobox for each endpoint. Typing invalidates the previous city ID until the passenger selects a suggestion by pointer or keyboard. Search, saving and sharing validate confirmed IDs first. Suggestions reuse the three-language/alias/region lookup and show up to eight matches, with the total match count. Arrow keys and Enter select, Escape closes the list, and stored plans/URLs restore the localized city name. Suggestion content floats outside the form layout so closing it cannot move a submit button during a click.
+
+The 11 November usability fixes passed 63 browser scenarios on a fresh disposable PostgreSQL/staging stack, including PWA, three-language city selection, keyboard scrolling, plans/sharing, failed/lost cancellation replies, immediate offline invalidation after cancellation, stale refresh replies and offline replacement updates. Frontend build/lint and all 35 unit tests passed. These fixes are local source changes pending publication.
+
 - The directory contains **all 90 city settlements in KATO NK RK 11-2025, updated 4 November 2026**, including cities that are not regional centres. It does not include every village or settlement type.
 - Source: the Bureau of National Statistics [KATO classifier](https://stat.gov.kz/ru/classifiers/statistical/21/) and its [4 November workbook](https://stat.gov.kz/upload/iblock/3af/er0488xunb664axbufnw46sagt10aqsm/%D0%9A%D0%90%D0%A2%D0%9E_04.11.2026.xlsx). Source date, retrieval date and checksum are recorded in `catalog.py` and exposed as catalogue metadata.
 - Russian and Kazakh source names are preserved. English labels are editorial Latin transliterations. City lookup matches the catalogue's EN/RU/KK city names, region names and recorded aliases.
@@ -67,7 +71,7 @@ Plans remain account-owned: create/list/edit/repeat/delete through `GET/POST /ap
 
 Share links whitelist public trip fields: origin, destination, date, time, passengers, modes, time mode, accessibility requirement and optional total-price limit. Executed-search links additionally include `search=1` and a permitted sort value. They contain no private note, user ID or plan ID and do not expose saved plans. Old links without the executed-search marker remain prefill-only. Invalid shared values fall back with a warning and do not automatically execute a search. Public links use the deployment origin; localhost links work only on that machine.
 
-Submitting a search records its public parameters in the address. Browser Back and reload restore those parameters and rerun the availability query, so returned results reflect current fares/capacity rather than a cached reservation. Comparisons reset when the search changes. City filtering preserves the selected city until a traveller selects another. Kazakhstan repeat-booking links start a new search on the next Kazakhstan calendar day at 06:00 and retain the accessibility requirement; they do not silently reuse an expired departure time.
+Submitting a search records its public parameters in the address. Browser Back and reload restore those parameters and rerun the availability query, so returned results reflect current fares/capacity rather than a cached reservation. Comparisons reset when the search changes. Typing a new endpoint clears the selected city ID until a suggestion is confirmed; unconfirmed text cannot be submitted as the previous city. Kazakhstan repeat-booking links start a new search on the next Kazakhstan calendar day at 06:00 and retain the accessibility requirement; they do not silently reuse an expired departure time.
 
 ## Verification status
 
