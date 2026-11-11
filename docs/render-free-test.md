@@ -2,6 +2,10 @@
 
 Prepared for **12 November 2026, ten participants**. This is a temporary hosted demonstration with synthetic transport, payments, refunds and confirmations. Kazakhstan cities and private plans do not represent live supplier availability or valid tickets. See [Kazakhstan scope](kazakhstan.md) and [business rules](business-rules.md).
 
+## Latest search and passenger-label increment
+
+The current source includes Kazakhstan arrive-by search, strict accessibility, whole-party KZT budget filters, saved/search-link restoration and readable generated route labels. Local checks passed: 373 backend tests, 35 frontend unit tests, build/lint and 57 browser scenarios including PWA. Both plan migrations (`0006` and the `0007` database-default repair) were applied locally after private backups, with existing records preserved. All five [CI jobs at `88122e0`](https://github.com/Alizhan2/Project-X/actions/runs/43061797052) passed. The public site still awaits the owner’s manual deployment; the records below describe the earlier observed public release, not this increment.
+
 ## New Kazakhstan booking increment — pending deployment
 
 The owner clarified that the next product remains a **demo without external APIs**. Local source now supports all 90 cities in the official KATO release of 4 November 2026, multilingual lookup/aliases and generated direct bus/train search, booking, payment/refund and recovery in KZT and Kazakhstan time. See the [source and generation rules](kazakhstan.md). Prices, durations, schedules, fictional stops and accessibility are invented examples; real city geography is not evidence of a real service.

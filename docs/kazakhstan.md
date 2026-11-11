@@ -2,7 +2,7 @@
 
 The current work implements the owner's clarified scope: **a working Kazakhstan demonstration without external APIs**. The home page `/` (also `/kazakhstan`) searches generated bus/train services, reserves places and uses the existing simulated payment, refund and replacement lifecycle. Private plans and share links remain available. A saved plan alone does not reserve a place.
 
-The earlier 90-city increment passed combined local verification and all five [CI jobs at `44cdde6`](https://github.com/Alizhan2/Project-X/actions/runs/43055303104). The new search-preferences increment adds arrival deadlines, accessibility/price filters and search restoration. Its combined local checks and local migration-preservation check passed; current-revision CI remains pending. Public deployment is still awaiting the owner's manual Render update. The last observed public release remains `e2e4b5a3c649`, which predates Kazakhstan booking; consult [HANDOFF](HANDOFF.md) and the [deployment record](render-free-test.md) before describing a public release as updated.
+The earlier 90-city increment passed combined local verification and all five [CI jobs at `44cdde6`](https://github.com/Alizhan2/Project-X/actions/runs/43055303104). The new search-preferences increment adds arrival deadlines, accessibility/price filters and search restoration. Its combined local checks and local migration-preservation check passed; [all five CI jobs](https://github.com/Alizhan2/Project-X/actions/runs/43061797052) passed for `88122e08ab9916b6500689a7f693a13a6ba667e9`. Public deployment is still awaiting the owner's manual Render update. The last observed public release remains `e2e4b5a3c649`, which predates Kazakhstan booking; consult [HANDOFF](HANDOFF.md) and the [deployment record](render-free-test.md) before describing a public release as updated.
 
 ## Geography and language
 
@@ -77,7 +77,7 @@ For the current search-preferences increment, final local verification passed:
 - OpenAPI schema validation, migration dry-run consistency, secret scan and whitespace checks passed.
 - Migration `accounts.0006_journeyplan_search_preferences` was applied to the local user database after a private logical backup. Before/after checks preserved accounts/passwords/roles, memberships, original plan fields and notes, and bookings. The integrity check passed and the native API/worker were ready.
 - A 390px browser check confirmed no horizontal overflow, explicit `+05:00` deadline context, and restored results after Back/reload. The edit/save workflow retained the same plan ID through `PUT` and prevented draft loss; the Kazakhstan screen no longer briefly showed the unrelated provider state during configuration loading.
-- Current-revision CI and an observed public deployment remain pending. These local results do not establish either outcome.
+- For this increment, [all five CI jobs](https://github.com/Alizhan2/Project-X/actions/runs/43061797052) passed for `88122e08ab9916b6500689a7f693a13a6ba667e9`. Public deployment remains pending; local and CI results do not establish that outcome.
 
 Historical evidence for the earlier 90-city increment at `44cdde6`:
 

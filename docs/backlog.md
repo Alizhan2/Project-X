@@ -49,5 +49,7 @@
 - [x] Additive plan migration `accounts.0006_journeyplan_search_preferences`; existing plans retain original fields/notes and receive safe defaults.
 - [x] Combined local verification: 373 backend, 35 frontend unit, build/lint, 57 browser scenarios, including 2 PWA scenarios; schema/migration/secret/whitespace checks passed.
 - [x] Apply `0006` locally after a private backup; preserve existing account/access/plan/booking data and pass integrity/readiness checks. Verify mobile layout, Back/reload and same-plan editing without draft loss.
-- [ ] Complete current-revision CI and observe the owner's manual public update separately. Earlier `44cdde6` CI/public results remain historical evidence.
+- [x] All five [CI jobs at `88122e0`](https://github.com/Alizhan2/Project-X/actions/runs/43061797052) passed.
+- [x] Persistent database defaults and repair migration `0007` preserve writes from the previous version; historical-model insertion passed.
+- [ ] Observe the owner’s manual public update separately. Earlier `44cdde6` CI/public results remain historical evidence.
 - Scope and behaviour: [Kazakhstan demo](kazakhstan.md). Current design and EN/RU/KK support remain; external supplier APIs, real payments and tickets remain outside this demo.
