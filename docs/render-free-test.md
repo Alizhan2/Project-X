@@ -4,13 +4,19 @@ Prepared for **12 November 2026, ten participants**. This is a temporary hosted 
 
 ## Current status and evidence
 
-The dedicated study deployment is **live**: [Kazakhstan planning](https://doedu-kazakhstan-test-x3wv.onrender.com/) and [fictional booking](https://doedu-kazakhstan-test-x3wv.onrender.com/demo). Render built and deployed revision `7c2d4bc6cd5ef25ab03f1fba6738f336b68b1b5d`. Initial deployment became live on 11 November at 15:01 UTC; a repeat deployment became live at 15:08 UTC. Both resources are free in the confirmed My Workspace. The unrelated `sanapath-ai` service was not changed.
+The dedicated study deployment is **live**: [Kazakhstan planning](https://doedu-kazakhstan-test-x3wv.onrender.com/) and [fictional booking](https://doedu-kazakhstan-test-x3wv.onrender.com/demo). The current revision is `e2e4b5a3c6493ed9dd516a28f71b86f0b52d00ed`, with all five CI jobs green, deployed at 15:30 UTC on 11 November. Initial deployment became live at 15:01 UTC; a persistence-check deployment became live at 15:08 UTC. Both resources are free in the confirmed My Workspace. The unrelated `sanapath-ai` service was not changed.
 
 Public checks passed: HTTPS 200, HTTP-to-HTTPS 301, staged HSTS and CSP, ready JSON with database/migrations/worker all `ok`, EN/RU/KK home pages, a 390px mobile viewport without horizontal overflow, independent registration, search, five-minute reservation, simulated payment, valid PDF/calendar downloads, Kazakhstan plan saving and parameter-only sharing. Anonymous booking access returned 403. After repeat deployment, the same authenticated session could read its confirmed booking, the saved Kazakhstan plan survived reload, and the worker was fresh. Logs confirmed the bootstrap was a no-op. The single synthetic smoke account/booking/plan are verification records, not participant observations.
 
 After the persistence check, only the synthetic smoke booking was cancelled. Its snapshotted policy quoted EUR 3.50; repeating cancellation retained one refund, and the hosted worker completed it. This released the smoke booking's place before the participant session.
 
-These are browser-emulation checks, not a physical-phone/mobile-data study. Hosted ten-user performance and moderated recovery scenarios remain to check before the session. The [release CI run](https://github.com/Alizhan2/Project-X/actions/runs/43043422451) records checks for the deployed revision; later documentation-only commits do not change that release.
+These are browser-emulation checks, not a physical-phone/mobile-data study. Moderated recovery scenarios still require preparation. The [validated CI run](https://github.com/Alizhan2/Project-X/actions/runs/43047350403) passed all five jobs for `e2e4b5a3c6493ed9dd516a28f71b86f0b52d00ed`: backend, frontend, security, container and e2e. The browser job installs the package-pinned Chromium, verifies it launches, and runs the unchanged application suite. This uses the hosted runner's existing system libraries and avoids the Ubuntu apt DNS failures observed in the earlier runs. Later documentation-only commits do not change the validated release.
+
+### Bounded public capacity check
+
+A single ten-account batch completed **10/10 registrations**, with p95 **47.9 seconds** under simultaneous registration on the free CPU. **Three purchase/payment flows were verified**, cancelled, and refunded successfully. Seven Python urllib search responses were incomplete; matching search entries were absent from the application logs. Their origin remains unresolved, so the public ten-user purchase test is **not a pass**. Subsequent individual searches returned valid JSON in about 1.2–1.4 seconds. A separate real Chromium check completed **10/10 simultaneous search fetches**, all with 14 routes, in 0.34–2.41 seconds. No application restart, error event or memory exhaustion was observed during the batch.
+
+Create accounts ahead of the session or stagger registration; a simultaneous sign-up task measures this free-tier CPU limit as well as the interface. The earlier disposable native ten-user purchase rehearsal passed, but it does not establish public purchase concurrency. All three created capacity-test bookings were cancelled; original seeded recovery fixtures were untouched. Exclude accounts prefixed `hosted-smoke-` and `hosted-capacity-`, and their bookings/plans, from actual participant observations.
 
 The deployment files are prepared: root `render.yaml`, `backend/render_start.py` and the guarded `bootstrap_hosted_demo` command. All 326 backend tests passed, including eleven focused runtime/bootstrap tests. A disposable native rehearsal using production settings completed ten simultaneous register/search/reserve/pay flows (10/10), passed the integrity check, and preserved all 18 account password hashes and 14 bookings after a full launcher restart. Only the documented staged-HSTS warnings W005/W021 remained. The temporary database and role were removed. These results establish local behaviour, not free-instance latency or public HTTPS/phone behaviour.
 
@@ -76,9 +82,10 @@ Capacity and response time on the free instance remain to be measured. Do not pr
 
 | Check | Observed result |
 | --- | --- |
-| Public HTTPS URL / deployed commit | https://doedu-kazakhstan-test-x3wv.onrender.com/ · `7c2d4bc6cd5e` |
+| Public HTTPS URL / deployed commit | https://doedu-kazakhstan-test-x3wv.onrender.com/ · `e2e4b5a3c649` |
 | Ready response / worker freshness | HTTP 200 JSON; database, migrations and worker all `ok` |
 | Ten-user disposable rehearsal | 10/10 concurrent purchases; integrity passed; scratch database removed |
+| Public capacity rehearsal | 10/10 registrations, p95 47.9s; 10/10 concurrent browser searches, max 2.41s; full ten-user purchases not established (3 verified, 7 interrupted search responses) |
 | Mobile browser walkthrough | 390px emulation passed; physical phone/mobile-data check remains for moderator |
 | Restart persistence | Authenticated session, confirmed smoke booking and saved Kazakhstan plan preserved after repeat deployment |
 | PostgreSQL creation / expiry date | Created 11 November 2026 14:57 UTC; expires 11 December 2026 14:57 UTC |
