@@ -1,6 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
+from django.db.migrations.loader import MigrationLoader
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -82,6 +83,15 @@ class JourneyPlanTests(TestCase):
             self.assertEqual(payload['time_mode'], 'departure')
             self.assertIs(payload['wheelchair_required'], False)
             self.assertIsNone(payload['max_price'])
+
+    def test_previous_application_can_create_a_plan_during_a_rolling_update(self):
+        old_apps = MigrationLoader(connection).project_state([('accounts', '0005_savedtraveller')]).apps
+        old_plan = old_apps.get_model('accounts', 'JourneyPlan').objects.create(user_id=self.user.pk, **self.data)
+        saved = JourneyPlan.objects.get(pk=old_plan.pk)
+        self.assertEqual(saved.time_mode, 'departure')
+        self.assertIs(saved.wheelchair_required, False)
+        self.assertIsNone(saved.max_price)
+        self.assertEqual(saved.note, self.data['note'])
 
     def test_invalid_preferences_do_not_create_or_replace_a_plan(self):
         pk = self.save(note='Keep this note').json()['id']

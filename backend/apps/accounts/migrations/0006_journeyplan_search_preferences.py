@@ -18,12 +18,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='journeyplan',
             name='time_mode',
-            field=models.CharField(choices=[('departure', 'Departure'), ('arrival', 'Arrival')], default='departure', max_length=9),
+            field=models.CharField(choices=[('departure', 'Departure'), ('arrival', 'Arrival')], default='departure', db_default='departure', max_length=9),
         ),
         migrations.AddField(
             model_name='journeyplan',
             name='wheelchair_required',
-            field=models.BooleanField(default=False),
+            field=models.BooleanField(default=False, db_default=False),
         ),
         migrations.AddConstraint(
             model_name='journeyplan',
