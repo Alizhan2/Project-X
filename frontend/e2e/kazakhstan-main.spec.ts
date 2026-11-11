@@ -54,6 +54,19 @@ for (const language of ['en', 'ru', 'kk'] as const) {
     expect(results.results.length).toBeGreaterThan(0)
     expect(results.results.every((it: { departs_at: string; timezone: string }) => it.timezone === 'Asia/Almaty' && it.departs_at.endsWith('+05:00'))).toBe(true)
     await expect(page.locator('.result').first()).toContainText('KZT')
+    const firstCard = page.locator('.result').first()
+    const firstLeg = results.results[0].legs[0]
+    const translatedPlace = (name: string) => language === 'en' ? name : messages[`place:${name}`]?.[language] ?? name
+    const readableRoute = `${label(firstLeg.mode === 'bus' ? 'Bus' : 'Train')} · ${translatedPlace(firstLeg.from.name)} → ${translatedPlace(firstLeg.to.name)}`
+    await expect(firstCard.locator('.rl-code')).toHaveText(readableRoute)
+    await expect(firstCard.locator('.route-segments')).not.toContainText(firstLeg.route_code)
+    const accessibleOverview = await firstCard.getByRole('img').getAttribute('aria-label')
+    expect(accessibleOverview).toContain(readableRoute)
+    expect(accessibleOverview).not.toContain(firstLeg.route_code)
+    await firstCard.locator('summary').click()
+    await expect(firstCard.locator('.result-details')).toContainText(`${label('Demo route code')}: ${firstLeg.route_code}`)
+    await expect(firstCard.getByText(label('An internal reference for a simulated route, not a real service number.'))).toBeVisible()
+    await firstCard.locator('summary').click()
     if (language === 'en') {
       await page.getByLabel('Sort by').selectOption('price')
       const cheapest = [...results.results].sort((a, b) => { const aa = BigInt(a.total_price.replace('.', '')), bb = BigInt(b.total_price.replace('.', '')); return aa === bb ? 0 : aa < bb ? -1 : 1 })[0]

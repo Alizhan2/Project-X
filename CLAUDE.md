@@ -43,6 +43,8 @@ Lock departures `ORDER BY pk` with `select_for_update` before touching `places_t
 - Config only through env vars; never commit secrets or `.env`.
 - Frontend uses the real API; no static stand-in data.
 
+Persistent database defaults in `0006` let the previous application version insert plans during rolling updates. `accounts.0007_journeyplan_database_defaults` also repairs those defaults on databases that applied the first version of `0006`; it changes no saved rows. Both migrations were applied locally with private backups and preservation checks, including all saved preference fields. A historical `0005` model insert against the latest schema verifies old-version write compatibility.
+
 ## Kazakhstan plan/search preferences
 `accounts.0006_journeyplan_search_preferences` adds `time_mode`, `wheelchair_required` and nullable `max_price` to private plans; apply it with `safe_migrate`, never a demo reset. Defaults preserve old departure plans. Search/plan serializers share raw fields but computed `depart_after`/`arrive_by` must be removed before creating/updating a plan. `max_price` is a KZT whole-party search filter, not a locked checkout cap. Plan edits use `PUT` on the same ID; require save/cancel before starting another search so URL remounting cannot discard drafts. See docs/kazakhstan.md for arrive-by windows, executed-search URLs and current verification.
 

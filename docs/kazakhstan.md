@@ -28,6 +28,8 @@ Generation is limited to the selected origin/destination pair and the local days
 
 Selecting an offer uses the existing checkout and five-minute reservation flow. Successful, failed and uncertain payments are simulated. Cancellation quotes use the policy saved at purchase; refunds have their existing requested/pending/completed/failed states. A disrupted booking can offer eligible generated alternatives or cancellation. Replacement payment and old-leg refunds remain separate. No valid ticket, real charge or actual supplier reservation is produced.
 
+Generated route identifiers remain internal: passenger cards show localized transport and city names, while details and operator tools retain the original demo code. Authored route numbers such as `VC1` remain unchanged.
+
 ## Tenge and local time
 
 KZT amounts remain `Decimal`; no legacy EUR price is converted. New KZ stop identifiers use `KZ-{nine-digit KATO}-B` or `-R`. Their transport market determines the `Asia/Almaty` timezone, currently UTC+5. Currency alone never determines timezone: old non-KZ KZT acceptance fixtures and historic EUR journeys keep Berlin time.
@@ -57,6 +59,8 @@ Hosted setup requires a private generated `DEMO_USER_PASSWORD` of at least 16 ch
 
 The hosted launcher runs locked migrations, the explicitly enabled guarded legacy bootstrap and then this additive command before starting Gunicorn and the worker. The legacy empty-database bootstrap and the additive Kazakhstan preparation serve different purposes. Never run the destructive development `seed_demo` command to update an existing database.
 
+Persistent database defaults in `0006` let the previous application version insert plans during rolling updates. `accounts.0007_journeyplan_database_defaults` also repairs those defaults on databases that applied the first version of `0006`; it changes no saved rows. Both migrations were applied locally with private backups and preservation checks, including all saved preference fields. A historical `0005` model insert against the latest schema verifies old-version write compatibility.
+
 ## Private plans and sharing
 
 Plans remain account-owned: create/list/edit/repeat/delete through `GET/POST /api/kazakhstan/plans/` and `PUT/DELETE /api/kazakhstan/plans/{id}/`. They persist the time mode, accessibility preference and optional total-price limit alongside the original trip fields and private note. Up to 50 plans per account; saving requires a future date within one year. Past plans remain readable and deletable. Authentication, CSRF and ownership checks apply server-side. While editing a plan, searching is disabled until the traveller saves or cancels editing. Saving an edit updates the same plan through `PUT`; it does not create a duplicate or discard the private note.
@@ -69,7 +73,7 @@ Submitting a search records its public parameters in the address. Browser Back a
 
 For the current search-preferences increment, final local verification passed:
 
-- **372 backend tests**, **33 frontend unit tests**, frontend **build/lint**, **55 standard Playwright scenarios** and **2 separately enabled PWA scenarios**. The two PWA scenarios were skipped in the standard run and exercised in their separate run.
+- **373 backend tests**, **35 frontend unit tests**, frontend **build/lint**, **57 Playwright scenarios**, including **2 PWA scenarios**. All 57 passed together against the final production build.
 - OpenAPI schema validation, migration dry-run consistency, secret scan and whitespace checks passed.
 - Migration `accounts.0006_journeyplan_search_preferences` was applied to the local user database after a private logical backup. Before/after checks preserved accounts/passwords/roles, memberships, original plan fields and notes, and bookings. The integrity check passed and the native API/worker were ready.
 - A 390px browser check confirmed no horizontal overflow, explicit `+05:00` deadline context, and restored results after Back/reload. The edit/save workflow retained the same plan ID through `PUT` and prevented draft loss; the Kazakhstan screen no longer briefly showed the unrelated provider state during configuration loading.

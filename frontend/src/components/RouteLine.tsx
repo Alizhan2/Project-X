@@ -1,6 +1,6 @@
 import { placeName, t } from '../i18n'
 import { useLanguage } from '../useLanguage'
-import { clock, duration } from '../format'
+import { clock, duration, isDemoRouteCode, passengerRouteLabel } from '../format'
 import { layoutRoute, type RouteLeg } from '../routeLine'
 
 const MODE: Record<string, string> = { bus: 'Bus', train: 'Train', taxi: 'Taxi' }
@@ -22,7 +22,8 @@ export default function RouteLine({ legs, compact = false, decorative = false }:
   const segments = layoutRoute(legs)
   const label = `${t('Route overview')}: ` + legs.map((l, i) => {
     const next = legs[i + 1]
-    const leg = `${l.mode === 'taxi' ? t(MODE.taxi) : `${t(MODE[l.mode] ?? l.mode)} ${l.route_code}`} ${placeName(l.from)} → ${placeName(l.to)}, ${clock(l.departs_at)}–${clock(l.arrives_at)}${l.note ? ` (${t(l.note)})` : ''}`
+    const route = isDemoRouteCode(l.route_code) ? passengerRouteLabel(l.route_code, l.mode, l.from, l.to) : `${l.mode === 'taxi' ? t(MODE.taxi) : `${t(MODE[l.mode] ?? l.mode)} ${l.route_code}`} ${placeName(l.from)} → ${placeName(l.to)}`
+    const leg = `${route}, ${clock(l.departs_at)}–${clock(l.arrives_at)}${l.note ? ` (${t(l.note)})` : ''}`
     return next ? `${leg}; ${t('Change:')} ${segments.find(s => s.kind === 'change' && s.index === i)?.minutes} ${t('min')}` : leg
   }).join('; ')
   return (
@@ -37,7 +38,7 @@ export default function RouteLine({ legs, compact = false, decorative = false }:
           <div key={k} className="rl-col rl-leg" style={{ flexGrow: s.weight }}>
             <div className={`rl-bar rl-${leg.mode}${leg.note ? ' rl-warn' : ''}`}>
               <ModeIcon mode={leg.mode} />
-              <span className="rl-code">{leg.mode === 'taxi' ? t(MODE.taxi) : leg.route_code}</span>
+              <span className="rl-code">{leg.mode === 'taxi' ? t(MODE.taxi) : passengerRouteLabel(leg.route_code, leg.mode, leg.from, leg.to)}</span>
               {!compact && <span className="rl-min">{duration(s.minutes)}</span>}
             </div>
             {!compact && (

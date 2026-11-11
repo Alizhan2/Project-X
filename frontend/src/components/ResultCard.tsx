@@ -2,7 +2,7 @@ import { placeName, t } from '../i18n'
 import { useLanguage } from '../useLanguage'
 import { Link } from 'react-router-dom'
 import type { Itinerary, Leg, Tri } from '../api'
-import { clock, dayLabel, duration, money, sameDay } from '../format'
+import { clock, dayLabel, duration, isDemoRouteCode, money, passengerRouteLabel, sameDay } from '../format'
 import RouteLine from './RouteLine'
 
 const MODE: Record<string, string> = { bus: 'Bus', train: 'Train', taxi: 'Taxi' }
@@ -38,8 +38,8 @@ export default function ResultCard({ it, comparison, arriveBy, wheelchairRequire
       <div className="route-segments"><RouteLine compact legs={it.legs.map(l => ({ departs_at: l.departs_at, arrives_at: l.arrives_at, from: l.from.name, to: l.to.name, mode: l.mode, route_code: l.route_code, note: l.status === 'delayed' ? t('Delayed by {0} min', { 0: l.delay_minutes }) : undefined }))} /></div>
       <div className="result-bottom"><div className="connection-buffer">{it.min_transfer_buffer_minutes !== null && <p>{t('Connection buffer: {0} min', {0: it.min_transfer_buffer_minutes})}</p>}
         {it.connections?.some(c => c.status === 'at_risk') && <p className="warn small" role="status">{t('Connection at risk')}</p>}
-        {scarce && <p className="warn small">{t('Only {0} place(s) left on {1}. ', {0: scarce.places_left, 1: scarce.route_code})}</p>}
-        {delayed.map(l => <p className="warn small" role="status" key={l.route_code + l.departs_at}>{l.route_code}: {t('Delayed by {0} min', {0: l.delay_minutes})}</p>)}
+        {scarce && <p className="warn small">{t('Only {0} place(s) left on {1}. ', {0: scarce.places_left, 1: passengerRouteLabel(scarce.route_code, scarce.mode, scarce.from.name, scarce.to.name)})}</p>}
+        {delayed.map(l => <p className="warn small" role="status" key={l.route_code + l.departs_at}>{passengerRouteLabel(l.route_code, l.mode, l.from.name, l.to.name)}: {t('Delayed by {0} min', {0: l.delay_minutes})}</p>)}
       </div><div className="result-actions">        <Link className="button primary" to={`/journey?${new URLSearchParams({ legs: it.legs_param, passengers: String(it.passengers), total: it.total_price, wheelchair_required: String(wheelchairRequired), ...(arriveBy ? { arrive_by: arriveBy } : {}) })}`}>
            {t("Select")}<span className="sr-only"> {clock(it.departs_at)}  {t("departure")}</span>
         </Link>
@@ -48,10 +48,11 @@ export default function ResultCard({ it, comparison, arriveBy, wheelchairRequire
       <details className="result-details"><summary>{t('Journey information')}</summary>        <ol className="chips" aria-label={t("Legs")}>
           {it.legs.map((l, i) => (
             <li key={i} className={`chip chip-${l.mode}`}>
-              {l.mode === 'taxi' ? t(MODE.taxi) : `${t(MODE[l.mode])} ${l.route_code}`}: {placeName(l.from.name)} → {placeName(l.to.name)}
+              {isDemoRouteCode(l.route_code) ? <>{passengerRouteLabel(l.route_code, l.mode, l.from.name, l.to.name)} · {t('Demo route code')}: {l.route_code}</> : <>{l.mode === 'taxi' ? t(MODE.taxi) : `${t(MODE[l.mode])} ${l.route_code}`}: {placeName(l.from.name)} → {placeName(l.to.name)}</>}
             </li>
           ))}
         </ol>
+        {it.legs.some(l => isDemoRouteCode(l.route_code)) && <p className="muted small">{t('An internal reference for a simulated route, not a real service number.')}</p>}
         {it.min_transfer_buffer_minutes !== null && (
           <p className="small">
              {t("Tightest connection:")} <strong>{it.min_transfer_buffer_minutes}  {t("min")}</strong>  {t("to spare")} <span className="muted">  {t("(extra time beyond the minimum needed to change; not a prediction of punctuality)")}</span>

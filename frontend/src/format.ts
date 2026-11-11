@@ -1,4 +1,4 @@
-import { t, getLanguage, locales } from './i18n.ts'
+import { t, getLanguage, locales, placeName } from './i18n.ts'
 import { defaults as kazakhstanDefaults } from './kazakhstan.ts'
 // Times arrive as ISO strings with the demo-region offset; we display the wall-clock time
 // as written by the server so the UI never silently shifts to the browser's timezone.
@@ -31,4 +31,12 @@ export function demoDateTimeInput(iso: string, timeZone = 'Europe/Berlin'): stri
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(iso))
   const value = (type: string) => parts.find(part => part.type === type)?.value ?? ''
   return `${value('year')}-${value('month')}-${value('day')}T${value('hour')}:${value('minute')}`
+}
+
+// Only the generated Kazakhstan identifiers need a passenger label; authored service codes remain intact.
+export const isDemoRouteCode = (code: string) => /^KZ[BT][a-f0-9]{12}$/.test(code)
+export function passengerRouteLabel(code: string, mode: string, from: string, to: string): string {
+  if (!isDemoRouteCode(code)) return code
+  const name = mode === 'bus' ? 'Bus' : mode === 'train' ? 'Train' : mode
+  return `${t(name)} · ${placeName(from)} → ${placeName(to)}`
 }

@@ -47,7 +47,7 @@
 - [x] Inclusive maximum total KZT fare for the whole party; no floating-point money or implied locked spending cap.
 - [x] Persist these preferences in private plans and whitelisted public links; preserve executed searches through browser Back/reload by fetching current results.
 - [x] Additive plan migration `accounts.0006_journeyplan_search_preferences`; existing plans retain original fields/notes and receive safe defaults.
-- [x] Combined local verification: 372 backend, 33 frontend unit, build/lint, 55 standard browser and 2 separate PWA scenarios; schema/migration/secret/whitespace checks passed.
+- [x] Combined local verification: 373 backend, 35 frontend unit, build/lint, 57 browser scenarios, including 2 PWA scenarios; schema/migration/secret/whitespace checks passed.
 - [x] Apply `0006` locally after a private backup; preserve existing account/access/plan/booking data and pass integrity/readiness checks. Verify mobile layout, Back/reload and same-plan editing without draft loss.
 - [ ] Complete current-revision CI and observe the owner's manual public update separately. Earlier `44cdde6` CI/public results remain historical evidence.
 - Scope and behaviour: [Kazakhstan demo](kazakhstan.md). Current design and EN/RU/KK support remain; external supplier APIs, real payments and tickets remain outside this demo.
