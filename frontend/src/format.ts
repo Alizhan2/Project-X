@@ -19,15 +19,15 @@ export const duration = (min: number) => t("{0} h {1} min", {0: Math.floor(min /
 export const money = (amount: string, currency: string) => `${currency} ${amount}`
 
 // Searches use the transport region's calendar, independent of the passenger's device timezone.
-export const regionToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Berlin' })
-export const repeatSearchUrl = (origin: string, destination: string, passengers = 1, wheelchairRequired = false) => `/demo?${new URLSearchParams({
-  origin, destination, passengers: String(passengers), date: regionToday(), time: '06:00', repeat: '1', wheelchair_required: String(wheelchairRequired),
-})}`
+export const regionToday = (timeZone = 'Europe/Berlin') => new Date().toLocaleDateString('en-CA', { timeZone })
+export const repeatSearchUrl = (origin: string, destination: string, passengers = 1, wheelchairRequired = false, originCity?: string, destinationCity?: string) => originCity && destinationCity
+  ? `/?${new URLSearchParams({ origin: originCity, destination: destinationCity, passengers: String(passengers), date: regionToday('Asia/Almaty'), time: '06:00', modes: 'bus,train' })}`
+  : `/demo?${new URLSearchParams({ origin, destination, passengers: String(passengers), date: regionToday(), time: '06:00', repeat: '1', wheelchair_required: String(wheelchairRequired) })}`
 
-/** A demo-region datetime-local value from an absolute timestamp, independent of device timezone. */
-export function demoDateTimeInput(iso: string): string {
+/** A transport-region datetime-local value, independent of the passenger's device timezone. */
+export function demoDateTimeInput(iso: string, timeZone = 'Europe/Berlin'): string {
   if (!iso || !Number.isFinite(Date.parse(iso))) return ''
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(iso))
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(iso))
   const value = (type: string) => parts.find(part => part.type === type)?.value ?? ''
   return `${value('year')}-${value('month')}-${value('day')}T${value('hour')}:${value('minute')}`
 }

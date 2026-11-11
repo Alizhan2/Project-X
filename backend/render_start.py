@@ -98,6 +98,8 @@ def main():
         commands = [[sys.executable, "manage.py", "safe_migrate"]]
         if environment.get("DOEDU_BOOTSTRAP_DEMO", "").lower() in ("1", "true", "yes", "on"):
             commands.append([sys.executable, "manage.py", "bootstrap_hosted_demo"])
+        if environment.get("DOEDU_LAUNCH_MODE") in ("development", "demo"):
+            commands.append([sys.executable, "manage.py", "prepare_kazakhstan_demo"])
         for command in commands:
             subprocess.run(command, cwd=BACKEND, env=environment, check=True)
         return supervise(environment)

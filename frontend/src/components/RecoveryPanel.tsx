@@ -15,10 +15,10 @@ function Settlement({ offer: o }: { offer: ReplacementOffer }) {
   </div>
 }
 
-const formValues = (data: Replacements): RecoveryPreferences => ({
+const formValues = (data: Replacements, timeZone = 'Europe/Berlin'): RecoveryPreferences => ({
   origin: data.constraints?.origin ?? '',
-  earliest_departure: demoDateTimeInput(data.constraints?.earliest_departure ?? ''),
-  latest_arrival: demoDateTimeInput(data.constraints?.latest_arrival ?? ''),
+  earliest_departure: demoDateTimeInput(data.constraints?.earliest_departure ?? '', data.timezone ?? timeZone),
+  latest_arrival: demoDateTimeInput(data.constraints?.latest_arrival ?? '', data.timezone ?? timeZone),
   max_payment_now: data.constraints?.max_payment_now == null ? '' : String(data.constraints.max_payment_now),
   wheelchair_required: String(data.constraints?.wheelchair_required ?? 'false'),
 })
@@ -40,10 +40,10 @@ export default function RecoveryPanel({ booking, onChanged, onCancel }: { bookin
   useEffect(() => {
     const ctrl = new AbortController()
     fetchReplacements(ref, ctrl.signal)
-      .then(d => { if (!ctrl.signal.aborted) { setData(d); setDraft(formValues(d)); setError(null) } })
+      .then(d => { if (!ctrl.signal.aborted) { setData(d); setDraft(formValues(d, booking.timezone)); setError(null) } })
       .catch(e => { if (!ctrl.signal.aborted) setError(e instanceof ApiError ? e.message : t('Could not load replacement options.')) })
     return () => ctrl.abort()
-  }, [ref])
+  }, [ref, booking.timezone])
 
   async function refresh(preferences = active) {
     const d = await fetchReplacements(ref, undefined, preferences)
@@ -84,12 +84,12 @@ export default function RecoveryPanel({ booking, onChanged, onCancel }: { bookin
     {error && <p role="alert" className="status-bad">{t(error)}</p>}
     <form className="card" onSubmit={search}>
       <h3>{t('Your recovery requirements')}</h3>
-      <p className="small muted">{t('Choose your current reachable stop. All times use Europe/Berlin. Used legs remain unchanged.')}</p>
+      <p className="small muted">{t('Choose your current reachable stop. All times use {0}. Used legs remain unchanged.', { 0: data.timezone ?? booking.timezone ?? 'Europe/Berlin' })}</p>
       <fieldset disabled={busy || !!pending}>
         <div className="field"><label htmlFor="recovery-origin">{t('Current reachable location')}</label>
           <select id="recovery-origin" value={draft.origin ?? ''} onChange={e => update('origin', e.target.value)} required>
             <option value="">{t('Choose a stop…')}</option>
-            {data.locations?.map(stop => <option key={stop.code} value={stop.code}>{placeName(stop.name)}</option>)}
+            {data.locations?.filter(stop => stop.code.startsWith('KZ-') === (booking.timezone === 'Asia/Almaty')).map(stop => <option key={stop.code} value={stop.code}>{placeName(stop.name)}</option>)}
           </select>{fieldError('origin')}
         </div>
         <div className="field"><label htmlFor="recovery-earliest">{t('Earliest departure')}</label><input id="recovery-earliest" type="datetime-local" value={draft.earliest_departure ?? ''} onChange={e => update('earliest_departure', e.target.value)} required />{fieldError('earliest_departure')}</div>

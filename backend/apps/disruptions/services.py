@@ -11,6 +11,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from apps.transport.markets import local_datetime, timezone_for_stops
 
 from apps.bookings.models import Booking, BookingLeg, Reservation
 from apps.core import jobs
@@ -186,7 +187,7 @@ def apply_change(*, actor, departure_id, action, minutes=0):
         if action == "delay" and minutes == dep.delay_minutes:
             return None, True
         status, delay = _override(dep, action, minutes)
-        label = f"{dep.route.code} {timezone.localtime(dep.departs_at):%d.%m %H:%M}"
+        label = f"{dep.route.code} {local_datetime(dep.departs_at, timezone_for_stops(last.stop)):%d.%m %H:%M}"
         # Assess *after* applying so connection checks see the new times.
         dep.status, dep.delay_minutes = status, delay
         dep.save(update_fields=["status", "delay_minutes"])

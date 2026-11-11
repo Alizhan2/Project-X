@@ -46,7 +46,7 @@ function Upcoming() {
       {plan.status === 'broken' ? <p className="status-bad">{t("Journey disrupted. Review a replacement or cancellation.")}</p> :
         <p>{plan.progress === 'in_progress' ? t("Journey in progress according to the timetable.") : t("Upcoming departure.")}{plan.status === 'delayed' ? t(" Times updated after a delay.") : ''}</p>}
       {next && plan.status !== 'broken' && <p className="muted">{next.state === 'travelling' ? t("Current leg") : t("Next leg")}: {t(next.mode)} {next.route_code} · {placeName(next.from)} → {placeName(next.to)} · {clock(next.departs_at)}</p>}
-      <p className="small muted">{t("Timetable estimate, not GPS. Updated at")} {clock(plan.generated_at)}  {t("· Europe/Berlin")}</p>
+      <p className="small muted">{t("Timetable estimate, not GPS. Updated at")} {clock(plan.generated_at)} · {plan.timezone ?? 'Europe/Berlin'}</p>
     </div>
     <Link className="button primary" to={`/booking/${plan.reference}`}>{plan.status === 'broken' ? t("Review disruption") : t("Open journey & downloads")}</Link>
   </section>

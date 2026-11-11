@@ -54,6 +54,7 @@ export interface Connection {
 }
 
 export interface Itinerary {
+  timezone?: string
   wheelchair_required?: boolean
   connections?: Connection[]
   departs_at: string
@@ -170,6 +171,9 @@ export interface BookingLeg {
   from: string; to: string; from_code: string; to_code: string; departs_at: string; arrives_at: string; unit_price: string; price_basis: string; cancellation_policy: string
 }
 export interface Booking {
+  timezone?: string
+  origin_city?: string
+  destination_city?: string
   wheelchair_required?: boolean
   travel_plan: TravelPlan | null
   reference: string; status: 'pending_payment' | 'confirmed' | 'cancelled' | 'expired'; status_label: string
@@ -193,6 +197,9 @@ export const fetchBooking = (ref: string, signal?: AbortSignal) => getJson<Booki
 export const fetchBookings = (signal?: AbortSignal) => getJson<{ results: Booking[] }>('/api/bookings/', signal)
 
 export interface TravelPlan {
+  timezone?: string
+  origin_city?: string
+  destination_city?: string
   reference: string; generated_at: string; status: 'ok' | 'delayed' | 'broken'; reason: string
   progress: 'upcoming' | 'in_progress' | 'needs_attention' | 'finished'; next_sequence: number | null; notice: string
   legs: {
@@ -238,19 +245,20 @@ export const fetchQuote = (ref: string) => getJson<CancellationQuote>(`/api/book
 export const cancelBooking = (ref: string, expected_refund?: string) =>
   request<Booking>('POST', `/api/bookings/${ref}/cancel/`, expected_refund ? { expected_refund } : {})
 
-export interface AppNotification { id: number; kind: string; title: string; body: string; booking: string | null; link: string | null; created_at: string; read: boolean }
+export interface AppNotification { id: number; kind: string; title: string; body: string; booking: string | null; link: string | null; created_at: string; read: boolean; timezone?: string }
 export const fetchNotifications = (signal?: AbortSignal) =>
   getJson<{ unread: number; results: AppNotification[] }>('/api/notifications/', signal)
 export const markRead = (id: number) => request<void>('POST', `/api/notifications/${id}/read/`)
 export const markAllRead = () => request<void>('POST', '/api/notifications/read-all/')
 
 export interface OpService {
+  timezone?: string
   id: number; route_code: string; route_name: string; mode: string; departs_at: string; ends_at: string
   status: 'scheduled' | 'delayed' | 'cancelled'; delay_minutes: number; capacity: number; places_taken: number
   wheelchair_accessible: boolean | null; first_stop: string; last_stop: string
   events?: { kind: string; delay_minutes: number; affected_bookings: number; created_at: string }[]
 }
-export interface OpRoute { id: number; code: string; name: string; mode: string; fares: { id: number; from: string; to: string; price: string; currency: string }[] }
+export interface OpRoute { timezone?: string; id: number; code: string; name: string; mode: string; fares: { id: number; from: string; to: string; price: string; currency: string }[] }
 export interface Impact {
   affected: { reference: string; passengers: number; booking_status: string; before: string; after: string; reason: string; arrival_delay_minutes: number }[]
   passengers: number; broken: number
@@ -276,6 +284,7 @@ export interface OfferLeg {
   accessibility: { wheelchair_vehicle: Tri; origin_step_free: Tri; destination_step_free: Tri }
 }
 export interface ReplacementOffer {
+  timezone?: string
   id: number; status: string; expires_at: string; arrives_at: string; legs: OfferLeg[]
   replacement_price: string; replaced_value: string; currency: string; difference: string
   connections?: Connection[]
@@ -286,6 +295,7 @@ export interface ReplacementOffer {
 export interface LegRow { sequence: number; mode: string; route_code: string; from: string; to: string; from_code: string; to_code: string; departs_at: string; arrives_at: string }
 export interface RecoveryPreferences { origin?: string; earliest_departure?: string; latest_arrival?: string; max_payment_now?: string; wheelchair_required?: string }
 export interface Replacements {
+  timezone?: string
   constraints?: RecoveryPreferences
   locations?: { code: string; name: string }[]
   state: 'not_disrupted' | 'options' | 'none'; offers: ReplacementOffer[]; retained_legs: LegRow[]; affected_legs: LegRow[]

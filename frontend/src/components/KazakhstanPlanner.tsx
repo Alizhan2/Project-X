@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ApiError, request } from '../api'
+import { ApiError, request, type SearchResponse } from '../api'
 import { useAuth } from '../authContext'
 import { t } from '../i18n'
 import { useLanguage } from '../useLanguage'
 import { cityMatches, readShared, sharePath, type City, type Plan, type PlanValues } from '../kazakhstan'
+import ResultCard from './ResultCard'
+import JourneyComparison from './JourneyComparison'
 
-export default function KazakhstanPlanner({ cities, search, today }: { cities: City[]; search: string; today: string }) {
+export default function KazakhstanPlanner({ cities, search, today, demo = false }: { cities: City[]; search: string; today: string; demo?: boolean }) {
   const language = useLanguage()
   const { user } = useAuth()
   const [initial] = useState(() => readShared(search, cities))
@@ -22,6 +24,9 @@ export default function KazakhstanPlanner({ cities, search, today }: { cities: C
   const [fields, setFields] = useState<Record<string, string>>({})
   const [shared, setShared] = useState('')
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [results, setResults] = useState<SearchResponse | null>(null)
+  const [sort, setSort] = useState('departure')
+  const [compared, setCompared] = useState<string[]>([])
   const controller = useRef<AbortController | null>(null)
   const form = useRef<HTMLFormElement>(null)
   useEffect(() => {
@@ -33,6 +38,7 @@ export default function KazakhstanPlanner({ cities, search, today }: { cities: C
   }, [user])
   function change(key: keyof PlanValues, value: string) {
     setValues(v => ({ ...v, [key]: value })); setShared(''); setFields({}); setMessage('')
+    setResults(null); setCompared([])
   }
   function handleError(error: unknown) {
     if (error instanceof ApiError) {
@@ -42,7 +48,7 @@ export default function KazakhstanPlanner({ cities, search, today }: { cities: C
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const action = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') ?? 'save'
+    const action = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') ?? (demo ? 'search' : 'save')
     if (values.origin === values.destination) { setFields({ destination: 'Origin and destination must differ.' }); return }
     setFields({}); setMessage(''); setShared('')
     if (action === 'share') {
@@ -56,8 +62,8 @@ export default function KazakhstanPlanner({ cities, search, today }: { cities: C
     const ctrl = new AbortController(); controller.current = ctrl; setBusy(true)
     try {
       if (action === 'search') {
-        await request('GET', `/api/kazakhstan/search/${sharePath(values).slice(1)}`, undefined, { signal: ctrl.signal })
-        setMessage('Real ticket sales are not yet available.')
+        setResults(null); setCompared([])
+        setResults(await request<SearchResponse>('GET', `/api/kazakhstan/search/${sharePath(values).slice(1)}`, undefined, { signal: ctrl.signal }))
       } else {
         const plan = await request<Plan>(editing ? 'PUT' : 'POST', `/api/kazakhstan/plans/${editing ? `${editing}/` : ''}`, { ...values, note }, { signal: ctrl.signal })
         setPlans(old => [plan, ...old.filter(p => p.id !== plan.id)])
@@ -70,6 +76,7 @@ export default function KazakhstanPlanner({ cities, search, today }: { cities: C
     setValues({ origin: plan.origin, destination: plan.destination, date: plan.date, time: plan.time.slice(0, 5), passengers: String(plan.passengers), modes: plan.modes })
     setNote(edit ? plan.note : ''); setEditing(edit ? plan.id : null)
     setQueries({ origin: '', destination: '' }); setFields({}); setShared('')
+    setResults(null); setCompared([])
     setMessage(edit ? 'Editing your plan. Update the date if it has passed.' : 'Choose a new date before saving another plan.')
     form.current?.scrollIntoView({ behavior: 'instant', block: 'start' })
     form.current?.querySelector<HTMLInputElement>('input')?.focus()
@@ -92,7 +99,7 @@ export default function KazakhstanPlanner({ cities, search, today }: { cities: C
     {initial.invalid && <p className="kz-notice">{t('Some link parameters were invalid and have been reset. Check the form before continuing.')}</p>}
     <form ref={form} className="card" onSubmit={submit} aria-label={t('Kazakhstan journey search')}>
       <h2>{t(editing ? 'Edit plan' : 'Plan a journey')}</h2>
-      <p>{t('A plan is not a booking. No seats, fares or departure times are confirmed.')}</p>
+      <p>{t(demo ? 'Search simulated journeys between Kazakhstan cities, then reserve and try the payment simulator. A saved plan does not hold a place.' : 'A plan is not a booking. No seats, fares or departure times are confirmed.')}</p>
       <fieldset disabled={busy} className="kz-fields search-form">
         {(['origin', 'destination'] as const).map((name, index) => {
           const matches = cities.filter(city => cityMatches(city, queries[name]))
@@ -107,7 +114,7 @@ export default function KazakhstanPlanner({ cities, search, today }: { cities: C
             </select>{errorFor(name)}
           </div>
         })}
-        <button type="button" className="button" onClick={() => { setValues(v => ({ ...v, origin: v.destination, destination: v.origin })); setQueries({ origin: '', destination: '' }); setFields({}); setShared('') }}>{t('Swap cities')}</button>
+        <button type="button" className="button" onClick={() => { setValues(v => ({ ...v, origin: v.destination, destination: v.origin })); setQueries({ origin: '', destination: '' }); setFields({}); setShared(''); setResults(null); setCompared([]) }}>{t('Swap cities')}</button>
         <label className="field">{t('Date')}<input name="date" type="date" required value={values.date} onChange={e => change('date', e.target.value)} {...fieldProps('date')} />{errorFor('date')}</label>
         <label className="field">{t('Departure time (UTC+5)')}<input name="time" type="time" required value={values.time} onChange={e => change('time', e.target.value)} {...fieldProps('time')} />{errorFor('time')}</label>
         <label className="field">{t('Passengers')}<input name="passengers" type="number" min="1" max="9" required value={values.passengers} onChange={e => change('passengers', e.target.value)} {...fieldProps('passengers')} />{errorFor('passengers')}</label>
@@ -115,15 +122,28 @@ export default function KazakhstanPlanner({ cities, search, today }: { cities: C
         {user && <label className="field kz-note">{t('Private note')}<textarea maxLength={1000} value={note} onChange={e => setNote(e.target.value)} {...fieldProps('note')} />{errorFor('note')}<span className="small muted">{t('Only you can see this note. It is never included in shared links.')}</span></label>}
       </fieldset>
       <div className="kz-actions">
-        {user ? <button className="primary" value="save" disabled={busy}>{t(editing ? 'Save changes' : 'Save plan')}</button> : <Link to="/login" state={{ from: sharePath(values) }}>{t('Sign in to save your plans.')}</Link>}
+        <button type="submit" className={demo ? 'primary' : undefined} value="search" disabled={busy}>{t(busy ? 'Please wait…' : demo ? 'Search demo journeys' : 'Check search availability')}</button>
+        {user ? <button value="save" disabled={busy}>{t(editing ? 'Save changes' : 'Save plan')}</button> : <Link to="/login" state={{ from: sharePath(values) }}>{t('Sign in to save your plans.')}</Link>}
         <button type="submit" value="share" disabled={busy}>{t('Share journey')}</button>
-        <button type="submit" value="search" disabled={busy}>{t('Check search availability')}</button>
         {editing && <button type="button" disabled={busy} onClick={() => { setEditing(null); setNote(''); setFields({}); setMessage('') }}>{t('Cancel editing')}</button>}
       </div>
     </form>
     {message && <p role="status" className="kz-notice">{t(message)}</p>}
     {shared && <label className="field">{t('Journey link')}<input readOnly value={shared} onFocus={e => e.currentTarget.select()} /></label>}
-    {user && <section className="kz-plans" aria-label={t('My plans')}><h2>{t('My plans')}</h2>
+    {results && <section aria-labelledby="kz-results-heading">
+      <h2 id="kz-results-heading">{t('Results')} · {results.results.length}</h2>
+      <p className="muted">{t('Demo journeys · KZT · Kazakhstan time (UTC+5). No real tickets.')}</p>
+      {!results.results.length ? <p role="status">{t('No demo journeys match this date and transport choice. Try another time or transport mode.')}</p> : <>
+        <label className="field">{t('Sort by')}<select value={sort} onChange={e => setSort(e.target.value)}><option value="departure">{t('Earliest departure')}</option><option value="price">{t('Lowest price')}</option><option value="duration">{t('Shortest duration')}</option></select></label>
+        <JourneyComparison options={compared.flatMap(key => { const it = results.results.find(value => value.legs_param === key); return it ? [it] : [] })} clear={() => setCompared([])} remove={key => setCompared(old => old.filter(k => k !== key))} />
+        <ul className="result-list">{[...results.results].sort((a, b) => {
+          if (sort === 'duration') return a.duration_minutes - b.duration_minutes
+          if (sort === 'price') { const aa = BigInt(a.total_price.replace('.', '')), bb = BigInt(b.total_price.replace('.', '')); return aa === bb ? 0 : aa < bb ? -1 : 1 }
+          return a.departs_at.localeCompare(b.departs_at)
+        }).map((it, index) => <ResultCard key={it.legs_param} it={it} comparison={{ label: t('Compare journey {0}', { 0: index + 1 }), selected: compared.includes(it.legs_param), disabled: compared.length >= 3 && !compared.includes(it.legs_param), toggle: () => setCompared(old => old.includes(it.legs_param) ? old.filter(key => key !== it.legs_param) : old.length < 3 ? [...old, it.legs_param] : old) }} />)}</ul>
+      </>}
+    </section>}
+    {user && <section className="kz-plans" id="my-plans" aria-label={t('My plans')}><h2>{t('My plans')}</h2>
       {loadingPlans && <p role="status">{t('Loading…')}</p>}
       {listError && <p role="alert">{t(listError)}</p>}
       {!loadingPlans && !listError && !plans.length && <p>{t('No plans yet. Save your first journey above.')}</p>}

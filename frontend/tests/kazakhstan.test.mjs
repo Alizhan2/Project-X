@@ -6,6 +6,13 @@ test('city filtering accepts all three languages and regions', () => {
   for (const query of ['aktobe', ' АКТОБЕ ', 'Ақтөбе', 'Актюбинская']) assert.equal(cityMatches(cities[1], query), true)
   assert.equal(cityMatches(cities[0], 'aktobe'), false)
 })
+test('city filtering accepts historical aliases without changing stable city identifiers', () => {
+  const city = { ...cities[0], aliases: ['Алма-Ата', 'Alma-Ata', 'Алма-Ата қаласы', 'Верный'] }
+  assert.equal(cityMatches(city, 'alma-ata'), true)
+  assert.equal(cityMatches(city, 'ВЕРНЫЙ'), true)
+  assert.equal(city.id, 'kz-almaty')
+  assert.equal(cityMatches({ ...city, aliases: ['Берёзовка'] }, 'березов'), true)
+})
 test('shared links whitelist only public trip fields and roundtrip', () => {
   const values = {...defaults(), destination:'kz-aktobe', note:'SECRET NOTE', id:42, user:9}
   const path = sharePath(values)

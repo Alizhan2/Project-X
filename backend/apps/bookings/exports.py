@@ -5,7 +5,6 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 from django.http import HttpResponse
-from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view
@@ -13,8 +12,9 @@ from rest_framework.response import Response
 
 from apps.core.throttling import throttle
 from apps.core.i18n import tr, language, place_name
+from apps.transport.markets import local_datetime
 from .models import Booking
-from .travel import travel_plan, upcoming_plan
+from .travel import travel_plan, travel_plan_payload, upcoming_plan
 from .views import Conflict, _own_booking
 
 
@@ -26,7 +26,7 @@ def private(response):
 @extend_schema(responses={200: dict})
 @api_view(["GET"])
 def upcoming(request):
-    return private(Response({"journey": upcoming_plan(request.user)}))
+    return private(Response({"journey": travel_plan_payload(upcoming_plan(request.user))}))
 
 
 def text(value):
@@ -92,12 +92,12 @@ def pdf_bytes(plan, booking):
         return Paragraph(escape(tr(str(value))), style)
     def local(value):
         # Numeric regional date avoids process-global locale and preserves DST offset.
-        return timezone.localtime(value).strftime("%d.%m.%Y, %H:%M %Z")
+        return local_datetime(value, plan["timezone"]).strftime("%d.%m.%Y, %H:%M %Z")
     story = [
         p("DOEDU / JOURNEY PLAN", title),
         p(tr("Booking {0} · {1} passenger(s)", booking.reference, booking.passengers), heading),
         p("DEMONSTRATION - Not a valid travel ticket. All services and payments are simulated.", warning),
-        p(f"Updated {local(plan['generated_at'])}. All times use Europe/Berlin."),
+        p(tr("Updated {0}. All times use {1}.", local(plan['generated_at']), plan["timezone"])),
         p("This downloaded copy does not update automatically. Check Doedu for changes before travelling."),
     ]
     if plan["status"] == "broken":

@@ -1,3 +1,6 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from django.conf import settings
 from django.http import Http404
 from django.utils import timezone
@@ -11,18 +14,19 @@ from apps.bookings.services import refund_quote
 from apps.bookings.views import Conflict, _own_booking, _quote_payload, booking_payload, idempotency_key
 
 from apps.core.throttling import throttle
+from apps.transport.markets import booking_timezone, local_iso, timezone_for_stops
 
 from . import recovery
 from .services import assess
 
 
 def _leg_row(l):
+    zone = timezone_for_stops(l.from_stop, l.to_stop)
     return {"sequence": l.sequence, "mode": l.mode, "route_code": l.route_code, "from": l.from_name, "to": l.to_name, "from_code": l.from_stop.code, "to_code": l.to_stop.code,
-            "departs_at": timezone.localtime(l.departs_at), "arrives_at": timezone.localtime(l.arrives_at)}
+            "timezone": zone, "departs_at": local_iso(l.departs_at, zone), "arrives_at": local_iso(l.arrives_at, zone)}
 
 
 def offer_payload(o):
-    from datetime import datetime
     from apps.planning.transfers import load_transfer_rules, assess_connection
     from apps.transport.models import Stop
     stops = {stop.code: stop for stop in Stop.objects.all()}
@@ -31,9 +35,10 @@ def offer_payload(o):
                      datetime.fromisoformat(a["arrives_at"]), datetime.fromisoformat(b["departs_at"]),
                      rules, on_demand=b["mode"] == "taxi") for a,b in zip(o.legs_snapshot, o.legs_snapshot[1:])]
     diff = o.difference
+    zone = booking_timezone(o.booking)
     return {
-        "id": o.pk, "status": o.status, "expires_at": timezone.localtime(o.expires_at),
-        "arrives_at": timezone.localtime(o.arrives_at), "legs": o.legs_snapshot, "legs_param": o.legs_param,
+        "id": o.pk, "status": o.status, "expires_at": local_iso(o.expires_at, zone), "timezone": zone,
+        "arrives_at": local_iso(o.arrives_at, zone), "legs": o.legs_snapshot, "legs_param": o.legs_param,
         "replacement_price": f"{o.total_new:.2f}", "replaced_value": f"{o.replaced_value:.2f}", "currency": o.currency,
         "difference": f"{diff:.2f}", "settlement": "pay",
         "payment_now": f"{o.total_new:.2f}", "eligible_refund": f"{o.eligible_refund:.2f}", "net_extra_cost": f"{diff:.2f}",
@@ -63,7 +68,10 @@ class RecoveryPreferences(serializers.Serializer):
 @api_view(["GET"])
 def replacements(request, reference):
     b = _own_booking(request, reference)
+    zone = booking_timezone(b)
     data = RecoveryPreferences(data=request.query_params.dict())
+    for field in ("earliest_departure", "latest_arrival"):
+        data.fields[field].timezone = ZoneInfo(zone)
     data.is_valid(raise_exception=True)
     prefs = data.validated_data
     try:
@@ -73,11 +81,13 @@ def replacements(request, reference):
         kept, affected, _, constraints, locations = recovery.recovery_context(b, live, timezone.now(), prefs) if live and live.status == "broken" else ([], [], None, {}, [])
     except recovery.RecoveryError as exc:
         raise Conflict(exc.code, exc.message) from exc
-    out = {"state": state, "offers": [offer_payload(o) for o in offers],
+    constraints = {**constraints, **{key: local_iso(datetime.fromisoformat(constraints[key]), zone)
+                                   for key in ("earliest_departure", "reachable_after", "latest_arrival") if key in constraints}}
+    out = {"state": state, "timezone": zone, "offers": [offer_payload(o) for o in offers],
            "retained_legs": [_leg_row(ll.leg) for ll in kept], "affected_legs": [_leg_row(ll.leg) for ll in affected],
            "original_arrival": None, "constraints": constraints, "locations": locations}
     if live and live.status == "broken":
-        out["original_arrival"] = timezone.localtime(live.legs[-1].leg.arrives_at)
+        out["original_arrival"] = local_iso(live.legs[-1].leg.arrives_at, zone)
         out["reason"] = live.reason
         if state == "none":
             out["cancellation"] = _quote_payload(refund_quote(b))

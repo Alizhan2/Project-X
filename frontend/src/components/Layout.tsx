@@ -50,6 +50,7 @@ export default function Layout() {
         <ThemeToggle />
         <nav id="main-navigation" aria-label={t("Main")} data-open={menuOpen} onClick={e => { if (e.target instanceof Element && e.target.closest('a')) setMenuOpen(false) }}>
           <NavLink to="/" end>{t("Kazakhstan")}</NavLink>
+          {user && <NavLink to="/#my-plans">{t('My plans')}</NavLink>}
           <NavLink to="/demo">{t("Demo journeys")}</NavLink>
           <NavLink to="/journeys">{t("My journeys")}</NavLink>
           {user && <NavLink to="/alerts">{t("Alerts")}</NavLink>}
@@ -69,11 +70,11 @@ export default function Layout() {
         </nav>
       </header>
       <main id="main">
-        {user && !user.email_verified && <aside className="email-notice">{t("Keep access to your account.")} <NavLink to="/verify-email">{t("Verify your email")}</NavLink></aside>}
+        {user && !user.email_verified && cfg.email_enabled !== false && <aside className="email-notice">{t("Keep access to your account.")} <NavLink to="/verify-email">{t("Verify your email")}</NavLink></aside>}
         <Outlet />
       </main>
       <footer className="site-footer">
-        {cfg.simulated && <div className="sim-banner" role="note">{isKazakhstan ? t('Kazakhstan directory. Real ticket sales are not yet available.') : <>{cfg.launch_mode === 'demo' ? t("Demonstration") : t("Development build")} {t("— all transport data, payments and booking confirmations are simulated. Confirmations are not valid travel tickets.")}</>}</div>}
+        {cfg.simulated && <div className="sim-banner" role="note">{isKazakhstan ? t('Kazakhstan booking demo. Cities are real; timetables, prices, payments and confirmations are simulated. Confirmations are not valid travel tickets.') : <>{cfg.launch_mode === 'demo' ? t("Demonstration") : t("Development build")} {t("— all transport data, payments and booking confirmations are simulated. Confirmations are not valid travel tickets.")}</>}</div>}
         <p className="release-label">Doedu · {t(cfg.launch_mode)} {t("· release")} {cfg.release}</p>
       </footer>
     </>

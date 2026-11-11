@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
@@ -19,6 +20,7 @@ from apps.notifications.watches import schedule_evaluation
 from apps.disruptions.models import DisruptionEvent
 
 from .models import Departure, Fare, Route
+from .markets import local_iso, route_timezone, timezone_for_stops
 
 
 class IsOperator(BasePermission):
@@ -41,20 +43,20 @@ def operator_of(request):
 
 
 def own_departures(request):
-    return Departure.objects.filter(route__operator=operator_of(request)).select_related("route")
+    return Departure.objects.filter(route__operator=operator_of(request)).select_related("route").prefetch_related("route__route_stops__stop")
 
 
 def dep_payload(d):
-    local = timezone.localtime
-    last = d.route.route_stops.order_by("-sequence").first()
-    first = d.route.route_stops.order_by("sequence").first()
+    stops = list(d.route.route_stops.all())
+    first, last = stops[0], stops[-1]
+    zone = timezone_for_stops(first.stop, last.stop)
     return {
         "id": d.pk, "route_code": d.route.code, "route_name": d.route.name, "mode": d.route.mode,
-        "departs_at": local(d.departs_at), "status": d.status, "delay_minutes": d.delay_minutes,
+        "timezone": zone, "departs_at": local_iso(d.departs_at, zone), "status": d.status, "delay_minutes": d.delay_minutes,
         "capacity": d.capacity, "places_taken": d.places_taken,
         "wheelchair_accessible": d.wheelchair_accessible,
         "first_stop": first.stop.name, "last_stop": last.stop.name,
-        "ends_at": local(d.departs_at + timedelta(minutes=last.arrival_offset_min + d.delay_minutes)),
+        "ends_at": local_iso(d.departs_at + timedelta(minutes=last.arrival_offset_min + d.delay_minutes), zone),
     }
 
 
@@ -79,9 +81,9 @@ class ServiceIn(serializers.Serializer):
 def routes(request):
     op = operator_of(request)
     out = []
-    for r in Route.objects.filter(operator=op).prefetch_related("fares__from_stop", "fares__to_stop"):
+    for r in Route.objects.filter(operator=op).prefetch_related("fares__from_stop", "fares__to_stop", "route_stops__stop"):
         out.append({
-            "id": r.pk, "code": r.code, "name": r.name, "mode": r.mode,
+            "id": r.pk, "code": r.code, "name": r.name, "mode": r.mode, "timezone": route_timezone(r),
             "fares": [{"id": f.pk, "from": f.from_stop.name, "to": f.to_stop.name, "price": f"{f.price:.2f}", "currency": f.currency}
                       for f in r.fares.all()],
         })
@@ -101,11 +103,18 @@ def services(request):
             qs = qs.filter(route__code=request.query_params["route"])
         return Response({"results": [dep_payload(d) for d in qs.order_by("departs_at")[:200]]})
     data = ServiceIn(data=request.data)
+    route = None
+    if "route_id" in request.data:
+        try:
+            route_id = data.fields["route_id"].run_validation(request.data["route_id"])
+        except serializers.ValidationError as exc:
+            raise serializers.ValidationError({"route_id": exc.detail}) from exc
+        route = get_object_or_404(Route, pk=route_id, operator=operator_of(request))
+        data.fields["departs_at"].timezone = ZoneInfo(route_timezone(route))
     data.is_valid(raise_exception=True)
     v = data.validated_data
     if not {"route_id", "departs_at", "capacity"} <= v.keys():
         raise serializers.ValidationError({"detail": "route_id, departs_at and capacity are required."})
-    route = get_object_or_404(Route, pk=v["route_id"], operator=operator_of(request))  # not yours => 404
     try:
         with transaction.atomic():
             d = Departure.objects.create(route=route, departs_at=v["departs_at"], capacity=v["capacity"],
@@ -124,14 +133,16 @@ def services(request):
 def service_detail(request, pk):
     if request.method == "GET":
         d = get_object_or_404(own_departures(request), pk=pk)
+        payload = dep_payload(d)
         events = [{"kind": e.kind, "delay_minutes": e.delay_minutes, "affected_bookings": e.affected_bookings,
-                   "created_at": timezone.localtime(e.created_at)} for e in d.disruption_events.all()[:20]]
-        return Response({**dep_payload(d), "events": events})
-    data = ServiceIn(data=request.data, partial=True)
-    data.is_valid(raise_exception=True)
-    v = data.validated_data
+                   "created_at": local_iso(e.created_at, payload["timezone"])} for e in d.disruption_events.all()[:20]]
+        return Response({**payload, "events": events})
     with transaction.atomic():
         d = get_object_or_404(own_departures(request).select_for_update(of=("self",)), pk=pk)
+        data = ServiceIn(data=request.data, partial=True)
+        data.fields["departs_at"].timezone = ZoneInfo(route_timezone(d.route))
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
         if "capacity" in v:
             if v["capacity"] < d.places_taken:
                 raise serializers.ValidationError({"capacity": f"{d.places_taken} places are already booked; capacity cannot go below that."})

@@ -1,6 +1,5 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers
 from rest_framework.decorators import api_view
@@ -8,6 +7,7 @@ from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 
 from apps.core.throttling import throttle
+from apps.transport.markets import booking_timezone, city_id_for_stop, local_iso, timezone_for_stops
 
 from . import services
 from .models import Booking
@@ -69,21 +69,27 @@ def _selection(leg):
 
 def booking_payload(b):
     from apps.disruptions.services import assess  # local import: disruptions depends on bookings
-    from .travel import travel_plan
+    from .travel import travel_plan, travel_plan_payload
 
     from .activity import booking_activity
 
     live = assess(b) if b.status == Booking.Status.CONFIRMED else None
+    zone = booking_timezone(b)
+    legs = list(b.legs.all())
+    active = [leg for leg in legs if leg.status == "booked"] or legs
     return {
+        "timezone": zone,
+        "origin_city": city_id_for_stop(active[0].from_stop) if active else None,
+        "destination_city": city_id_for_stop(active[-1].to_stop) if active else None,
         "activity": booking_activity(b),
-        "travel_plan": travel_plan(b, live) if live is not None else None,
+        "travel_plan": travel_plan_payload(travel_plan(b, live)) if live is not None else None,
         "disruption": None if live is None else {
             "status": live.status, "reason": live.reason, "problem_sequence": live.problem_sequence,
             "arrival_delay_minutes": live.arrival_delay_minutes, "connections": getattr(live, "connections", []),
         },
         "cancellable": b.status in (Booking.Status.CONFIRMED, Booking.Status.PENDING_PAYMENT),
         "refunds": [
-            {"id": r.pk, "failure_reason": r.failure_reason, "status": r.status, "amount": f"{r.amount:.2f}", "reason": r.get_reason_display(), "created_at": timezone.localtime(r.created_at)}
+            {"id": r.pk, "failure_reason": r.failure_reason, "status": r.status, "amount": f"{r.amount:.2f}", "reason": r.get_reason_display(), "created_at": local_iso(r.created_at, zone)}
             for r in b.refunds.all()
         ],
         "reference": b.reference,
@@ -93,9 +99,9 @@ def booking_payload(b):
         "total_amount": f"{b.total_amount:.2f}",
         "currency": b.currency,
         "contact_email": b.contact_email,
-        "expires_at": timezone.localtime(b.expires_at),
-        "created_at": timezone.localtime(b.created_at),
-        "confirmed_at": timezone.localtime(b.confirmed_at) if b.confirmed_at else None,
+        "expires_at": local_iso(b.expires_at, zone),
+        "created_at": local_iso(b.created_at, zone),
+        "confirmed_at": local_iso(b.confirmed_at, zone),
         "simulated_notice": "Simulated booking for demonstration. Not a valid travel ticket.",
         "travellers": [t.full_name for t in b.travellers.all()],
         "legs": [
@@ -104,14 +110,16 @@ def booking_payload(b):
                 "route_code": l.route_code, "route_name": l.route_name,
                 "from": l.from_name, "to": l.to_name,
                 "from_code": l.from_stop.code, "to_code": l.to_stop.code,
-                "departs_at": timezone.localtime(l.departs_at), "arrives_at": timezone.localtime(l.arrives_at),
+                "timezone": timezone_for_stops(l.from_stop, l.to_stop),
+                "departs_at": local_iso(l.departs_at, timezone_for_stops(l.from_stop, l.to_stop)),
+                "arrives_at": local_iso(l.arrives_at, timezone_for_stops(l.from_stop, l.to_stop)),
                 "unit_price": f"{l.unit_price:.2f}", "price_basis": l.price_basis, "cancellation_policy": l.policy_name,
             }
-            for l in b.legs.all()
+            for l in legs
         ],
         "payments": [
             {"id": p.pk, "idempotency_key": p.idempotency_key, "offer_id": p.offer_id, "compensated": p.compensated, "status": p.status, "purpose": p.purpose, "amount": f"{p.amount:.2f}", "failure_reason": p.failure_reason,
-             "created_at": timezone.localtime(p.created_at)}
+             "created_at": local_iso(p.created_at, zone)}
             for p in b.payment_attempts.all()
         ],
     }

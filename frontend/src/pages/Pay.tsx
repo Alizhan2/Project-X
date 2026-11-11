@@ -55,7 +55,7 @@ export default function Pay() {
     <h1>{t('Reservation expired')}</h1>
     <p>{t('The reservation ended. Check payment and refund history for the final settlement.')}</p>
     <Link to={`/booking/${ref}`}>{t('View payment and refund history')}</Link>
-    <p><Link className="button primary" to="/demo">{t('Search again')}</Link></p>
+    <p><Link className="button primary" to={booking.origin_city ? '/' : '/demo'}>{t('Search again')}</Link></p>
   </section>
   if (booking.status === 'cancelled' && !pending) return <p>{t('This reservation was cancelled.')} <Link to={`/booking/${ref}`}>{t('View payment and refund history')}</Link></p>
 

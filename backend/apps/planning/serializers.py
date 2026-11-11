@@ -1,7 +1,7 @@
-from django.utils import timezone
 from rest_framework import serializers
 
 from apps.transport.models import Stop
+from apps.transport.markets import itinerary_timezone, local_iso, timezone_for_stops
 
 
 class StopSerializer(serializers.ModelSerializer):
@@ -19,6 +19,7 @@ def _tri(value):
 def serialize_leg(leg, passengers):
     dep = leg.departure
     wheelchair = leg.wheelchair_accessible
+    zone = timezone_for_stops(leg.from_stop, leg.to_stop)
     return {
         "kind": "taxi" if leg.taxi else "service",
         "departure_id": dep.pk if dep else None,
@@ -29,8 +30,9 @@ def serialize_leg(leg, passengers):
         "route_name": leg.route_name,
         "from": {"code": leg.from_stop.code, "name": leg.from_stop.name},
         "to": {"code": leg.to_stop.code, "name": leg.to_stop.name},
-        "departs_at": timezone.localtime(leg.departs_at),
-        "arrives_at": timezone.localtime(leg.arrives_at),
+        "timezone": zone,
+        "departs_at": local_iso(leg.departs_at, zone),
+        "arrives_at": local_iso(leg.arrives_at, zone),
         "status": dep.status if dep else "scheduled",
         "delay_minutes": dep.delay_minutes if dep else 0,
         "unit_price": f"{leg.unit_price:.2f}",
@@ -47,9 +49,11 @@ def serialize_leg(leg, passengers):
 
 
 def serialize_itinerary(it):
+    zone = itinerary_timezone(it)
     return {
-        "departs_at": timezone.localtime(it.departs_at),
-        "arrives_at": timezone.localtime(it.arrives_at),
+        "timezone": zone,
+        "departs_at": local_iso(it.departs_at, zone),
+        "arrives_at": local_iso(it.arrives_at, zone),
         "duration_minutes": it.duration_minutes,
         "transfers": it.transfers,
         "min_transfer_buffer_minutes": it.min_transfer_buffer_minutes,

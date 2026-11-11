@@ -3690,5 +3690,477 @@
   "Walking time between stops": {
     "ru": "Время пешком между остановками",
     "kk": "Аялдамалар арасындағы жаяу жүру уақыты"
+  },
+  "Kazakhstan booking demo": {
+    "ru": "Демобронирование по Казахстану",
+    "kk": "Қазақстан бойынша брондау демосы"
+  },
+  "The cities are real. Routes, departure times, prices, seats, payments and confirmations are simulated. No real ticket is issued.": {
+    "ru": "Города реальные. Маршруты, время отправления, цены, места, платежи и подтверждения смоделированы. Настоящий билет не выдаётся.",
+    "kk": "Қалалар нақты. Бағыттар, жөнелу уақыттары, бағалар, орындар, төлемдер және растаулар үлгі ретінде берілген. Нақты билет берілмейді."
+  },
+  "{0} cities of Kazakhstan. The directory does not indicate real ticket availability.": {
+    "ru": "Города Казахстана: {0}. Справочник не подтверждает наличие настоящих билетов.",
+    "kk": "Қазақстан қалалары: {0}. Анықтамалық нақты билеттердің бар екенін растамайды."
+  },
+  "Official KATO directory": {
+    "ru": "Официальный справочник КАТО",
+    "kk": "Ресми КАТО анықтамалығы"
+  },
+  "Updated {0}": {
+    "ru": "Обновлено {0}",
+    "kk": "Жаңартылды: {0}"
+  },
+  "Find a city": {
+    "ru": "Найти город",
+    "kk": "Қаланы табу"
+  },
+  "Region": {
+    "ru": "Регион",
+    "kk": "Өңір"
+  },
+  "All regions": {
+    "ru": "Все регионы",
+    "kk": "Барлық өңірлер"
+  },
+  "{0} matching cities.": {
+    "ru": "Найдено городов: {0}.",
+    "kk": "Табылған қалалар: {0}."
+  },
+  "Try another spelling or select All regions.": {
+    "ru": "Попробуйте другое написание или выберите «Все регионы».",
+    "kk": "Басқаша жазып көріңіз немесе «Барлық өңірлер» таңдаңыз."
+  },
+  "Other demo scenarios (fictional region, EUR)": {
+    "ru": "Другие демосценарии (вымышленный регион, евро)",
+    "kk": "Басқа демосценарийлер (ойдан шығарылған өңір, EUR)"
+  },
+  "Search simulated journeys between Kazakhstan cities, then reserve and try the payment simulator. A saved plan does not hold a place.": {
+    "ru": "Найдите деморейс между городами Казахстана, забронируйте место и попробуйте симулятор оплаты. Сохранённый план не резервирует место.",
+    "kk": "Қазақстан қалалары арасынан деморейсті табыңыз, орын брондап, төлем симуляторын қолданып көріңіз. Сақталған жоспар орын ұстамайды."
+  },
+  "Search demo journeys": {
+    "ru": "Найти деморейсы",
+    "kk": "Деморейстерді іздеу"
+  },
+  "Demo journeys · KZT · Kazakhstan time (UTC+5). No real tickets.": {
+    "ru": "Деморейсы · тенге · время Казахстана (UTC+5). Настоящие билеты не выдаются.",
+    "kk": "Деморейстер · теңге · Қазақстан уақыты (UTC+5). Нақты билеттер берілмейді."
+  },
+  "No demo journeys match this date and transport choice. Try another time or transport mode.": {
+    "ru": "Для этой даты и транспорта деморейсов нет. Попробуйте другое время или вид транспорта.",
+    "kk": "Бұл күн мен көлік түріне деморейстер жоқ. Басқа уақытты немесе көлік түрін таңдаңыз."
+  },
+  "Progress is estimated, not GPS tracking.": {
+    "ru": "Прогресс рассчитан по расписанию, не по GPS.",
+    "kk": "Ілгерілеу кестемен есептелген, GPS арқылы емес."
+  },
+  "Choose your current reachable stop. All times use {0}. Used legs remain unchanged.": {
+    "ru": "Выберите доступную вам сейчас остановку. Все времена указаны в {0}. Пройденные участки сохраняются.",
+    "kk": "Қазір жете алатын аялдаманы таңдаңыз. Барлық уақыт {0} бойынша. Өтілген бөліктер сақталады."
+  },
+  "Checked against the current timetable; not a punctuality guarantee.": {
+    "ru": "Проверено по текущему расписанию; точность не гарантирована.",
+    "kk": "Ағымдағы кестемен тексерілді; уақытында келуге кепілдік емес."
+  },
+  "The deadline is checked again when reserving.": {
+    "ru": "Время прибытия проверяется повторно при резервировании.",
+    "kk": "Келу мерзімі брондау кезінде қайта тексеріледі."
+  },
+  "Departure ({0})": {
+    "ru": "Отправление ({0})",
+    "kk": "Жөнелу ({0})"
+  },
+  "All times use {0}.": {
+    "ru": "Все времена указаны в {0}.",
+    "kk": "Барлық уақыт {0} бойынша."
+  },
+  "Kazakhstan booking demo. Cities are real; timetables, prices, payments and confirmations are simulated. Confirmations are not valid travel tickets.": {
+    "ru": "Демобронирование по Казахстану. Города реальные; расписания, цены, платежи и подтверждения смоделированы. Подтверждения не являются проездными билетами.",
+    "kk": "Қазақстан бойынша брондау демосы. Қалалар нақты; кестелер, бағалар, төлемдер және растаулар үлгі ретінде берілген. Растаулар жол жүру билеті емес."
+  },
+  "Kazakhstan city names are real. Timetables, prices, seats, payments, refunds and confirmations are simulated. A confirmation is not a travel ticket and no money is charged. The separate fictional-region scenarios use EUR and Europe/Berlin time.": {
+    "ru": "Названия городов Казахстана реальные. Расписания, цены, места, платежи, возвраты и подтверждения смоделированы. Подтверждение не является билетом, деньги не списываются. Отдельные сценарии вымышленного региона используют евро и время Europe/Berlin.",
+    "kk": "Қазақстан қалаларының атаулары нақты. Кестелер, бағалар, орындар, төлемдер, қайтарулар және растаулар үлгі ретінде берілген. Растау билет емес, ақша алынбайды. Ойдан шығарылған өңірдің бөлек сценарийлері EUR және Europe/Berlin уақытын пайдаланады."
+  },
+  "Updated {0}. All times use {1}.": {
+    "ru": "Обновлено {0}. Все времена указаны в {1}.",
+    "kk": "Жаңартылды: {0}. Барлық уақыт {1} бойынша."
+  },
+  "Kazakhstan demo: full refund 24h+, 50% 2h+, none after": {
+    "ru": "Демо Казахстана: полный возврат за 24 ч и более, 50% за 2 ч и более, позже — без возврата",
+    "kk": "Қазақстан демосы: 24 сағаттан бұрын толық қайтару, 2 сағаттан бұрын 50%, кейін қайтарылмайды"
+  },
+  "Doedu KZ Bus (simulated)": {
+    "ru": "Doedu KZ Bus (демо)",
+    "kk": "Doedu KZ Bus (демо)"
+  },
+  "Doedu KZ Rail (simulated)": {
+    "ru": "Doedu KZ Rail (демо)",
+    "kk": "Doedu KZ Rail (демо)"
+  },
+  "Email delivery is not configured on this deployment.": {
+    "ru": "Отправка писем в этой версии пока не подключена.",
+    "kk": "Бұл нұсқада хат жіберу әлі қосылмаған."
+  },
+  "place:Astana": {
+    "ru": "Астана",
+    "kk": "Астана"
+  },
+  "place:Almaty": {
+    "ru": "Алматы",
+    "kk": "Алматы"
+  },
+  "place:Shymkent": {
+    "ru": "Шымкент",
+    "kk": "Шымкент"
+  },
+  "place:Kokshetau": {
+    "ru": "Кокшетау",
+    "kk": "Көкшетау"
+  },
+  "place:Aktobe": {
+    "ru": "Актобе",
+    "kk": "Ақтөбе"
+  },
+  "place:Atyrau": {
+    "ru": "Атырау",
+    "kk": "Атырау"
+  },
+  "place:Oral": {
+    "ru": "Уральск",
+    "kk": "Орал"
+  },
+  "place:Aktau": {
+    "ru": "Актау",
+    "kk": "Ақтау"
+  },
+  "place:Kostanay": {
+    "ru": "Костанай",
+    "kk": "Қостанай"
+  },
+  "place:Petropavl": {
+    "ru": "Петропавловск",
+    "kk": "Петропавл"
+  },
+  "place:Pavlodar": {
+    "ru": "Павлодар",
+    "kk": "Павлодар"
+  },
+  "place:Karaganda": {
+    "ru": "Караганда",
+    "kk": "Қарағанды"
+  },
+  "place:Zhezkazgan": {
+    "ru": "Жезказган",
+    "kk": "Жезқазған"
+  },
+  "place:Oskemen": {
+    "ru": "Усть-Каменогорск",
+    "kk": "Өскемен"
+  },
+  "place:Semey": {
+    "ru": "Семей",
+    "kk": "Семей"
+  },
+  "place:Taldykorgan": {
+    "ru": "Талдыкорган",
+    "kk": "Талдықорған"
+  },
+  "place:Konaev": {
+    "ru": "Конаев",
+    "kk": "Қонаев"
+  },
+  "place:Taraz": {
+    "ru": "Тараз",
+    "kk": "Тараз"
+  },
+  "place:Kyzylorda": {
+    "ru": "Кызылорда",
+    "kk": "Қызылорда"
+  },
+  "place:Turkistan": {
+    "ru": "Туркестан",
+    "kk": "Түркістан"
+  },
+  "place:Kurchatov": {
+    "ru": "Курчатов",
+    "kk": "Курчатов"
+  },
+  "place:Ayagoz": {
+    "ru": "Аягоз",
+    "kk": "Аягөз"
+  },
+  "place:Shar": {
+    "ru": "Шар",
+    "kk": "Шар"
+  },
+  "place:Kosshy": {
+    "ru": "Косшы",
+    "kk": "Қосшы"
+  },
+  "place:Stepnogorsk": {
+    "ru": "Степногорск",
+    "kk": "Степногор"
+  },
+  "place:Akkol": {
+    "ru": "Акколь",
+    "kk": "Ақкөл"
+  },
+  "place:Atbasar": {
+    "ru": "Атбасар",
+    "kk": "Атбасар"
+  },
+  "place:Makinsk": {
+    "ru": "Макинск",
+    "kk": "Макинск"
+  },
+  "place:Stepnyak": {
+    "ru": "Степняк",
+    "kk": "Степняк"
+  },
+  "place:Yereymentau": {
+    "ru": "Ерейментау",
+    "kk": "Ерейментау"
+  },
+  "place:Esil": {
+    "ru": "Есиль",
+    "kk": "Есіл"
+  },
+  "place:Derzhavinsk": {
+    "ru": "Державинск",
+    "kk": "Державин"
+  },
+  "place:Shchuchinsk": {
+    "ru": "Щучинск",
+    "kk": "Щучинск"
+  },
+  "place:Alga": {
+    "ru": "Алга",
+    "kk": "Алға"
+  },
+  "place:Kandyagash": {
+    "ru": "Кандыагаш",
+    "kk": "Қандыағаш"
+  },
+  "place:Embi": {
+    "ru": "Эмба",
+    "kk": "Ембі"
+  },
+  "place:Zhem": {
+    "ru": "Жем",
+    "kk": "Жем"
+  },
+  "place:Temir": {
+    "ru": "Темир",
+    "kk": "Темір"
+  },
+  "place:Khromtau": {
+    "ru": "Хромтау",
+    "kk": "Хромтау"
+  },
+  "place:Shalkar": {
+    "ru": "Шалкар",
+    "kk": "Шалқар"
+  },
+  "place:Alatau": {
+    "ru": "Алатау",
+    "kk": "Алатау"
+  },
+  "place:Esik": {
+    "ru": "Есик",
+    "kk": "Есік"
+  },
+  "place:Kaskelen": {
+    "ru": "Каскелен",
+    "kk": "Қаскелең"
+  },
+  "place:Talgar": {
+    "ru": "Талгар",
+    "kk": "Талғар"
+  },
+  "place:Kulsary": {
+    "ru": "Кульсары",
+    "kk": "Құлсары"
+  },
+  "place:Aksai": {
+    "ru": "Аксай",
+    "kk": "Ақсай"
+  },
+  "place:Zhanatas": {
+    "ru": "Жанатас",
+    "kk": "Жаңатас"
+  },
+  "place:Karatau": {
+    "ru": "Каратау",
+    "kk": "Қаратау"
+  },
+  "place:Shu": {
+    "ru": "Шу",
+    "kk": "Шу"
+  },
+  "place:Tekeli": {
+    "ru": "Текели",
+    "kk": "Текелі"
+  },
+  "place:Usharal": {
+    "ru": "Ушарал",
+    "kk": "Үшарал"
+  },
+  "place:Ushtobe": {
+    "ru": "Уштобе",
+    "kk": "Үштөбе"
+  },
+  "place:Zharkent": {
+    "ru": "Жаркент",
+    "kk": "Жаркент"
+  },
+  "place:Sarkan": {
+    "ru": "Саркан",
+    "kk": "Сарқан"
+  },
+  "place:Balkhash": {
+    "ru": "Балхаш",
+    "kk": "Балқаш"
+  },
+  "place:Priozersk": {
+    "ru": "Приозерск",
+    "kk": "Приозерск"
+  },
+  "place:Saran": {
+    "ru": "Сарань",
+    "kk": "Саран"
+  },
+  "place:Temirtau": {
+    "ru": "Темиртау",
+    "kk": "Теміртау"
+  },
+  "place:Shakhtinsk": {
+    "ru": "Шахтинск",
+    "kk": "Шахтинск"
+  },
+  "place:Abai": {
+    "ru": "Абай",
+    "kk": "Абай"
+  },
+  "place:Karkaraly": {
+    "ru": "Каркаралинск",
+    "kk": "Қарқаралы"
+  },
+  "place:Arkalyk": {
+    "ru": "Аркалык",
+    "kk": "Арқалық"
+  },
+  "place:Lisakovsk": {
+    "ru": "Лисаковск",
+    "kk": "Лисаков"
+  },
+  "place:Rudny": {
+    "ru": "Рудный",
+    "kk": "Рудный"
+  },
+  "place:Zhitikara": {
+    "ru": "Житикара",
+    "kk": "Жітіқара"
+  },
+  "place:Tobyl": {
+    "ru": "Тобыл",
+    "kk": "Тобыл"
+  },
+  "place:Baikonur": {
+    "ru": "Байконыр",
+    "kk": "Байқоңыр"
+  },
+  "place:Aral": {
+    "ru": "Аральск",
+    "kk": "Арал"
+  },
+  "place:Kazaly": {
+    "ru": "Казалинск",
+    "kk": "Қазалы"
+  },
+  "place:Zhanaozen": {
+    "ru": "Жанаозен",
+    "kk": "Жаңаөзен"
+  },
+  "place:Fort-Shevchenko": {
+    "ru": "Форт-Шевченко",
+    "kk": "Форт-Шевченко"
+  },
+  "place:Aksu": {
+    "ru": "Аксу",
+    "kk": "Ақсу"
+  },
+  "place:Ekibastuz": {
+    "ru": "Экибастуз",
+    "kk": "Екібастұз"
+  },
+  "place:Bulaevo": {
+    "ru": "Булаево",
+    "kk": "Булаев"
+  },
+  "place:Mamlyutka": {
+    "ru": "Мамлютка",
+    "kk": "Мамлют"
+  },
+  "place:Sergeyevka": {
+    "ru": "Сергеевка",
+    "kk": "Сергеев"
+  },
+  "place:Taiynsha": {
+    "ru": "Тайынша",
+    "kk": "Тайынша"
+  },
+  "place:Arys": {
+    "ru": "Арысь",
+    "kk": "Арыс"
+  },
+  "place:Kentau": {
+    "ru": "Кентау",
+    "kk": "Кентау"
+  },
+  "place:Zhetysay": {
+    "ru": "Жетысай",
+    "kk": "Жетісай"
+  },
+  "place:Saryagash": {
+    "ru": "Сарыагаш",
+    "kk": "Сарыағаш"
+  },
+  "place:Lenger": {
+    "ru": "Ленгер",
+    "kk": "Леңгір"
+  },
+  "place:Shardara": {
+    "ru": "Шардара",
+    "kk": "Шардара"
+  },
+  "place:Karazhal": {
+    "ru": "Каражал",
+    "kk": "Қаражал"
+  },
+  "place:Satbayev": {
+    "ru": "Сатпаев",
+    "kk": "Сәтбаев"
+  },
+  "place:Ridder": {
+    "ru": "Риддер",
+    "kk": "Риддер"
+  },
+  "place:Zaisan": {
+    "ru": "Зайсан",
+    "kk": "Зайсан"
+  },
+  "place:Altai": {
+    "ru": "Алтай",
+    "kk": "Алтай"
+  },
+  "place:Serebryansk": {
+    "ru": "Серебрянск",
+    "kk": "Серебрянск"
+  },
+  "place:Shemonaikha": {
+    "ru": "Шемонаиха",
+    "kk": "Шемонайха"
   }
 }

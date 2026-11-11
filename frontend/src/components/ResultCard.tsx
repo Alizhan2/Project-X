@@ -24,7 +24,7 @@ export default function ResultCard({ it, comparison, arriveBy, wheelchairRequire
       <div className="result-main">
         <p className="times">
           <strong>{clock(it.departs_at)}</strong> → <strong>{clock(it.arrives_at)}</strong>
-          {nextDay && <span className="badge">  {t("+1 day (")}{dayLabel(it.arrives_at)})</span>}
+          {nextDay && <span className="badge"> {t("Arrival")} {dayLabel(it.arrives_at)}</span>}
         </p>
         <p className="muted">
           {dayLabel(it.departs_at)} · {duration(it.duration_minutes)} ·{' '}

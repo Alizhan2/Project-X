@@ -59,7 +59,7 @@ export default function Account({ mode }: { mode: 'login' | 'register' }) {
         </div>
         <button className="primary" type="submit" disabled={busy}>{mode === 'login' ? t("Sign in") : t("Create account")}</button>
       </form>
-      {mode === 'login' && <p><Link to="/forgot-password">{t("Forgot your password?")}</Link></p>}
+      {mode === 'login' && cfg.email_enabled !== false && <p><Link to="/forgot-password">{t("Forgot your password?")}</Link></p>}
       <p>
         {mode === 'login' ? (cfg.registration_enabled ? <>{t("No account?")} <Link to="/register" state={loc.state}>{t("Create one")}</Link></> : null) : <>{t("Already registered?")} <Link to="/login" state={loc.state}>{t("Sign in")}</Link></>}
       </p>

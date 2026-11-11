@@ -27,7 +27,7 @@ export default function Services() {
             {rows.map((s) => (
               <tr key={s.id}>
                 <th scope="row">{s.route_code} <span className="muted small">{placeName(s.first_stop)} → {placeName(s.last_stop)}</span></th>
-                <td>{dayLabel(s.departs_at)} {clock(s.departs_at)}</td>
+                <td>{dayLabel(s.departs_at)} {clock(s.departs_at)}<span className="small muted"> · {s.timezone ?? 'Europe/Berlin'}</span></td>
                 <td><span className={`badge status-${s.status}`}>{t(s.status)}{s.status === 'delayed' ? t(" +{0} min", {0: s.delay_minutes}) : ''}</span></td>
                 <td>{s.places_taken} / {s.capacity}</td>
                 <td><Link to={`/operator/services/${s.id}`}>{t("Manage")}<span className="sr-only"> {s.route_code} {clock(s.departs_at)}</span></Link></td>

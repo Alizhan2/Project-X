@@ -40,7 +40,7 @@ export default function MyJourneys() {
       )}
       {err && <p className="status-bad" role="alert">{t(err.message)}</p>}
       {!list && !err && !offline && <p>{t("Loading…")}</p>}
-      {list && list.length === 0 && <div className="card empty"><p><strong>{t("No journeys yet.")}</strong></p><Link to="/demo">{t("Search for a journey")}</Link></div>}
+      {list && list.length === 0 && <div className="card empty"><p><strong>{t("No journeys yet.")}</strong></p><Link to="/">{t("Search for a journey")}</Link></div>}
       {list && list.length > 0 && (
         <ul className="result-list">
           {list.map((b) => (
@@ -51,7 +51,7 @@ export default function MyJourneys() {
                 <p className="muted">{dayLabel(b.legs[0].departs_at)} · {clock(b.legs[0].departs_at)} · {b.passengers}  {t("passenger(s)")}</p>
               </div>
               <div className="result-price"><p className="price">{money(b.total_amount, b.currency)}</p>
-                <Link to={repeatSearchUrl(b.legs[0].from_code, b.legs[b.legs.length - 1].to_code, b.passengers, b.wheelchair_required)}>{t("Repeat journey")}</Link>
+                <Link to={repeatSearchUrl(b.legs[0].from_code, b.legs[b.legs.length - 1].to_code, b.passengers, b.wheelchair_required, b.origin_city, b.destination_city)}>{t("Repeat journey")}</Link>
                 <span className="muted small">{t("New search at current prices")}</span></div>
             </li>
           ))}

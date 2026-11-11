@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { t } from '../i18n'
 
 const TOPICS: [string, string][] = [
-  ['What does "simulated" mean?', 'Everything in Doedu is a demonstration. Timetables, prices, payments, refunds and confirmations are made up. A confirmation is not a travel ticket and no money is ever charged. Do not use it to travel.'],
+  ['What does "simulated" mean?', 'Kazakhstan city names are real. Timetables, prices, seats, payments, refunds and confirmations are simulated. A confirmation is not a travel ticket and no money is charged. The separate fictional-region scenarios use EUR and Europe/Berlin time.'],
   ['What happens if a connection breaks?', 'If a connection breaks, choose your reachable location, arrival deadline, payment budget and accessibility requirement. A replacement requires full payment now. Any eligible old-leg refund is processed separately. Your original booking stays intact until replacement confirmation succeeds.'],
   ['How long is a place held while I pay?', 'Places are held for a short time after checkout (5 minutes in this demo). If you do not pay in time, the booking expires and the places go back on sale.'],
   ['How do refunds work?', 'Each leg has its own cancellation policy, shown before you book and saved with your booking. The refund depends on how long before departure you cancel; a service cancelled by the operator is refunded in full. Refunds here are simulated.'],

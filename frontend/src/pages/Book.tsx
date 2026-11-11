@@ -19,6 +19,7 @@ export default function Book() {
   const arriveBy = p.get('arrive_by') || undefined
   const wheelchairRequired = p.get('wheelchair_required') === 'true'
   const st = useItinerary(legs, passengers, arriveBy, wheelchairRequired)
+  const searchHome = legs.includes(':KZ-') ? '/' : '/demo'
   const n = Number(passengers)
   const [names, setNames] = useState<string[]>(() => Array.from({ length: n }, (_, i) => (i === 0 ? (user?.name ?? '') : '')))
   const [email, setEmail] = useState(user?.email ?? '')
@@ -58,16 +59,16 @@ export default function Book() {
     <>
       <h1>{t("Traveller details")}</h1>
       {wheelchairRequired && <p className="email-notice">{t("Require a fully step-free journey")}</p>}
-      {arriveBy && <p>{t("Arrive by")} {arriveBy.replace('T', ' ')}  {t("(Europe/Berlin). The deadline is checked again when reserving.")}</p>}
+      {arriveBy && st.kind === 'ready' && <p>{t("Arrive by")} {arriveBy.replace('T', ' ')} ({st.data.timezone ?? 'Europe/Berlin'}). {t('The deadline is checked again when reserving.')}</p>}
       {st.kind === 'loading' && <p>{t("Loading journey…")}</p>}
-      {st.kind === 'error' && <div className="card" role="alert"><p className="status-bad">{st.error.message}</p><Link to="/demo">{t("Search again")}</Link></div>}
+      {st.kind === 'error' && <div className="card" role="alert"><p className="status-bad">{st.error.message}</p><Link to={searchHome}>{t("Search again")}</Link></div>}
       {st.kind === 'ready' && (
         <div className="two-col">
           <form className="card" onSubmit={submit} noValidate>
             {err && !changedTotal && (
               <div role="alert" className="status-bad">
                 <p>{t(err.message)}</p>
-                {['unavailable', 'no_capacity', 'invalid_leg', 'arrival_deadline_missed'].includes(err.code ?? '') && <p><Link to="/demo">{t("Search again")}</Link></p>}
+                {['unavailable', 'no_capacity', 'invalid_leg', 'arrival_deadline_missed'].includes(err.code ?? '') && <p><Link to={searchHome}>{t("Search again")}</Link></p>}
               </div>
             )}
             {changedTotal && (

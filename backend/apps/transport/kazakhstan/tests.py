@@ -2,7 +2,7 @@ from dataclasses import replace
 from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory
 from .catalog import CITIES
@@ -16,10 +16,11 @@ class KazakhstanTests(SimpleTestCase):
         self.params = {'origin': 'kz-almaty', 'destination': 'kz-astana',
                        'date': (self.now + timedelta(days=2)).date().isoformat(), 'time': '06:00'}
 
+    @override_settings(SIMULATION_ENABLED=False)
     def test_catalog_is_multilingual_geography_not_inventory(self):
         response = catalog(APIRequestFactory().get('/'))
-        self.assertEqual(len(CITIES), 20)
-        self.assertEqual(len({c['id'] for c in CITIES}), 20)
+        self.assertEqual(len(CITIES), 90)
+        self.assertEqual(len({c['id'] for c in CITIES}), 90)
         self.assertFalse(response.data['booking_enabled'])
         self.assertEqual(response.data['currency'], 'KZT')
         self.assertEqual(response.data['timezone'], 'Asia/Almaty')
@@ -43,6 +44,7 @@ class KazakhstanTests(SimpleTestCase):
                 serializer = SearchInput(data={**self.params, **changes})
                 self.assertFalse(serializer.is_valid())
 
+    @override_settings(SIMULATION_ENABLED=False)
     def test_unconnected_supplier_cannot_return_fake_inventory(self):
         with self.assertRaises(ProviderUnavailable):
             OneTR().search(None)
@@ -60,6 +62,7 @@ class KazakhstanTests(SimpleTestCase):
                      departure + timedelta(hours=20), Decimal('12345.67'), 'KZT',
                      self.now, self.now + timedelta(minutes=10), 'train', 1)
 
+    @override_settings(SIMULATION_ENABLED=False)
     def test_boundary_filters_expired_wrong_route_currency_party_and_long_journeys(self):
         valid = self.offer()
         rejected = [replace(valid, checked_at=self.now - timedelta(hours=2), expires_at=self.now - timedelta(hours=1)),

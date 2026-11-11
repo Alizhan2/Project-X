@@ -116,8 +116,9 @@ class OperationsEndpointTests(TestCase):
 
     def test_config_endpoint_states_what_the_deployment_may_claim(self):
         data = self.client.get("/api/config/").json()
-        self.assertEqual(set(data), {"launch_mode", "simulated", "registration_enabled", "release"})
+        self.assertEqual(set(data), {"launch_mode", "simulated", "registration_enabled", "release", "email_enabled"})
         self.assertTrue(data["simulated"])
+        self.assertIsInstance(data["email_enabled"], bool)
 
     def test_metrics_need_the_token_and_contain_no_personal_data(self):
         self.assertEqual(self.client.get("/api/ops/metrics/").status_code, 404)               # off: no token configured

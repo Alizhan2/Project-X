@@ -1,5 +1,5 @@
 import type { Language } from './i18n'
-export type City = { id: string; name: Record<Language, string>; region: Record<Language, string> }
+export type City = { id: string; name: Record<Language, string>; region: Record<Language, string>; aliases?: string[] }
 export type PlanValues = { origin: string; destination: string; date: string; time: string; passengers: string; modes: string }
 export type Plan = Omit<PlanValues, 'passengers'> & { passengers: number; id: number; note: string }
 export const zone = 'Asia/Almaty'
@@ -30,6 +30,7 @@ export function readShared(search: string, cities: City[], now = new Date()): { 
   return { values, invalid }
 }
 export function cityMatches(city: City, query: string) {
-  const normalized = query.trim().normalize('NFKC').toLocaleLowerCase()
-  return [...Object.values(city.name), ...Object.values(city.region)].some(name => name.normalize('NFKC').toLocaleLowerCase().includes(normalized))
+  const normalize = (value: string) => value.trim().normalize('NFKC').toLocaleLowerCase().replaceAll('ё', 'е')
+  const normalized = normalize(query)
+  return [...Object.values(city.name), ...Object.values(city.region), ...(city.aliases ?? [])].some(name => normalize(name).includes(normalized))
 }

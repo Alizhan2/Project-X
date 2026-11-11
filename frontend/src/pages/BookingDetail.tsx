@@ -116,7 +116,7 @@ export default function BookingDetail() {
         <p>{t("Status:")} <span className="badge" data-testid="status">{t(b.status_label)}</span></p>
         {!offlineAt && b.status === 'pending_payment' && <p><Link to={`/booking/${b.reference}/pay`}>{t("Continue to payment")}</Link></p>}
         {b.status === 'expired' && <p className="warn">{t("The reservation ended. Check payment and refund history for the final settlement.")}</p>}
-        {b.travel_plan && <p className="muted small">{t("Current timetable · checked at")} {clock(b.travel_plan.generated_at)}  {t("(Europe/Berlin). Progress is estimated, not GPS tracking.")}</p>}
+        {b.travel_plan && <p className="muted small">{t("Current timetable · checked at")} {clock(b.travel_plan.generated_at)} ({b.travel_plan.timezone ?? b.timezone ?? 'Europe/Berlin'}). {t('Progress is estimated, not GPS tracking.')}</p>}
         <Timeline connections={b.disruption?.connections} legs={b.travel_plan ? b.travel_plan.legs.map(l => ({ ...l, note: l.state === 'unavailable' ? t("Service unavailable") : l.departs_at !== l.scheduled_departs_at ? t("Originally booked departure: {0}", {0: clock(l.scheduled_departs_at)}) : undefined })) : b.legs.filter((l) => l.status === 'booked')} />
         {!offlineAt && b.status === 'confirmed' && <JourneyDownloads reference={b.reference} disrupted={b.disruption?.status === 'broken'} />}
         {b.legs.some((l) => l.status === 'replaced') && (

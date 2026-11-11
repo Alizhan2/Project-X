@@ -19,7 +19,7 @@ export default function NewService() {
     e.preventDefault(); setErr(null)
     try {
       const s = await opCreate({
-        route_id: Number(routeId), departs_at: new Date(when).toISOString(), capacity: Number(capacity),
+        route_id: Number(routeId), departs_at: when, capacity: Number(capacity),
         wheelchair_accessible: wheelchair === 'unknown' ? null : wheelchair === 'yes',
       })
       nav(`/operator/services/${s.id}`)
@@ -36,7 +36,7 @@ export default function NewService() {
             <option value="">{t("Choose a route…")}</option>
             {routes.map((r) => <option key={r.id} value={r.id}>{r.code} — {placeName(r.name)}</option>)}
           </select></div>
-        <div className="field"><label htmlFor="when">{t("Departure (your local time)")}</label>
+        <div className="field"><label htmlFor="when">{t('Departure ({0})', { 0: routes.find(route => String(route.id) === routeId)?.timezone ?? 'Europe/Berlin' })}</label>
           <input id="when" type="datetime-local" required value={when} onChange={(e) => setWhen(e.target.value)} aria-invalid={!!f('departs_at')} />
           {f('departs_at') && <span className="field-error">{f('departs_at')}</span>}</div>
         <div className="field"><label htmlFor="cap">{t("Capacity (passengers)")}</label>

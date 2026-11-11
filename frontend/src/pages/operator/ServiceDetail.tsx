@@ -74,6 +74,7 @@ export default function ServiceDetail() {
     <>
       <p><Link to="/operator">{t("← All services")}</Link></p>
       <h1>{s.route_code} · {dayLabel(s.departs_at)} {clock(s.departs_at)}</h1>
+      <p className="small muted">{t('All times use {0}.', { 0: s.timezone ?? 'Europe/Berlin' })}</p>
       <p className="muted">{placeName(s.first_stop)} → {placeName(s.last_stop)} · <span className={`badge status-${s.status}`}>{t(s.status)}{s.status === 'delayed' ? t(" +{0} min", {0: s.delay_minutes}) : ''}</span></p>
       {msg && <p role="status" className="card">{t(msg)}</p>}
 

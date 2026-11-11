@@ -4,11 +4,13 @@ import { useState, type FormEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ApiError, request } from '../api'
 import { useAuth } from '../authContext'
+import { useConfig } from '../configContext'
 
 export default function EmailAccount({ mode }: { mode: 'forgot' | 'reset' | 'verify' }) {
   useLanguage()
   const { hash } = useLocation()
   const { user, refresh } = useAuth()
+  const cfg = useConfig()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
@@ -39,6 +41,7 @@ export default function EmailAccount({ mode }: { mode: 'forgot' | 'reset' | 'ver
       setError(e instanceof ApiError ? Object.values(e.fields).join(' ') || e.message : t("Could not reach the server. Try again."))
     } finally { setBusy(false) }
   }
+  if (cfg.email_enabled === false && !hasToken) return <section className="card narrow account-card"><h1>{title}</h1><p role="status">{t('Email delivery is not configured on this deployment.')}</p><p><Link to="/login">{t('Back to sign in')}</Link></p></section>
   return <section className="card narrow account-card">
     <h1>{title}</h1>
     <p className="muted">{mode === 'forgot' ? t("Enter your account email. We’ll send a link to set a new password.") : mode === 'reset' ? t("Use a unique password with at least 8 characters.") : hasToken ? t("Confirm that this email address belongs to you.") : t("Request a link to confirm the email address on your account.")}</p>

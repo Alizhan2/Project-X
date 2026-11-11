@@ -20,7 +20,7 @@ export default function Timeline({ legs, buffers, connections }: { legs: Item[];
       {legs.map((l, i) => (
         <li key={i}>
           <p><strong>{clock(l.departs_at)}</strong> {placeName(l.from)} <span className="muted">({dayLabel(l.departs_at)})</span></p>
-          <p className="muted small">{[l.mode === 'taxi' ? t("Taxi (simulated)") : `${t(l.mode)} ${l.route_code}`, l.operator].filter(Boolean).join(' · ')}</p>
+          <p className="muted small">{[l.mode === 'taxi' ? t("Taxi (simulated)") : `${t(l.mode)} ${l.route_code}`, t(l.operator)].filter(Boolean).join(' · ')}</p>
           {l.note && <p className="warn">{t(l.note)}</p>}
           <p><strong>{clock(l.arrives_at)}</strong> {placeName(l.to)} <span className="muted">({dayLabel(l.arrives_at)})</span></p>
           {i < legs.length - 1 && (

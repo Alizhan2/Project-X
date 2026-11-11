@@ -4,12 +4,14 @@ from datetime import timedelta
 from django.utils import timezone
 
 from apps.disruptions.services import assess
+from apps.transport.markets import booking_timezone, city_id_for_stop, local_datetime, local_iso
 from .models import Booking
 
 
 def travel_plan(booking, assessment=None, now=None):
     now = now or timezone.now()
     assessment = assessment or assess(booking)
+    zone = booking_timezone(booking)
     legs = []
     for item in assessment.legs:
         leg = item.leg
@@ -19,14 +21,17 @@ def travel_plan(booking, assessment=None, now=None):
             state = "unavailable"
         legs.append({
             "sequence": leg.sequence, "from": leg.from_name, "to": leg.to_name,
+            "from_code": leg.from_stop.code, "to_code": leg.to_stop.code,
             "mode": leg.mode, "route_code": leg.route_code, "operator": leg.operator_name,
-            "departs_at": timezone.localtime(item.departs_at), "arrives_at": timezone.localtime(item.arrives_at),
-            "scheduled_departs_at": timezone.localtime(leg.departs_at), "scheduled_arrives_at": timezone.localtime(leg.arrives_at),
+            "departs_at": local_datetime(item.departs_at, zone), "arrives_at": local_datetime(item.arrives_at, zone),
+            "scheduled_departs_at": local_datetime(leg.departs_at, zone), "scheduled_arrives_at": local_datetime(leg.arrives_at, zone),
             "state": state,
         })
     remaining = [leg for leg in legs if leg["arrives_at"] > now]
     return {
-        "reference": booking.reference, "generated_at": timezone.localtime(now),
+        "reference": booking.reference, "generated_at": local_datetime(now, zone), "timezone": zone,
+        "origin_city": city_id_for_stop(assessment.legs[0].leg.from_stop) if assessment.legs else None,
+        "destination_city": city_id_for_stop(assessment.legs[-1].leg.to_stop) if assessment.legs else None,
         "status": assessment.status, "reason": assessment.reason,
         "progress": "finished" if not remaining else (
             "needs_attention" if assessment.status == "broken" else
@@ -35,6 +40,16 @@ def travel_plan(booking, assessment=None, now=None):
         "legs": legs,
         "notice": "Timetable estimate, not GPS tracking. All transport and tickets are simulated.",
     }
+
+
+def travel_plan_payload(plan):
+    """Keep datetimes for exports/calculation; preserve market offsets at the JSON boundary."""
+    if plan is None:
+        return None
+    zone = plan["timezone"]
+    fields = ("departs_at", "arrives_at", "scheduled_departs_at", "scheduled_arrives_at")
+    return {**plan, "generated_at": local_iso(plan["generated_at"], zone),
+            "legs": [{**leg, **{field: local_iso(leg[field], zone) for field in fields}} for leg in plan["legs"]]}
 
 
 def upcoming_plan(user):

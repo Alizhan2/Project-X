@@ -2,7 +2,7 @@
 (booking, payment attempts, refunds, disruption notifications); nothing extra is stored, and the texts are
 fixed phrases that the frontend translates. No e-mail, IP or other personal data is included."""
 
-from django.utils import timezone
+from apps.transport.markets import booking_timezone, local_iso
 
 # Notification kinds that describe something that happened to the journey (not generic account messages).
 JOURNEY_NOTICE_KINDS = {
@@ -28,4 +28,5 @@ def booking_activity(booking):
     if booking.cancelled_at:
         events.append({"kind": "cancelled", "title": "Booking cancelled", "at": booking.cancelled_at})
     events.sort(key=lambda e: e["at"])
-    return [{**e, "at": timezone.localtime(e["at"])} for e in events]
+    zone = booking_timezone(booking)
+    return [{**e, "at": local_iso(e["at"], zone)} for e in events]

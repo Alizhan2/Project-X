@@ -101,6 +101,15 @@ class SupervisorTests(SimpleTestCase):
         self.assertEqual(render_start.main(), 0)
         self.assertEqual([call.args[0][-1] for call in run.call_args_list], ["safe_migrate"])
 
+    @mock.patch("render_start.supervise", return_value=0)
+    @mock.patch("render_start.subprocess.run")
+    @mock.patch("render_start.render_environment")
+    def test_kazakhstan_setup_runs_after_existing_bootstrap(self, prepare, run, _supervise):
+        prepare.return_value = {"DOEDU_BOOTSTRAP_DEMO": "true", "DOEDU_LAUNCH_MODE": "demo"}
+        self.assertEqual(render_start.main(), 0)
+        self.assertEqual([call.args[0][-1] for call in run.call_args_list],
+                         ["safe_migrate", "bootstrap_hosted_demo", "prepare_kazakhstan_demo"])
+
 
 @override_settings(IS_DEPLOYED=True, LAUNCH_MODE="demo", SIMULATION_ENABLED=True, ALLOW_DEMO_TOOLS=False)
 class HostedBootstrapTests(TestCase):

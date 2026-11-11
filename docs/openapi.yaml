@@ -1102,6 +1102,76 @@ paths:
           - kz-taraz
           - kz-kyzylorda
           - kz-turkistan
+          - kz-kurchatov
+          - kz-ayagoz
+          - kz-shar
+          - kz-kosshy
+          - kz-stepnogorsk
+          - kz-akkol
+          - kz-atbasar
+          - kz-makinsk
+          - kz-stepnyak
+          - kz-yereymentau
+          - kz-esil
+          - kz-derzhavinsk
+          - kz-shchuchinsk
+          - kz-alga
+          - kz-kandyagash
+          - kz-embi
+          - kz-zhem
+          - kz-temir
+          - kz-khromtau
+          - kz-shalkar
+          - kz-alatau
+          - kz-esik
+          - kz-kaskelen
+          - kz-talgar
+          - kz-kulsary
+          - kz-aksai
+          - kz-zhanatas
+          - kz-karatau
+          - kz-shu
+          - kz-tekeli
+          - kz-usharal
+          - kz-ushtobe
+          - kz-zharkent
+          - kz-sarkan
+          - kz-balkhash
+          - kz-priozersk
+          - kz-saran
+          - kz-temirtau
+          - kz-shakhtinsk
+          - kz-abai
+          - kz-karkaraly
+          - kz-arkalyk
+          - kz-lisakovsk
+          - kz-rudny
+          - kz-zhitikara
+          - kz-tobyl
+          - kz-baikonur
+          - kz-aral
+          - kz-kazaly
+          - kz-zhanaozen
+          - kz-fort-shevchenko
+          - kz-aksu
+          - kz-ekibastuz
+          - kz-bulaevo
+          - kz-mamlyutka
+          - kz-sergeyevka
+          - kz-taiynsha
+          - kz-arys
+          - kz-kentau
+          - kz-zhetysay
+          - kz-saryagash
+          - kz-lenger
+          - kz-shardara
+          - kz-karazhal
+          - kz-satbayev
+          - kz-ridder
+          - kz-zaisan
+          - kz-altai
+          - kz-serebryansk
+          - kz-shemonaikha
           type: string
           minLength: 1
         description: |-
@@ -1125,6 +1195,76 @@ paths:
           * `kz-taraz` - kz-taraz
           * `kz-kyzylorda` - kz-kyzylorda
           * `kz-turkistan` - kz-turkistan
+          * `kz-kurchatov` - kz-kurchatov
+          * `kz-ayagoz` - kz-ayagoz
+          * `kz-shar` - kz-shar
+          * `kz-kosshy` - kz-kosshy
+          * `kz-stepnogorsk` - kz-stepnogorsk
+          * `kz-akkol` - kz-akkol
+          * `kz-atbasar` - kz-atbasar
+          * `kz-makinsk` - kz-makinsk
+          * `kz-stepnyak` - kz-stepnyak
+          * `kz-yereymentau` - kz-yereymentau
+          * `kz-esil` - kz-esil
+          * `kz-derzhavinsk` - kz-derzhavinsk
+          * `kz-shchuchinsk` - kz-shchuchinsk
+          * `kz-alga` - kz-alga
+          * `kz-kandyagash` - kz-kandyagash
+          * `kz-embi` - kz-embi
+          * `kz-zhem` - kz-zhem
+          * `kz-temir` - kz-temir
+          * `kz-khromtau` - kz-khromtau
+          * `kz-shalkar` - kz-shalkar
+          * `kz-alatau` - kz-alatau
+          * `kz-esik` - kz-esik
+          * `kz-kaskelen` - kz-kaskelen
+          * `kz-talgar` - kz-talgar
+          * `kz-kulsary` - kz-kulsary
+          * `kz-aksai` - kz-aksai
+          * `kz-zhanatas` - kz-zhanatas
+          * `kz-karatau` - kz-karatau
+          * `kz-shu` - kz-shu
+          * `kz-tekeli` - kz-tekeli
+          * `kz-usharal` - kz-usharal
+          * `kz-ushtobe` - kz-ushtobe
+          * `kz-zharkent` - kz-zharkent
+          * `kz-sarkan` - kz-sarkan
+          * `kz-balkhash` - kz-balkhash
+          * `kz-priozersk` - kz-priozersk
+          * `kz-saran` - kz-saran
+          * `kz-temirtau` - kz-temirtau
+          * `kz-shakhtinsk` - kz-shakhtinsk
+          * `kz-abai` - kz-abai
+          * `kz-karkaraly` - kz-karkaraly
+          * `kz-arkalyk` - kz-arkalyk
+          * `kz-lisakovsk` - kz-lisakovsk
+          * `kz-rudny` - kz-rudny
+          * `kz-zhitikara` - kz-zhitikara
+          * `kz-tobyl` - kz-tobyl
+          * `kz-baikonur` - kz-baikonur
+          * `kz-aral` - kz-aral
+          * `kz-kazaly` - kz-kazaly
+          * `kz-zhanaozen` - kz-zhanaozen
+          * `kz-fort-shevchenko` - kz-fort-shevchenko
+          * `kz-aksu` - kz-aksu
+          * `kz-ekibastuz` - kz-ekibastuz
+          * `kz-bulaevo` - kz-bulaevo
+          * `kz-mamlyutka` - kz-mamlyutka
+          * `kz-sergeyevka` - kz-sergeyevka
+          * `kz-taiynsha` - kz-taiynsha
+          * `kz-arys` - kz-arys
+          * `kz-kentau` - kz-kentau
+          * `kz-zhetysay` - kz-zhetysay
+          * `kz-saryagash` - kz-saryagash
+          * `kz-lenger` - kz-lenger
+          * `kz-shardara` - kz-shardara
+          * `kz-karazhal` - kz-karazhal
+          * `kz-satbayev` - kz-satbayev
+          * `kz-ridder` - kz-ridder
+          * `kz-zaisan` - kz-zaisan
+          * `kz-altai` - kz-altai
+          * `kz-serebryansk` - kz-serebryansk
+          * `kz-shemonaikha` - kz-shemonaikha
         required: true
       - in: query
         name: modes
@@ -1164,6 +1304,76 @@ paths:
           - kz-taraz
           - kz-kyzylorda
           - kz-turkistan
+          - kz-kurchatov
+          - kz-ayagoz
+          - kz-shar
+          - kz-kosshy
+          - kz-stepnogorsk
+          - kz-akkol
+          - kz-atbasar
+          - kz-makinsk
+          - kz-stepnyak
+          - kz-yereymentau
+          - kz-esil
+          - kz-derzhavinsk
+          - kz-shchuchinsk
+          - kz-alga
+          - kz-kandyagash
+          - kz-embi
+          - kz-zhem
+          - kz-temir
+          - kz-khromtau
+          - kz-shalkar
+          - kz-alatau
+          - kz-esik
+          - kz-kaskelen
+          - kz-talgar
+          - kz-kulsary
+          - kz-aksai
+          - kz-zhanatas
+          - kz-karatau
+          - kz-shu
+          - kz-tekeli
+          - kz-usharal
+          - kz-ushtobe
+          - kz-zharkent
+          - kz-sarkan
+          - kz-balkhash
+          - kz-priozersk
+          - kz-saran
+          - kz-temirtau
+          - kz-shakhtinsk
+          - kz-abai
+          - kz-karkaraly
+          - kz-arkalyk
+          - kz-lisakovsk
+          - kz-rudny
+          - kz-zhitikara
+          - kz-tobyl
+          - kz-baikonur
+          - kz-aral
+          - kz-kazaly
+          - kz-zhanaozen
+          - kz-fort-shevchenko
+          - kz-aksu
+          - kz-ekibastuz
+          - kz-bulaevo
+          - kz-mamlyutka
+          - kz-sergeyevka
+          - kz-taiynsha
+          - kz-arys
+          - kz-kentau
+          - kz-zhetysay
+          - kz-saryagash
+          - kz-lenger
+          - kz-shardara
+          - kz-karazhal
+          - kz-satbayev
+          - kz-ridder
+          - kz-zaisan
+          - kz-altai
+          - kz-serebryansk
+          - kz-shemonaikha
           type: string
           minLength: 1
         description: |-
@@ -1187,6 +1397,76 @@ paths:
           * `kz-taraz` - kz-taraz
           * `kz-kyzylorda` - kz-kyzylorda
           * `kz-turkistan` - kz-turkistan
+          * `kz-kurchatov` - kz-kurchatov
+          * `kz-ayagoz` - kz-ayagoz
+          * `kz-shar` - kz-shar
+          * `kz-kosshy` - kz-kosshy
+          * `kz-stepnogorsk` - kz-stepnogorsk
+          * `kz-akkol` - kz-akkol
+          * `kz-atbasar` - kz-atbasar
+          * `kz-makinsk` - kz-makinsk
+          * `kz-stepnyak` - kz-stepnyak
+          * `kz-yereymentau` - kz-yereymentau
+          * `kz-esil` - kz-esil
+          * `kz-derzhavinsk` - kz-derzhavinsk
+          * `kz-shchuchinsk` - kz-shchuchinsk
+          * `kz-alga` - kz-alga
+          * `kz-kandyagash` - kz-kandyagash
+          * `kz-embi` - kz-embi
+          * `kz-zhem` - kz-zhem
+          * `kz-temir` - kz-temir
+          * `kz-khromtau` - kz-khromtau
+          * `kz-shalkar` - kz-shalkar
+          * `kz-alatau` - kz-alatau
+          * `kz-esik` - kz-esik
+          * `kz-kaskelen` - kz-kaskelen
+          * `kz-talgar` - kz-talgar
+          * `kz-kulsary` - kz-kulsary
+          * `kz-aksai` - kz-aksai
+          * `kz-zhanatas` - kz-zhanatas
+          * `kz-karatau` - kz-karatau
+          * `kz-shu` - kz-shu
+          * `kz-tekeli` - kz-tekeli
+          * `kz-usharal` - kz-usharal
+          * `kz-ushtobe` - kz-ushtobe
+          * `kz-zharkent` - kz-zharkent
+          * `kz-sarkan` - kz-sarkan
+          * `kz-balkhash` - kz-balkhash
+          * `kz-priozersk` - kz-priozersk
+          * `kz-saran` - kz-saran
+          * `kz-temirtau` - kz-temirtau
+          * `kz-shakhtinsk` - kz-shakhtinsk
+          * `kz-abai` - kz-abai
+          * `kz-karkaraly` - kz-karkaraly
+          * `kz-arkalyk` - kz-arkalyk
+          * `kz-lisakovsk` - kz-lisakovsk
+          * `kz-rudny` - kz-rudny
+          * `kz-zhitikara` - kz-zhitikara
+          * `kz-tobyl` - kz-tobyl
+          * `kz-baikonur` - kz-baikonur
+          * `kz-aral` - kz-aral
+          * `kz-kazaly` - kz-kazaly
+          * `kz-zhanaozen` - kz-zhanaozen
+          * `kz-fort-shevchenko` - kz-fort-shevchenko
+          * `kz-aksu` - kz-aksu
+          * `kz-ekibastuz` - kz-ekibastuz
+          * `kz-bulaevo` - kz-bulaevo
+          * `kz-mamlyutka` - kz-mamlyutka
+          * `kz-sergeyevka` - kz-sergeyevka
+          * `kz-taiynsha` - kz-taiynsha
+          * `kz-arys` - kz-arys
+          * `kz-kentau` - kz-kentau
+          * `kz-zhetysay` - kz-zhetysay
+          * `kz-saryagash` - kz-saryagash
+          * `kz-lenger` - kz-lenger
+          * `kz-shardara` - kz-shardara
+          * `kz-karazhal` - kz-karazhal
+          * `kz-satbayev` - kz-satbayev
+          * `kz-ridder` - kz-ridder
+          * `kz-zaisan` - kz-zaisan
+          * `kz-altai` - kz-altai
+          * `kz-serebryansk` - kz-serebryansk
+          * `kz-shemonaikha` - kz-shemonaikha
         required: true
       - in: query
         name: passengers
@@ -1195,6 +1475,14 @@ paths:
           maximum: 9
           minimum: 1
           default: 1
+      - in: query
+        name: sort
+        schema:
+          type: string
+          enum:
+          - departure
+          - duration
+          - price
       - in: query
         name: time
         schema:
@@ -1951,6 +2239,76 @@ components:
       - kz-taraz
       - kz-kyzylorda
       - kz-turkistan
+      - kz-kurchatov
+      - kz-ayagoz
+      - kz-shar
+      - kz-kosshy
+      - kz-stepnogorsk
+      - kz-akkol
+      - kz-atbasar
+      - kz-makinsk
+      - kz-stepnyak
+      - kz-yereymentau
+      - kz-esil
+      - kz-derzhavinsk
+      - kz-shchuchinsk
+      - kz-alga
+      - kz-kandyagash
+      - kz-embi
+      - kz-zhem
+      - kz-temir
+      - kz-khromtau
+      - kz-shalkar
+      - kz-alatau
+      - kz-esik
+      - kz-kaskelen
+      - kz-talgar
+      - kz-kulsary
+      - kz-aksai
+      - kz-zhanatas
+      - kz-karatau
+      - kz-shu
+      - kz-tekeli
+      - kz-usharal
+      - kz-ushtobe
+      - kz-zharkent
+      - kz-sarkan
+      - kz-balkhash
+      - kz-priozersk
+      - kz-saran
+      - kz-temirtau
+      - kz-shakhtinsk
+      - kz-abai
+      - kz-karkaraly
+      - kz-arkalyk
+      - kz-lisakovsk
+      - kz-rudny
+      - kz-zhitikara
+      - kz-tobyl
+      - kz-baikonur
+      - kz-aral
+      - kz-kazaly
+      - kz-zhanaozen
+      - kz-fort-shevchenko
+      - kz-aksu
+      - kz-ekibastuz
+      - kz-bulaevo
+      - kz-mamlyutka
+      - kz-sergeyevka
+      - kz-taiynsha
+      - kz-arys
+      - kz-kentau
+      - kz-zhetysay
+      - kz-saryagash
+      - kz-lenger
+      - kz-shardara
+      - kz-karazhal
+      - kz-satbayev
+      - kz-ridder
+      - kz-zaisan
+      - kz-altai
+      - kz-serebryansk
+      - kz-shemonaikha
       type: string
       description: |-
         * `kz-astana` - kz-astana
@@ -1973,6 +2331,76 @@ components:
         * `kz-taraz` - kz-taraz
         * `kz-kyzylorda` - kz-kyzylorda
         * `kz-turkistan` - kz-turkistan
+        * `kz-kurchatov` - kz-kurchatov
+        * `kz-ayagoz` - kz-ayagoz
+        * `kz-shar` - kz-shar
+        * `kz-kosshy` - kz-kosshy
+        * `kz-stepnogorsk` - kz-stepnogorsk
+        * `kz-akkol` - kz-akkol
+        * `kz-atbasar` - kz-atbasar
+        * `kz-makinsk` - kz-makinsk
+        * `kz-stepnyak` - kz-stepnyak
+        * `kz-yereymentau` - kz-yereymentau
+        * `kz-esil` - kz-esil
+        * `kz-derzhavinsk` - kz-derzhavinsk
+        * `kz-shchuchinsk` - kz-shchuchinsk
+        * `kz-alga` - kz-alga
+        * `kz-kandyagash` - kz-kandyagash
+        * `kz-embi` - kz-embi
+        * `kz-zhem` - kz-zhem
+        * `kz-temir` - kz-temir
+        * `kz-khromtau` - kz-khromtau
+        * `kz-shalkar` - kz-shalkar
+        * `kz-alatau` - kz-alatau
+        * `kz-esik` - kz-esik
+        * `kz-kaskelen` - kz-kaskelen
+        * `kz-talgar` - kz-talgar
+        * `kz-kulsary` - kz-kulsary
+        * `kz-aksai` - kz-aksai
+        * `kz-zhanatas` - kz-zhanatas
+        * `kz-karatau` - kz-karatau
+        * `kz-shu` - kz-shu
+        * `kz-tekeli` - kz-tekeli
+        * `kz-usharal` - kz-usharal
+        * `kz-ushtobe` - kz-ushtobe
+        * `kz-zharkent` - kz-zharkent
+        * `kz-sarkan` - kz-sarkan
+        * `kz-balkhash` - kz-balkhash
+        * `kz-priozersk` - kz-priozersk
+        * `kz-saran` - kz-saran
+        * `kz-temirtau` - kz-temirtau
+        * `kz-shakhtinsk` - kz-shakhtinsk
+        * `kz-abai` - kz-abai
+        * `kz-karkaraly` - kz-karkaraly
+        * `kz-arkalyk` - kz-arkalyk
+        * `kz-lisakovsk` - kz-lisakovsk
+        * `kz-rudny` - kz-rudny
+        * `kz-zhitikara` - kz-zhitikara
+        * `kz-tobyl` - kz-tobyl
+        * `kz-baikonur` - kz-baikonur
+        * `kz-aral` - kz-aral
+        * `kz-kazaly` - kz-kazaly
+        * `kz-zhanaozen` - kz-zhanaozen
+        * `kz-fort-shevchenko` - kz-fort-shevchenko
+        * `kz-aksu` - kz-aksu
+        * `kz-ekibastuz` - kz-ekibastuz
+        * `kz-bulaevo` - kz-bulaevo
+        * `kz-mamlyutka` - kz-mamlyutka
+        * `kz-sergeyevka` - kz-sergeyevka
+        * `kz-taiynsha` - kz-taiynsha
+        * `kz-arys` - kz-arys
+        * `kz-kentau` - kz-kentau
+        * `kz-zhetysay` - kz-zhetysay
+        * `kz-saryagash` - kz-saryagash
+        * `kz-lenger` - kz-lenger
+        * `kz-shardara` - kz-shardara
+        * `kz-karazhal` - kz-karazhal
+        * `kz-satbayev` - kz-satbayev
+        * `kz-ridder` - kz-ridder
+        * `kz-zaisan` - kz-zaisan
+        * `kz-altai` - kz-altai
+        * `kz-serebryansk` - kz-serebryansk
+        * `kz-shemonaikha` - kz-shemonaikha
     LegIn:
       type: object
       description: A bus/train leg (`departure_id`) or a simulated taxi leg (`taxi_offer_id`

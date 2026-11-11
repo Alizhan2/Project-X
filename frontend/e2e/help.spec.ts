@@ -11,7 +11,7 @@ test.describe('help centre', () => {
       await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Help' }).click()
       await expect(page.getByRole('heading', { name: 'Help', level: 1 })).toBeVisible()
       await page.getByText('What does "simulated" mean?').click()
-      await expect(page.getByText('no money is ever charged')).toBeVisible()
+      await expect(page.getByText('no money is charged')).toBeVisible()
       const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
       expect(r.violations.map((v) => v.id)).toEqual([])
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

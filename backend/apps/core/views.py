@@ -48,6 +48,7 @@ def config(request):
     return Response({
         "launch_mode": settings.LAUNCH_MODE, "simulated": settings.SIMULATION_ENABLED,
         "registration_enabled": settings.REGISTRATION_ENABLED, "release": settings.RELEASE,
+        "email_enabled": settings.ACCOUNT_EMAIL_CONFIGURED,
     })
 
 

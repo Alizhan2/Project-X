@@ -46,7 +46,7 @@ export default function Search() {
   useEffect(() => {
     const ctrl = new AbortController()
     fetchStops(ctrl.signal)
-      .then(setStops)
+      .then(data => setStops(data.filter(stop => !stop.code.startsWith('KZ-'))))
       .catch((e: unknown) => { if (!ctrl.signal.aborted) setStopsError(e instanceof Error ? e.message : String(e)) })
     return () => ctrl.abort()
   }, [])

@@ -1,13 +1,13 @@
 # Doedu (provisional name)
 
 Multimodal transport booking MVP (bus · train · taxi) with disruption recovery.
-**Everything is simulated**: transport data, payments, tickets. Not production software.
+**Transport services, fares, payments, refunds and tickets are simulated.** The Kazakhstan city directory uses official geography; it does not establish real transport coverage. Not commercial software.
 
 Interface: **English · Русский · Қазақша**, including account emails and PDF/calendar downloads. [Localization behavior and maintenance](docs/localization.md).
 
 Handoff / current blockers: [docs/HANDOFF.md](docs/HANDOFF.md)
 
-Temporary hosted demo: [Doedu Kazakhstan](https://doedu-kazakhstan-test-x3wv.onrender.com/) · [fictional booking demo](https://doedu-kazakhstan-test-x3wv.onrender.com/demo). Public HTTPS, mobile viewport, booking/download and restart checks passed on 11 November. Study setup and free-tier limits: [Render study deployment](docs/render-free-test.md).
+Temporary hosted demo: [Doedu Kazakhstan](https://doedu-kazakhstan-test-x3wv.onrender.com/) · [legacy fictional network](https://doedu-kazakhstan-test-x3wv.onrender.com/demo). The new 90-city Kazakhstan booking increment passed local checks: 353 backend tests, 29 frontend unit tests, build/lint, 54 browser scenarios and 2 separately enabled PWA scenarios. Current-revision CI and deployment remain pending; the observed public release is still `e2e4b5a3c649`, and earlier public HTTPS/mobile/download checks apply to that release. Study setup and free-tier limits: [Render study deployment](docs/render-free-test.md).
 
 Status: **Core demonstration MVP and temporary hosted demo available; production hardening incomplete.** Production-readiness assessment: [docs/production-readiness.md](docs/production-readiness.md) · current hosted evidence: [docs/render-free-test.md](docs/render-free-test.md). Commercial operation is **not** ready: [docs/commercial-readiness.md](docs/commercial-readiness.md).
 
@@ -25,8 +25,8 @@ Status: **Core demonstration MVP and temporary hosted demo available; production
 cp .env.example .env        # development values (DOEDU_ENV=development); never reuse for hosting
 docker compose up --build
 ```
-After start-up: `docker compose exec backend python manage.py seed_demo` (dev-only demo data).
-Open http://localhost:5173 for Kazakhstan planning; `/demo` opens the fictional booking network (API docs: http://localhost:5173/api/docs/, health: /api/health/).
+After start-up: `docker compose exec backend python manage.py prepare_kazakhstan_demo` adds Kazakhstan geography and scoped demo operators without resetting existing data. For the older acceptance fixtures, `seed_demo` is a destructive, development-only reset for a fresh disposable database; see [demo data](docs/demo-data.md).
+Open http://localhost:5173 for Kazakhstan demo search and booking; `/demo` retains the earlier fictional network (API docs: http://localhost:5173/api/docs/, health: /api/health/).
 
 ## Setup B — without Docker (what was verified on the author's machine)
 Needs Python 3.14, Node 24, and a running PostgreSQL 16+ with a `doedu` database/user.
@@ -34,14 +34,17 @@ Needs Python 3.14, Node 24, and a running PostgreSQL 16+ with a `doedu` database
 cp .env.example .env
 python3 -m venv backend/.venv && backend/.venv/bin/pip install -r backend/requirements.txt
 cd backend && set -a && source ../.env && set +a
-.venv/bin/python manage.py migrate
+.venv/bin/python manage.py safe_migrate
+.venv/bin/python manage.py prepare_kazakhstan_demo
 .venv/bin/python manage.py runserver 127.0.0.1:8000      # terminal 1
 cd backend && .venv/bin/python manage.py run_worker        # terminal 3: reservation expiry (durable jobs)
 cd ../frontend && npm ci && npm run dev                  # terminal 2
 ```
 
 ## Demo data
-`cd backend && .venv/bin/python manage.py seed_demo` (see [docs/demo-data.md](docs/demo-data.md)). Required before using search.
+`prepare_kazakhstan_demo` is additive: 90 city hubs, 180 fictional bus/rail stops, transfer links and two operator accounts. Kazakhstan search generates services only for the selected pair and dates, preserving later operator edits and existing bookings. It does not prebuild a national route mesh. See [Kazakhstan demo behaviour](docs/kazakhstan.md).
+
+The legacy `seed_demo` command is only for resetting disposable development/test fixtures; see [docs/demo-data.md](docs/demo-data.md). Never use it to update an existing user's database.
 
 ## Background worker
 `manage.py run_worker` expires unpaid reservations (default 5 min, `RESERVATION_MINUTES`). It is also a Compose service. Expiry additionally happens lazily on access/payment, so the app stays correct if the worker is down; the worker just releases places promptly.
@@ -49,9 +52,9 @@ cd ../frontend && npm ci && npm run dev                  # terminal 2
 ## Tests
 ```bash
 cd backend && set -a && source ../.env && set +a && .venv/bin/python manage.py test
-cd frontend && npx playwright install chromium && npm run e2e   # stack running + `manage.py seed_demo` first (tests consume the seeded scenarios, so re-seed before every run; they run serially)
+cd frontend && npx playwright install chromium && npm run e2e   # use a disposable seeded stack; prepare_kazakhstan_demo adds scoped KZ operators
 ```
-Backend tests run against PostgreSQL (the DB user needs CREATEDB). Do not hard-code counts from this README; run the suites.
+Backend tests run against PostgreSQL (the DB user needs CREATEDB). Browser fixtures consume state: reset only a fresh disposable development/test database with `seed_demo`, then run `prepare_kazakhstan_demo` before the suite. Never reset a user's or live study database for a test run. Do not hard-code counts from this README; run the suites.
 Demo walk-through: [docs/demo-script.md](docs/demo-script.md).
 
 ## Configuration
@@ -61,11 +64,11 @@ All config is via environment variables (`.env.example`). `.env` is git-ignored.
 ## Production-style stack (hosted demonstration, staging)
 Portable image + compose: `Dockerfile`, `docker-compose.prod.yml`, `.env.production.example` (see [docs/deployment.md](docs/deployment.md), [docs/configuration.md](docs/configuration.md)).
 The same sequence works **without containers** against any PostgreSQL (verified locally, this is what CI runs): `ops/run-staging.sh` (roles → locked migrate → static → gunicorn + worker → readiness).
-Hosted-demo data: `manage.py sync_demo_schedule` (additive; also run by the worker when `DEMO_SCHEDULE_DAYS>0`). `seed_demo` (destructive reset) never runs in production.
+Hosted legacy schedules: `manage.py sync_demo_schedule` (additive; also run by the worker when `DEMO_SCHEDULE_DAYS>0`). Kazakhstan uses `prepare_kazakhstan_demo` plus generation for the requested pair/date. `seed_demo` (destructive reset) never runs in production.
 Accounts in a hosted environment: `manage.py createsuperuser` for the first administrator; operators/passengers via Django Admin (Operator users need role `operator` + an Operator membership).
-The temporary Render study uses a separate guarded, one-time synthetic bootstrap instead; see the [study deployment instructions](docs/render-free-test.md).
+The Render launcher runs locked migrations, the explicitly enabled guarded legacy bootstrap, then additive `prepare_kazakhstan_demo` before web/worker startup. Kazakhstan operators are `ops.kzbus@doedu.test` and `ops.kzrail@doedu.test`; hosted credentials come from private `DEMO_USER_PASSWORD` (at least 16 characters). Existing passwords, roles, memberships and access revocations are preserved; conflicts require administrator review. See the [study deployment instructions](docs/render-free-test.md).
 
-## Release candidate checks (all commands verified locally)
+## Release candidate checks
 ```bash
 cd backend && set -a && source ../.env && set +a
 python manage.py test                                   # PostgreSQL-backed suite
@@ -92,9 +95,9 @@ Choose **Arrive by** to find journeys that reach your destination by a chosen da
 
 Signed-in passengers see their next confirmed journey on the search page. Confirmed booking pages offer calendar (.ics) and PDF downloads using current timetable estimates. Downloads are static, private, demonstrative copies, not valid tickets. See [travel companion](docs/travel-companion.md).
 
-### Kazakhstan preparation
+### Kazakhstan demonstration
 
-The home page `/` (also `/kazakhstan`) provides 20 Kazakhstan cities, three-language region names, KZT and local time (Asia/Almaty). Real supplier access and ticket sales are not enabled. See [Kazakhstan integration and 1TR.kz access](docs/kazakhstan.md).
+The home page `/` (also `/kazakhstan`) supports all **90 cities in the official KATO release of 4 November 2026**, multilingual names/regions/aliases, private plans and sharing. In simulation mode it returns bookable generated bus/train offers with KZT prices, five-minute holds, simulated payment/refund and recovery. Kazakhstan timestamps use `Asia/Almaty` (UTC+5) through search, bookings, operator screens and exports; old EUR/Berlin journeys retain their original market. Timetables, prices, durations, stops and accessibility are invented examples. No supplier API, real charge or valid ticket is involved. See [Kazakhstan demo and future integration](docs/kazakhstan.md).
 
 ## Installable app (PWA)
 Production builds register a service worker (`frontend/public/sw.js`): it caches only static, content-hashed files and the last good `index.html`, never `/api/` or `/admin/`.
@@ -106,4 +109,4 @@ Passengers can ask to be told when a searched price drops or a journey becomes a
 
 ## November requirements alignment
 
-Kazakhstan planning is the home page; fictional bookings remain under `/demo` with historic-link compatibility. Five-minute holds, shared walking/boarding connection margins, strict accessibility, constrained recovery, full replacement payments and separate refund/reconciliation states are described in [business rules](docs/business-rules.md). Current verification and remaining scope: [requirements alignment](docs/requirements-alignment-2026-11-10.md).
+Kazakhstan demo search is the home page; older fictional bookings remain under `/demo` with historic-link compatibility. Five-minute holds, shared walking/boarding connection margins, strict accessibility, constrained recovery, full replacement payments and separate refund/reconciliation states are described in [business rules](docs/business-rules.md). The earlier [requirements alignment](docs/requirements-alignment-2026-11-10.md) is dated evidence; current local/deployment status is in [HANDOFF](docs/HANDOFF.md).

@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from apps.accounts.models import User
 from apps.core.throttling import throttle
 from apps.transport.models import Route
+from apps.transport.markets import local_datetime, timezone_for_stops
 
 from .models import LineFollow
 from .services import notify
@@ -75,8 +76,8 @@ def notify_followers(departure, kind, delay_minutes, event_pk, exclude_user_ids=
     if departure.departs_at > now + NOTIFY_HORIZON:
         return 0
     route = departure.route
-    when = timezone.localtime(departure.departs_at)
     first = route.route_stops.select_related("stop").order_by("sequence").first()
+    when = local_datetime(departure.departs_at, timezone_for_stops(first.stop if first else None))
     origin = first.stop.name if first else route.name
     if kind == "cancel":
         title, body = f"Line {route.code}: cancelled", f"The {when:%a %d %b %H:%M} departure from {origin} is cancelled."

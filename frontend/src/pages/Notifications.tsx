@@ -20,7 +20,7 @@ export default function Notifications() {
           <li key={n.id} className={`card notif ${n.read ? '' : 'unread'}`}>
             <p><strong>{t(n.title)}</strong> {!n.read && <span className="badge">{t("New")}</span>}</p>
             <p>{t(n.body)}</p>
-            <p className="muted small">{dayLabel(n.created_at)} {clock(n.created_at)}</p>
+            <p className="muted small">{dayLabel(n.created_at)} {clock(n.created_at)}{n.timezone && <> · {n.timezone}</>}</p>
             <p>
               {n.link && <Link to={n.link}>{n.link.startsWith('/alerts') ? t('Open alerts') : t('Open search')}</Link>}{' '}
               {n.booking && <Link to={`/booking/${n.booking}`}>{t("Open booking")} {n.booking}</Link>}{' '}

@@ -2,15 +2,16 @@ from datetime import datetime, timedelta, time
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
+from django.conf import settings
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.core.throttling import throttle
-from .catalog import CITIES, CITY_IDS, CURRENCY, TIMEZONE, MAX_JOURNEY_HOURS
+from .catalog import CITIES, CITY_IDS, CURRENCY, TIMEZONE, MAX_JOURNEY_HOURS, GEOGRAPHY_SOURCE
 from .providers import ProviderUnavailable, SearchQuery, get_provider
 
 
@@ -39,13 +40,16 @@ class SearchInput(serializers.Serializer):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def catalog(request):
+    simulated = settings.SIMULATION_ENABLED
     return Response({'country': 'KZ', 'currency': CURRENCY, 'timezone': TIMEZONE,
                      'max_journey_hours': MAX_JOURNEY_HOURS, 'cities': CITIES,
-                     'provider': {'code': '1tr', 'name': '1TR.kz', 'status': 'awaiting_partner_access'},
-                     'booking_enabled': False})
+                     'geography': GEOGRAPHY_SOURCE, 'simulated': simulated,
+                     'provider': ({'code': 'kazakhstan_demo', 'name': 'Doedu Kazakhstan demo', 'status': 'simulated'}
+                                  if simulated else {'code': '1tr', 'name': '1TR.kz', 'status': 'awaiting_partner_access'}),
+                     'booking_enabled': simulated})
 
 
-@extend_schema(parameters=[SearchInput], responses={200: dict, 400: dict, 503: dict})
+@extend_schema(parameters=[SearchInput, OpenApiParameter('sort', str, enum=['departure', 'price', 'duration'])], responses={200: dict, 400: dict, 503: dict})
 @throttle('search')
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -54,6 +58,14 @@ def search(request):
     data.is_valid(raise_exception=True)
     v = data.validated_data
     query = SearchQuery(v['origin'], v['destination'], v['depart_after'], v['passengers'], tuple(v['modes'].split(',')))
+    if settings.SIMULATION_ENABLED:
+        from apps.planning.serializers import serialize_itinerary
+        from .demo import search_demo
+        sort = serializers.ChoiceField(choices=('departure', 'price', 'duration')).run_validation(request.query_params.get('sort', 'departure'))
+        results = search_demo(query, sort=sort)
+        return Response({'simulated': True, 'provider': 'kazakhstan_demo', 'currency': CURRENCY,
+                         'timezone': TIMEZONE, 'booking_enabled': True, 'window_hours': 24,
+                         'count': len(results), 'results': [serialize_itinerary(itinerary) for itinerary in results]})
     try:
         offers = get_provider().search(query)
     except ProviderUnavailable:

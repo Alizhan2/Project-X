@@ -1,65 +1,73 @@
-# Doedu Kazakhstan
+# Doedu Kazakhstan demonstration
 
-The home page `/` (with `/kazakhstan` kept as an alias) is the geographic catalogue and integration preparation area. The existing fictional booking network is explicitly labelled and lives at `/demo`. Existing simulated itineraries, EUR bookings and Europe/Berlin demo timestamps are preserved. It does not sell tickets, make supplier requests, create reservations, or take payments.
+The current work implements the owner's clarified scope: **a working Kazakhstan demonstration without external APIs**. The home page `/` (also `/kazakhstan`) searches generated bus/train services, reserves places and uses the existing simulated payment, refund and replacement lifecycle. Private plans and share links remain available. A saved plan alone does not reserve a place.
 
-## Implemented
+The 90-city increment has passed combined local verification; current-revision CI and deployment remain pending. The last observed public release remains `e2e4b5a3c649`, which predates Kazakhstan booking; consult [HANDOFF](HANDOFF.md) and the [deployment record](render-free-test.md) before describing a public release as updated.
 
-- 20 cities: the 17 regional capitals and Astana, Almaty, Shymkent. City and region names in Kazakh, Russian and English; stable internal `kz-*` identifiers.
-- Currency KZT (₸). Provider prices use Decimal, not floating-point arithmetic or a conversion of old EUR prices.
-- IANA `Asia/Almaty`, currently UTC+5. Inputs are interpreted in Kazakhstan time independently of the browser timezone. Provider timestamps must be timezone aware.
-- `GET /api/kazakhstan/catalog/`: multilingual geography, market metadata and explicit provider status.
-- `GET /api/kazakhstan/search/`: validates cities, future date (up to one year), local time, 1–9 passengers and bus/train modes. It returns HTTP 503 `provider_not_connected` until a real supplier adapter exists. This differs from a successful search with zero seats.
-- Backend supplier boundary under `backend/apps/transport/kazakhstan/`. Offers carry supplier ID, expiry/check timestamps, full-party price, currency and passenger count. Output excludes expired offers, mismatched routes/parties/modes and journeys longer than 72 hours. This internal policy is not a claim about supplier search horizons or schedules.
-- Booking remains disabled even for an adapter returning search offers. UI offer rendering and checkout require a later integration milestone.
+## Geography and language
 
-No migration, paid subscription or API key is required for this preparation. Existing data has not been reseeded. There are no fabricated Kazakhstan schedules or fares.
+- The directory contains **all 90 city settlements in KATO NK RK 11-2025, updated 4 November 2026**, including cities that are not regional centres. It does not include every village or settlement type.
+- Source: the Bureau of National Statistics [KATO classifier](https://stat.gov.kz/ru/classifiers/statistical/21/) and its [4 November workbook](https://stat.gov.kz/upload/iblock/3af/er0488xunb664axbufnw46sagt10aqsm/%D0%9A%D0%90%D0%A2%D0%9E_04.11.2026.xlsx). Source date, retrieval date and checksum are recorded in `catalog.py` and exposed as catalogue metadata.
+- Russian and Kazakh source names are preserved. English labels are editorial Latin transliterations. City lookup matches the catalogue's EN/RU/KK city names, region names and recorded aliases.
+- Existing first-20 `kz-*` identifiers remain stable so saved plans and shared links continue to resolve. KATO geography identifiers are separate from any future supplier station identifiers.
 
-## 1TR.kz access
+## Generated transport and booking
 
-Verified on the official site https://1tr.kz/ on 2026-10-20:
+Simulation-enabled launches use the internal `kazakhstan_demo` provider. Catalogue and search responses explicitly report that they are simulated; no supplier request is made.
 
-- Agency contact: Бахтияр, bpm@mobportal.kz, +7 747 842 30 59. General contact: office@mobportal.kz.
-- Agency API is advertised for bus and rail tickets. Free connection and zero commission statements concern bus stations/carriers; free agent API access or a free sandbox is not established by the public page.
-- The short `/v1/...` examples on the landing page are not a complete integration specification. No base URL, authentication scheme or response shape is assumed in our code.
+`GET /api/kazakhstan/catalog/` returns cities, geography provenance, KZT, `Asia/Almaty`, simulation/provider status and whether demo booking is enabled. `GET /api/kazakhstan/search/` validates different cities, a future date within one year, local time, 1–9 passengers and bus/train modes. It returns generated direct itineraries and supports departure, price and duration sorting.
 
-Suggested message to send yourself:
+Generation is limited to the selected origin/destination pair and requested dates: the pair gets a two-day example timetable, and results cover the next 24 hours from the chosen departure time. This avoids prebuilding a complete national route mesh. Repeating a search reuses existing rows and preserves current operator fares, delays, cancellations, capacity and booked places. It does not restore a cancelled service or overwrite purchase snapshots.
 
-> Здравствуйте! Разрабатываем Doedu — сервис поиска поездок по Казахстану на казахском, русском и английском языках. Хотим подключить автобусные и железнодорожные билеты через API. Есть ли бесплатная песочница и тестовые ключи? Можно ли начать с поиска и перехода на оформление у партнёра без абонентской платы? Пришлите, пожалуйста, документацию API, условия подключения, тарифы, комиссии, требования к ИП/ТОО, депозиту и минимальному обороту, а также перечень доступных перевозчиков и направлений.
+**Timetables, fares, durations, stops, operators and accessibility values are illustrative.** They are not calculations of road/rail distance or evidence that real transport serves a city pair. The directory represents real city names; the bus/rail stops and services used by this demo are fictional. Initial Kazakhstan search results are direct bus/train journeys. Existing transfer and multimodal acceptance scenarios remain in the legacy network.
 
-Do not put production credentials in chat or Git. After receiving the official contract, configure server-side secrets through the deployment environment.
+Selecting an offer uses the existing checkout and five-minute reservation flow. Successful, failed and uncertain payments are simulated. Cancellation quotes use the policy saved at purchase; refunds have their existing requested/pending/completed/failed states. A disrupted booking can offer eligible generated alternatives or cancellation. Replacement payment and old-leg refunds remain separate. No valid ticket, real charge or actual supplier reservation is produced.
 
-## Next integration milestones
+## Tenge and local time
 
-1. Obtain documentation, sandbox credentials, commercial terms, permitted data display/cache durations and supplier station identifiers. Map internal cities to verified station IDs; a city is not a station and coverage must be confirmed.
-2. Implement `OneTR.search` from the actual specification: bounded timeouts/retries, redacted logs, rate limits, provider errors, Decimal KZT values and timezone normalization. Never fall back to demo data on supplier failure. Confirm price includes the entire party and all fees; represent incomplete pricing explicitly rather than guessing.
-3. Contract tests using authorized sandbox fixtures: no results, timeout, expiry, price changes, route mismatches and multi-day rail journeys. Display real offers with source and freshness only after those checks pass.
-4. Add provider-backed booking separately: fare revalidation, idempotency, reservation expiry, payment/issuance reconciliation, signed callbacks, refunds and supplier ticket documents. A local database transaction cannot guarantee atomic purchases across independent providers.
-5. Real-sales launch requires separate approval and verification. The existing commercial-mode guard remains in place.
+KZT amounts remain `Decimal`; no legacy EUR price is converted. New KZ stop identifiers use `KZ-{nine-digit KATO}-B` or `-R`. Their transport market determines the `Asia/Almaty` timezone, currently UTC+5. Currency alone never determines timezone: old non-KZ KZT acceptance fixtures and historic EUR journeys keep Berlin time.
 
-Sources for geographic/time conventions:
-- https://stat.gov.kz/ru/industries/social-statistics/demography/publications/476642/?sphrase_id=2098465
-- https://www.president.kz/ru/republic_of_kazakhstan/kazakhstan
-- https://primeminister.kz/ru/decisions/19012024-20
+Search/booking/travel-plan/recovery/operator responses include market timezone metadata and explicit `+05:00` timestamp offsets for Kazakhstan. Naive recovery and operator inputs use the booking or selected route timezone. Payment/refund activity timestamps, departure notices and PDF times follow that market. Calendar exports retain UTC instants so calendar applications can display the correct local time. Existing stored snapshots and old Berlin journeys are preserved.
 
-## Validation
+## Additive setup and operator access
 
-2026-10-20: 230 backend tests passed on PostgreSQL; 9 frontend unit tests and all 23 existing Playwright scenarios passed against an isolated production-like stack. Build and OpenAPI validation passed. Lint has five existing warnings and no errors. Manual browser automation exercised EN/RU/KK, provider-unavailable responses, identical-city validation and desktop/mobile layout. Actual 1TR requests and real ticket issuance remain untested because partner access is unavailable.
+After applying migrations with `manage.py safe_migrate`, run:
+
+```bash
+python manage.py prepare_kazakhstan_demo
+```
+
+The command adds missing **90 hubs, 180 fictional bus/rail stops and their transfer links, two operators and the example policy**. Services are created when a city pair/date is searched. No new migration is required by this increment. The command neither resets the database nor copies a user's local records to hosting.
+
+New operator accounts are scoped to their own transport operator:
+
+| Account | Operator |
+| --- | --- |
+| `ops.kzbus@doedu.test` | Kazakhstan synthetic buses |
+| `ops.kzrail@doedu.test` | Kazakhstan synthetic trains |
+
+Hosted setup requires a private generated `DEMO_USER_PASSWORD` of at least 16 characters. Keep its value in hosting configuration, outside Git, chat and public instructions. Existing passwords, roles, memberships and access revocations are preserved. An existing account with a conflicting role, staff/admin privileges, missing/reassigned membership is left unchanged and reported for administrator review. Re-running setup does not grant revoked access back.
+
+The hosted launcher runs locked migrations, the explicitly enabled guarded legacy bootstrap and then this additive command before starting Gunicorn and the worker. The legacy empty-database bootstrap and the additive Kazakhstan preparation serve different purposes. Never run the destructive development `seed_demo` command to update an existing database.
 
 ## Private plans and sharing
 
-The Kazakhstan page now supports private account-owned plans: create, list, edit (full replacement), repeat with a new date, and delete with confirmation. A plan contains internal city IDs, intended Kazakhstan departure date/time, 1–9 passengers, bus/train preference, and an optional private note (up to 1000 characters). It is never a booking, availability claim or price quote. Up to 50 plans per account; old plans remain readable and deletable, while saving requires a future date within one year.
+Plans remain account-owned: create/list/edit/repeat/delete through `GET/POST /api/kazakhstan/plans/` and `PUT/DELETE /api/kazakhstan/plans/{id}/`. Up to 50 plans per account; saving requires a future date within one year. Past plans remain readable and deletable. Authentication, CSRF and ownership checks apply server-side.
 
-- `GET/POST /api/kazakhstan/plans/`
-- `PUT/DELETE /api/kazakhstan/plans/{id}/`
+Share links contain only origin, destination, date, time, passengers and modes. They contain no private note, user ID or plan ID and do not expose saved plans. Filtering preserves the selected city until a traveller selects another. Invalid shared values fall back with a warning. Public links use the deployment origin; localhost links work only on that machine.
 
-Authentication, CSRF and ownership checks apply server-side. Migration `accounts.0004_journeyplan` adds a table without modifying existing bookings. Apply through `manage.py safe_migrate`.
+## Verification status for this increment
 
-City filters match all three language variants and region names regardless of selected UI language. Filtering preserves the selected city until the traveller explicitly chooses another. A swap button reverses the direction.
+- Final combined local backend suite: **353 tests passed**, including the geography/generation/setup, market-timezone, booking/export, recovery/operator and followed-line cases.
+- Frontend: **29 unit tests**, **build** and **lint** passed.
+- Browser verification: **54 Playwright scenarios passed**, plus **2 separately enabled PWA scenarios**. These combined results supersede earlier focused counts; do not add those focused counts to the totals.
+- Current-revision CI and public deployment remain pending at this handoff. Earlier public results in the deployment record apply to the earlier release.
+- No external API, real payment, real ticket issuance or real participant response was exercised or generated.
 
-Share links whitelist only `origin`, `destination`, `date`, `time`, `passengers`, and `modes`. They contain no note, user ID or plan ID and do not grant access to saved plans. Recipients can open the filled form without an account. Invalid link values fall back to defaults with a warning; dates in the past remain visible so the traveller can change them. Clipboard failure leaves a selectable link for manual copying. The link uses the current deployment origin: links from localhost are only usable on that machine; public sharing needs a hosted deployment.
+## Future supplier integration — separate work
 
-Validation for this increment: 235 backend tests, 12 frontend unit tests and 23 existing browser scenarios passed. Browser checks additionally exercised multilingual city lookup, swaps, shared-link reloads, sign-in return to the form, plan persistence/edit/repeat/delete, guest privacy, RU/KK labels and mobile layout. Guest-page WCAG A/AA automated checks found no violations.
+The current demo requires no API key, paid supplier subscription or vendor outreach. `OneTR` remains a future adapter boundary; a non-simulation search without a connected provider returns the explicit unavailable state rather than invented real offers. Commercial launch mode remains refused.
 
-## Main navigation (November 2026)
+The [official 1TR site](https://1tr.kz/), checked on 11 November 2026, advertises agency API access for bus and rail. Agency contact: `bpm@mobportal.kz`, +7 747 842 30 59. Its free connection/zero-commission statements concern bus stations; free agent API or sandbox terms are not established publicly. The short endpoint examples are not an authentication or integration contract.
 
-Kazakhstan is now the default entry point. Demo search is a separate navigation item; old root links containing fictional stop codes redirect to `/demo` preserving their query. Saved Kazakhstan plans and parameter-only share links remain compatible. No historic booking was converted to KZT and no synthetic Kazakhstan ticket inventory was created.
+A future real-ticket milestone needs supplier documentation and permitted sandbox access, verified city-to-station mapping and coverage, fare/availability revalidation, reservation/issuance/cancellation integration, payment/refund reconciliation and actual mail delivery. Existing demo cities, capacity or accessibility must never be used as a fallback claim about a real supplier. See [commercial-readiness backlog](commercial-readiness.md). No supplier was contacted by this implementation.
