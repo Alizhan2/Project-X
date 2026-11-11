@@ -21,7 +21,6 @@ services:
     dockerCommand: python render_start.py
     autoDeployTrigger: "off"
     healthCheckPath: /api/health/ready/
-    maxShutdownDelaySeconds: 45
     envVars:
       - key: DOEDU_ENV
         value: production
