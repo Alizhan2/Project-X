@@ -106,7 +106,22 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: frontend-dist, path: frontend/dist }
       - run: ops/run-staging.sh
-      - run: npm ci && npx playwright install --with-deps chromium
+      # Hosted Ubuntu already includes Chrome's system libraries. Validate the pinned browser explicitly.
+      - run: npm ci && npx playwright install chromium
+        working-directory: frontend
+      - name: Verify Chromium runtime
+        run: |
+          node --input-type=module <<'JS'
+          import { chromium } from '@playwright/test';
+          const browser = await chromium.launch();
+          try {
+            const page = await browser.newPage();
+            await page.setContent('<title>Browser readiness</title>');
+            if (await page.title() !== 'Browser readiness') throw new Error('Browser readiness failed');
+          } finally {
+            await browser.close();
+          }
+          JS
         working-directory: frontend
       - run: BASE_URL=http://127.0.0.1:8000 npm run e2e
         working-directory: frontend
