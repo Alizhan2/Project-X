@@ -2,7 +2,7 @@
 
 The current work implements the owner's clarified scope: **a working Kazakhstan demonstration without external APIs**. The home page `/` (also `/kazakhstan`) searches generated bus/train services, reserves places and uses the existing simulated payment, refund and replacement lifecycle. Private plans and share links remain available. A saved plan alone does not reserve a place.
 
-The 90-city increment has passed combined local verification; current-revision CI and deployment remain pending. The last observed public release remains `e2e4b5a3c649`, which predates Kazakhstan booking; consult [HANDOFF](HANDOFF.md) and the [deployment record](render-free-test.md) before describing a public release as updated.
+The 90-city increment has passed combined local verification and all five [CI jobs at `44cdde6`](https://github.com/Alizhan2/Project-X/actions/runs/43055303104); public deployment remains pending. The last observed public release remains `e2e4b5a3c649`, which predates Kazakhstan booking; consult [HANDOFF](HANDOFF.md) and the [deployment record](render-free-test.md) before describing a public release as updated.
 
 ## Geography and language
 
@@ -61,7 +61,7 @@ Share links contain only origin, destination, date, time, passengers and modes. 
 - Final combined local backend suite: **353 tests passed**, including the geography/generation/setup, market-timezone, booking/export, recovery/operator and followed-line cases.
 - Frontend: **29 unit tests**, **build** and **lint** passed.
 - Browser verification: **54 Playwright scenarios passed**, plus **2 separately enabled PWA scenarios**. These combined results supersede earlier focused counts; do not add those focused counts to the totals.
-- Current-revision CI and public deployment remain pending at this handoff. Earlier public results in the deployment record apply to the earlier release.
+- On 11 November, [all five CI jobs](https://github.com/Alizhan2/Project-X/actions/runs/43055303104) passed for `44cdde6efb584c5f57bcc56cd0c9c7370e151a00`. Public deployment is awaiting the owner’s manual update in Render because native Chrome controls timed out. Earlier public results in the deployment record apply to the earlier release.
 - No external API, real payment, real ticket issuance or real participant response was exercised or generated.
 
 ## Future supplier integration — separate work

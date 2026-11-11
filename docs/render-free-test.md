@@ -8,7 +8,7 @@ The owner clarified that the next product remains a **demo without external APIs
 
 The updated launcher adds missing Kazakhstan geography and scoped operator accounts through `prepare_kazakhstan_demo` after locked migrations and the enabled guarded legacy bootstrap. It generates dated services only for selected pairs and dates. This additive preparation preserves existing study accounts, passwords, memberships, bookings and legacy EUR/Berlin records; it requires no new migration. It is not a reset of the current hosted database.
 
-Final combined local checks passed: **353 backend tests**, **29 frontend unit tests**, frontend **build/lint**, **54 Playwright browser scenarios** and **2 separately enabled PWA scenarios**. These supersede the earlier focused-run counts. New-revision CI and public deployment remain pending. **The public records below still describe `e2e4b5a3c649`, before the 90-city booking work.** Do not report the new Kazakhstan scenario as publicly tested until its deployed commit and walkthrough are recorded.
+Final combined local checks passed: **353 backend tests**, **29 frontend unit tests**, frontend **build/lint**, **54 Playwright browser scenarios** and **2 separately enabled PWA scenarios**. These supersede the earlier focused-run counts. On 11 November, [all five CI jobs](https://github.com/Alizhan2/Project-X/actions/runs/43055303104) passed for `44cdde6efb584c5f57bcc56cd0c9c7370e151a00`. Public deployment is awaiting the owner’s manual update in Render after native Chrome controls timed out. **The public records below still describe `e2e4b5a3c649`, before the 90-city booking work.** Do not report the new Kazakhstan scenario as publicly tested until its deployed commit and walkthrough are recorded.
 
 ## Current status and evidence
 
@@ -97,7 +97,7 @@ The earlier public capacity results above apply to the previous release and netw
 | Check | Observed result |
 | --- | --- |
 | New 90-city local checks | Passed: 353 backend, 29 frontend unit, build/lint, 54 browser + 2 separate PWA scenarios |
-| New 90-city public release / CI | Pending; do not infer from local checks or the earlier records below |
+| New 90-city CI / public release | All five CI jobs passed at `44cdde6`; public deployment/walkthrough awaiting the owner’s manual update |
 | Public HTTPS URL / deployed commit | https://doedu-kazakhstan-test-x3wv.onrender.com/ · `e2e4b5a3c649` |
 | Ready response / worker freshness | HTTP 200 JSON; database, migrations and worker all `ok` |
 | Ten-user disposable rehearsal | 10/10 concurrent purchases; integrity passed; scratch database removed |
