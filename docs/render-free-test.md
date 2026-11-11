@@ -2,21 +2,38 @@
 
 Prepared for **12 November 2026, ten participants**. This is a temporary hosted demonstration with synthetic transport, payments, refunds and confirmations. Kazakhstan cities and private plans do not represent live supplier availability or valid tickets. See [Kazakhstan scope](kazakhstan.md) and [business rules](business-rules.md).
 
-## Latest search and passenger-label increment
+## Current public release
 
-The current source includes Kazakhstan arrive-by search, strict accessibility, whole-party KZT budget filters, saved/search-link restoration and readable generated route labels. Local checks passed: 373 backend tests, 35 frontend unit tests, build/lint and 57 browser scenarios including PWA. Both plan migrations (`0006` and the `0007` database-default repair) were applied locally after private backups, with existing records preserved. All five [CI jobs at `88122e0`](https://github.com/Alizhan2/Project-X/actions/runs/43061797052) passed. The public site still awaits the owner’s manual deployment; the records below describe the earlier observed public release, not this increment.
+**`12836e8525bb` is live** at [Doedu Kazakhstan](https://doedu-kazakhstan-test-x3wv.onrender.com/). Full source commit `12836e8525bb6f575b85fa1d0aa0378d489e22f8` passed [all five CI jobs](https://github.com/Alizhan2/Project-X/actions/runs/43070073333). Manual deployment `dep-dbqannkipgvc73a0mon0` was triggered in My Workspace for the existing Free service at 17:54:39 UTC on 11 November 2026. The built image includes the current frontend bundle, locked migrations and additive Kazakhstan setup. Public readiness subsequently reported the expected release with database, migrations and worker all `ok`.
 
-## New Kazakhstan booking increment — pending deployment
+Verified on this public release with an independent Chromium context emulating a 390 × 844 touch phone:
+
+- 90 cities, demo booking, KZT and Kazakhstan time.
+- EN/RU/KK city confirmation prevents the previous city from being searched after typing a different city. Arrival deadlines, strict accessibility, whole-party budget filters, comparison labels and reload restoration work.
+- A failed cancellation request keeps the active reservation visible and supports retry. A lost reply after server cancellation blocks payment until the status check confirms the outcome.
+- Five-minute reservation, simulated successful payment, PDF and calendar downloads in all three languages, cancellation and immediate removal of the old offline confirmation. After interrupting access to the cancelled booking, the old confirmed status did not return.
+- The existing own-account login and cancelled legacy EUR/Berlin booking with its single completed refund remained accessible after deployment.
+- HTTPS returned 200, HTTP redirected to HTTPS with 301, and the readiness endpoint returned the expected release. The manual mobile page check showed no horizontal overflow and displayed Aktobe → Astana correctly.
+
+All five own synthetic reservations created over the verification attempts were released. The one paid smoke reservation received its completed simulated refund. Test records are excluded from participant observations. An initial smoke attempt interrupted the page's first status load while setting up a network fault; the harness was corrected to wait for the payment countdown, then the final bounded smoke passed. No application change was required.
+
+The public mobile proof is in `output/playwright/doedu-public-mobile-12836e8.jpg` locally. These are browser-emulation checks. A physical phone using mobile data, public ten-user purchases and moderator-only operator/recovery tasks still require their separate checks. The historical capacity measurements below apply to the old revision. Current local source checks passed with 373 backend tests, 35 frontend unit tests, build/lint and 63 browser scenarios including PWA.
+
+## Earlier search and passenger-label increment
+
+The search-preferences revision `88122e0` passed its local checks and five CI jobs before publication. Its two plan migrations were tested locally with private backups and preservation checks. It is now included in public release `12836e8525bb`.
+
+## Earlier Kazakhstan booking increment
 
 The owner clarified that the next product remains a **demo without external APIs**. Local source now supports all 90 cities in the official KATO release of 4 November 2026, multilingual lookup/aliases and generated direct bus/train search, booking, payment/refund and recovery in KZT and Kazakhstan time. See the [source and generation rules](kazakhstan.md). Prices, durations, schedules, fictional stops and accessibility are invented examples; real city geography is not evidence of a real service.
 
 The updated launcher adds missing Kazakhstan geography and scoped operator accounts through `prepare_kazakhstan_demo` after locked migrations and the enabled guarded legacy bootstrap. It generates dated services only for selected pairs and dates. This additive preparation preserves existing study accounts, passwords, memberships, bookings and legacy EUR/Berlin records; it requires no new migration. It is not a reset of the current hosted database.
 
-Final combined local checks passed: **353 backend tests**, **29 frontend unit tests**, frontend **build/lint**, **54 Playwright browser scenarios** and **2 separately enabled PWA scenarios**. These supersede the earlier focused-run counts. On 11 November, [all five CI jobs](https://github.com/Alizhan2/Project-X/actions/runs/43055303104) passed for `44cdde6efb584c5f57bcc56cd0c9c7370e151a00`. Public deployment is awaiting the owner’s manual update in Render after native Chrome controls timed out. **The public records below still describe `e2e4b5a3c649`, before the 90-city booking work.** Do not report the new Kazakhstan scenario as publicly tested until its deployed commit and walkthrough are recorded.
+Final combined local checks passed: **353 backend tests**, **29 frontend unit tests**, frontend **build/lint**, **54 Playwright browser scenarios** and **2 separately enabled PWA scenarios**. These supersede the earlier focused-run counts. On 11 November, [all five CI jobs](https://github.com/Alizhan2/Project-X/actions/runs/43055303104) passed for `44cdde6efb584c5f57bcc56cd0c9c7370e151a00`. This work is now included in public release `12836e8525bb`. The historical records below describe `e2e4b5a3c649`; current public verification is recorded above.
 
-## Current status and evidence
+## Historical initial deployment evidence
 
-The dedicated study deployment is **live**: [Kazakhstan planning](https://doedu-kazakhstan-test-x3wv.onrender.com/) and [fictional booking](https://doedu-kazakhstan-test-x3wv.onrender.com/demo). The current revision is `e2e4b5a3c6493ed9dd516a28f71b86f0b52d00ed`, with all five CI jobs green, deployed at 15:30 UTC on 11 November. Initial deployment became live at 15:01 UTC; a persistence-check deployment became live at 15:08 UTC. Both resources are free in the confirmed My Workspace. The unrelated `sanapath-ai` service was not changed.
+The dedicated study deployment is **live**: [Kazakhstan planning](https://doedu-kazakhstan-test-x3wv.onrender.com/) and [fictional booking](https://doedu-kazakhstan-test-x3wv.onrender.com/demo). That earlier revision was `e2e4b5a3c6493ed9dd516a28f71b86f0b52d00ed`, with all five CI jobs green, deployed at 15:30 UTC on 11 November. Initial deployment became live at 15:01 UTC; a persistence-check deployment became live at 15:08 UTC. Both resources are free in the confirmed My Workspace. The unrelated `sanapath-ai` service was not changed.
 
 Public checks passed: HTTPS 200, HTTP-to-HTTPS 301, staged HSTS and CSP, ready JSON with database/migrations/worker all `ok`, EN/RU/KK home pages, a 390px mobile viewport without horizontal overflow, independent registration, search, five-minute reservation, simulated payment, valid PDF/calendar downloads, Kazakhstan plan saving and parameter-only sharing. Anonymous booking access returned 403. After repeat deployment, the same authenticated session could read its confirmed booking, the saved Kazakhstan plan survived reload, and the worker was fresh. Logs confirmed the bootstrap was a no-op. The single synthetic smoke account/booking/plan are verification records, not participant observations.
 
@@ -68,7 +85,7 @@ Retrieve `DEMO_USER_PASSWORD` **only from the web service's Environment page in 
 
 The administrator `admin@doedu.test` has the separate generated `DEMO_ADMIN_PASSWORD`. Never give participants the administrator password or use an administrator account as a shared passenger login. See [seeded scenario accounts](demo-data.md) for the individual passenger/operator identities.
 
-The updated Kazakhstan setup adds `ops.kzbus@doedu.test` and `ops.kzrail@doedu.test` for moderators. The last observed public release predates these accounts. Use them after the additive setup and deployed revision are verified, and confirm each account can see only its own operator's services.
+The updated Kazakhstan setup adds `ops.kzbus@doedu.test` and `ops.kzrail@doedu.test` for moderators. The current deployed launcher prepares these accounts additively. Confirm their credentials and each account's operator boundary before assigning moderator-only tasks.
 
 Each participant should use a separate account. Create accounts ahead of the session or stagger registration: the earlier ten-account burst reached p95 47.9 seconds on the free CPU. The study Blueprint raises bounded registration/login limits for shared Wi-Fi without disabling abuse controls. Avoid unnecessary real personal data, and do not ask for real payment details.
 
@@ -101,8 +118,8 @@ The earlier public capacity results above apply to the previous release and netw
 | Check | Observed result |
 | --- | --- |
 | New 90-city local checks | Passed: 353 backend, 29 frontend unit, build/lint, 54 browser + 2 separate PWA scenarios |
-| New 90-city CI / public release | All five CI jobs passed at `44cdde6`; public deployment/walkthrough awaiting the owner’s manual update |
-| Public HTTPS URL / deployed commit | https://doedu-kazakhstan-test-x3wv.onrender.com/ · `e2e4b5a3c649` |
+| Current CI / public release | All five CI jobs passed at `12836e8`; public mobile-browser smoke passed |
+| Public HTTPS URL / deployed commit | https://doedu-kazakhstan-test-x3wv.onrender.com/ · `12836e8525bb` |
 | Ready response / worker freshness | HTTP 200 JSON; database, migrations and worker all `ok` |
 | Ten-user disposable rehearsal | 10/10 concurrent purchases; integrity passed; scratch database removed |
 | Public capacity rehearsal | 10/10 registrations, p95 47.9s; 10/10 concurrent browser searches, max 2.41s; full ten-user purchases not established (3 verified, 7 interrupted search responses) |
