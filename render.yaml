@@ -1,0 +1,73 @@
+# Temporary, free usability-test deployment. Both compute plans are explicitly free.
+databases:
+  - name: doedu-usability-db
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "17"
+    databaseName: doedu_usability
+    user: doedu_owner
+    ipAllowList: []
+
+services:
+  - type: web
+    name: doedu-kazakhstan-test
+    runtime: docker
+    plan: free
+    region: frankfurt
+    repo: https://github.com/Alizhan2/Project-X
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python render_start.py
+    autoDeployTrigger: "off"
+    healthCheckPath: /api/health/ready/
+    maxShutdownDelaySeconds: 45
+    envVars:
+      - key: DOEDU_ENV
+        value: production
+      - key: DOEDU_LAUNCH_MODE
+        value: demo
+      - key: DOEDU_BOOTSTRAP_DEMO
+        value: "true"
+      - key: DOEDU_SECRET_SEED
+        generateValue: true
+      - key: DEMO_USER_PASSWORD
+        generateValue: true
+      - key: DEMO_ADMIN_PASSWORD
+        generateValue: true
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: doedu-usability-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: doedu-usability-db
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: doedu-usability-db
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: doedu-usability-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: doedu-usability-db
+          property: password
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: GUNICORN_THREADS
+        value: "4"
+      - key: RESERVATION_MINUTES
+        value: "5"
+      - key: DEMO_SCHEDULE_DAYS
+        value: "14"
+      - key: REGISTRATION_ENABLED
+        value: "true"
+      - key: THROTTLE_REGISTER
+        value: 60/hour
+      - key: THROTTLE_LOGIN
+        value: 60/min
+      - key: THROTTLE_SEARCH
+        value: 600/min

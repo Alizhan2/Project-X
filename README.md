@@ -7,6 +7,8 @@ Interface: **English · Русский · Қазақша**, including account em
 
 Handoff / current blockers: [docs/HANDOFF.md](docs/HANDOFF.md)
 
+Temporary free hosting for the ten-person November usability test: [Render study deployment](docs/render-free-test.md). Configuration is prepared; a public deployment is not yet verified.
+
 Status: **Core demonstration MVP implemented; hosted deployment and remaining hardening require verification.** Production-readiness assessment: [docs/production-readiness.md](docs/production-readiness.md) · evidence: [docs/verification-report.md](docs/verification-report.md). Commercial operation is **not** ready: [docs/commercial-readiness.md](docs/commercial-readiness.md).
 
 ## Layout
@@ -61,6 +63,7 @@ Portable image + compose: `Dockerfile`, `docker-compose.prod.yml`, `.env.product
 The same sequence works **without containers** against any PostgreSQL (verified locally, this is what CI runs): `ops/run-staging.sh` (roles → locked migrate → static → gunicorn + worker → readiness).
 Hosted-demo data: `manage.py sync_demo_schedule` (additive; also run by the worker when `DEMO_SCHEDULE_DAYS>0`). `seed_demo` (destructive reset) never runs in production.
 Accounts in a hosted environment: `manage.py createsuperuser` for the first administrator; operators/passengers via Django Admin (Operator users need role `operator` + an Operator membership).
+The temporary Render study uses a separate guarded, one-time synthetic bootstrap instead; see the [study deployment instructions](docs/render-free-test.md).
 
 ## Release candidate checks (all commands verified locally)
 ```bash

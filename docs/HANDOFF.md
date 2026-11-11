@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 10 November 2026. See [requirements alignment](requirements-alignment-2026-11-10.md) for this increment and [business rules](business-rules.md) for current behaviour. Earlier dated verification documents are historical evidence, not certification of the current revision.
+Updated 11 November 2026. See [requirements alignment](requirements-alignment-2026-11-10.md) for the requirements increment, [business rules](business-rules.md) for current behaviour and the [temporary Render study deployment](render-free-test.md) for hosting preparation. Earlier dated verification documents are historical evidence, not certification of the current revision.
 
 ## Current product
 
@@ -15,15 +15,21 @@ Updated 10 November 2026. See [requirements alignment](requirements-alignment-20
 
 Additive migrations are required for transport transfer metadata, booking access/used markers, offer constraints and payment/refund lifecycle fields. Apply via `manage.py safe_migrate` and restart both application and worker. Do not reseed the user's database. A private pre-migration PostgreSQL backup was saved for this local update.
 
-Local checks passed: 315 backend tests, 27 frontend unit tests, build/lint/schema checks, 51 standard browser scenarios and 2 separately enabled PWA scenarios. Final combined evidence is recorded in requirements-alignment-2026-11-10.md. No push, GitHub CI run, remote server or external publication is implied by local checks.
+For the earlier requirements increment, local checks passed: 315 backend tests, 27 frontend unit tests, build/lint/schema checks, 51 standard browser scenarios and 2 separately enabled PWA scenarios. Combined evidence is recorded in requirements-alignment-2026-11-10.md; those counts are not a rerun of the current hosting changes.
+
+For the Render preparation, eleven focused local runtime/bootstrap tests passed. The native ten-user rehearsal is still pending, as are the Render image build, public HTTPS/phone walkthrough, worker and restart checks. These local tests do not establish a public deployment or a CI result for this hosting increment.
 
 ## Remaining boundaries
 
 - All booking inventory, payments, refunds and confirmations remain simulated; commercial mode is still refused.
 - Recorded used markers and recovery preserve used legs, but general per-leg cancellation/amendment is not implemented; whole cancellation retains its documented capacity-counter simplification.
-- Actual SMTP delivery, public server/domain/HTTPS, off-host backup scheduling, full container/read-only runtime and manual screen-reader/user studies remain separate work.
+- Actual mail delivery, verified public deployment/HTTPS, off-host backup scheduling, full container/read-only runtime and manual screen-reader/user studies remain separate work. Render Free blocks normal SMTP ports; email delivery is excluded from the temporary study.
 - Process-plan activities, team hours/approvals and usability participant responses must be recorded from real events, not generated from software state.
 
 ## Deployment
 
-Repository: https://github.com/Alizhan2/Project-X. Choose hosting, exact hostname and DNS provider before deploying. Inspect services first; follow deployment.md and release-procedure.md. Never expose Django's development server publicly or relax startup safety gates. Real supplier integration needs official documentation, permitted fixtures and server-side credentials.
+Repository: https://github.com/Alizhan2/Project-X. A temporary free Render plan is prepared for ten participants on 12 November: one Docker web service with a cohosted worker and a dedicated synthetic PostgreSQL 17 database, both explicitly free. The Render account is connected, but no Doedu resources or public URL have been created or verified. The unrelated `sanapath-ai` service already in that workspace must not be changed.
+
+Review the Blueprint before approving resource creation, leave automatic deployment off, and follow [render-free-test.md](render-free-test.md). Never transfer the user's local database. Guarded bootstrap seeds only a new empty study database once; generated passenger/operator credentials stay private in Render Dashboard, and the administrator has a separate password. The normal ten-account booking task uses NG-BUS → RV-BUS tomorrow at 16:00; shared recovery/operator fixtures require moderation.
+
+Free web sleep pauses the worker; warm the site before testing. Free PostgreSQL expires after 30 days without automatic backups. This study uses the managed database-owner credential for runtime as well as migrations, so full database least privilege and production operation are not established. Kazakhstan plans do not expose real ticket inventory. Follow [deployment.md](deployment.md) and [release-procedure.md](release-procedure.md) for the broader hardening work; never expose Django's development server publicly or relax startup gates. Real supplier integration needs official documentation, permitted fixtures and server-side credentials.
