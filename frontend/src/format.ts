@@ -1,4 +1,5 @@
 import { t, getLanguage, locales } from './i18n.ts'
+import { defaults as kazakhstanDefaults } from './kazakhstan.ts'
 // Times arrive as ISO strings with the demo-region offset; we display the wall-clock time
 // as written by the server so the UI never silently shifts to the browser's timezone.
 export const clock = (iso: string) => iso.slice(11, 16)
@@ -21,7 +22,7 @@ export const money = (amount: string, currency: string) => `${currency} ${amount
 // Searches use the transport region's calendar, independent of the passenger's device timezone.
 export const regionToday = (timeZone = 'Europe/Berlin') => new Date().toLocaleDateString('en-CA', { timeZone })
 export const repeatSearchUrl = (origin: string, destination: string, passengers = 1, wheelchairRequired = false, originCity?: string, destinationCity?: string) => originCity && destinationCity
-  ? `/?${new URLSearchParams({ origin: originCity, destination: destinationCity, passengers: String(passengers), date: regionToday('Asia/Almaty'), time: '06:00', modes: 'bus,train' })}`
+  ? `/?${new URLSearchParams({ origin: originCity, destination: destinationCity, passengers: String(passengers), date: kazakhstanDefaults().date, time: '06:00', modes: 'bus,train', time_mode: 'departure', wheelchair_required: String(wheelchairRequired) })}`
   : `/demo?${new URLSearchParams({ origin, destination, passengers: String(passengers), date: regionToday(), time: '06:00', repeat: '1', wheelchair_required: String(wheelchairRequired) })}`
 
 /** A transport-region datetime-local value, independent of the passenger's device timezone. */

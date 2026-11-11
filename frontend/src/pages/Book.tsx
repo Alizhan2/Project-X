@@ -7,7 +7,7 @@ import SavedTravellers from '../components/SavedTravellers'
 import { useAuth } from '../authContext'
 import LegSummary from '../components/LegSummary'
 import { useItinerary } from '../hooks'
-import { money } from '../format'
+import { clock, dayLabel, money } from '../format'
 
 export default function Book() {
   useLanguage()
@@ -59,7 +59,7 @@ export default function Book() {
     <>
       <h1>{t("Traveller details")}</h1>
       {wheelchairRequired && <p className="email-notice">{t("Require a fully step-free journey")}</p>}
-      {arriveBy && st.kind === 'ready' && <p>{t("Arrive by")} {arriveBy.replace('T', ' ')} ({st.data.timezone ?? 'Europe/Berlin'}). {t('The deadline is checked again when reserving.')}</p>}
+      {arriveBy && st.kind === 'ready' && <p>{t("Arrive by")} {dayLabel(arriveBy)}, {clock(arriveBy)} ({st.data.timezone === 'Asia/Almaty' ? `${t('Kazakhstan time')} · UTC+5` : st.data.timezone ?? 'Europe/Berlin'}). {t('The deadline is checked again when reserving.')}</p>}
       {st.kind === 'loading' && <p>{t("Loading journey…")}</p>}
       {st.kind === 'error' && <div className="card" role="alert"><p className="status-bad">{st.error.message}</p><Link to={searchHome}>{t("Search again")}</Link></div>}
       {st.kind === 'ready' && (

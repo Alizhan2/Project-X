@@ -72,6 +72,7 @@ export interface Itinerary {
 }
 
 export interface SearchResponse {
+  arrive_by?: string | null
   simulated: boolean
   window_hours: number
   count: number

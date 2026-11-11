@@ -35,7 +35,19 @@
 - [x] PDF journey plan with current times and clear simulation/disruption labels.
 - Details: travel-companion.md.
 
-## Arrival deadline
+## Arrival deadline — legacy fictional network
 - [x] Arrive-by search with latest departure ranking, multimodal connections and taxi opening hours.
 - [x] Deadline retained through selection/comparison and checked again before reserving seats.
 - Details: arrive-by.md.
+
+## Kazakhstan search preferences — current increment
+
+- [x] Arrive-by mode with an inclusive Kazakhstan-time deadline, preceding 24-hour departure window, previous-day departures and latest-departure ranking.
+- [x] Strict accessibility for the vehicle and both stops, with current-data revalidation through selection and checkout.
+- [x] Inclusive maximum total KZT fare for the whole party; no floating-point money or implied locked spending cap.
+- [x] Persist these preferences in private plans and whitelisted public links; preserve executed searches through browser Back/reload by fetching current results.
+- [x] Additive plan migration `accounts.0006_journeyplan_search_preferences`; existing plans retain original fields/notes and receive safe defaults.
+- [x] Combined local verification: 372 backend, 33 frontend unit, build/lint, 55 standard browser and 2 separate PWA scenarios; schema/migration/secret/whitespace checks passed.
+- [x] Apply `0006` locally after a private backup; preserve existing account/access/plan/booking data and pass integrity/readiness checks. Verify mobile layout, Back/reload and same-plan editing without draft loss.
+- [ ] Complete current-revision CI and observe the owner's manual public update separately. Earlier `44cdde6` CI/public results remain historical evidence.
+- Scope and behaviour: [Kazakhstan demo](kazakhstan.md). Current design and EN/RU/KK support remain; external supplier APIs, real payments and tickets remain outside this demo.

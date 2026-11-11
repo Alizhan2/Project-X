@@ -5,6 +5,7 @@ There is no supplier API, distance calculation or real ticket availability here.
 Geography is additive; dated services are created only for the requested pair.
 """
 from datetime import datetime, time, timedelta
+from dataclasses import replace
 from decimal import Decimal
 import hashlib
 from zoneinfo import ZoneInfo
@@ -16,6 +17,7 @@ from django.utils import timezone
 
 from apps.core.models import AuditRecord
 from apps.planning.services import Itinerary, Leg, SORTS
+from apps.planning.transfers import leg_accessible
 from apps.transport.models import CancellationPolicy, Departure, Fare, Hub, Operator, Route, RouteStop, Stop, TransferLink
 
 from .catalog import CITIES, CURRENCY, TIMEZONE
@@ -146,25 +148,34 @@ def _ensure_pair(query, operators, policy, stops):
 
 
 @transaction.atomic
-def search_demo(query, sort='departure'):
+def search_demo(query, sort=None, *, arrive_by=None, wheelchair_required=False, max_price=None):
     """Generate this pair's two-day synthetic timetable and return current direct planner itineraries."""
     _require_demo()
+    sort = sort or ('latest_departure' if arrive_by is not None else 'departure')
     if (query.origin not in _CITIES or query.destination not in _CITIES or query.origin == query.destination
             or query.currency != CURRENCY or type(query.passengers) is not int or not 1 <= query.passengers <= 9
             or not query.modes or not set(query.modes) <= set(OPERATORS)
-            or timezone.is_naive(query.depart_after) or sort not in SORTS):
+            or timezone.is_naive(query.depart_after) or sort not in SORTS
+            or type(wheelchair_required) is not bool
+            or (max_price is not None and (not isinstance(max_price, Decimal)
+                                           or not max_price.is_finite() or max_price < 0))
+            or (arrive_by is not None and (timezone.is_naive(arrive_by) or arrive_by <= query.depart_after))):
         raise ValueError('Invalid Kazakhstan demo search.')
+    now = timezone.now()
+    if arrive_by is not None and arrive_by <= now:
+        return []
+    window_start = max(query.depart_after, now, arrive_by - timedelta(hours=24)) if arrive_by is not None else query.depart_after
+    window_end = arrive_by if arrive_by is not None else query.depart_after + timedelta(hours=24)
     _lock_network()
     operators, policy, stops = _ensure_network()
-    choices = _ensure_pair(query, operators, policy, stops)
+    choices = _ensure_pair(replace(query, depart_after=window_start), operators, policy, stops)
     # Positive delays can move a previously scheduled departure into this search's live window.
     delay = models.ExpressionWrapper(F('delay_minutes') * Value(timedelta(minutes=1)), output_field=models.DurationField())
     effective = models.ExpressionWrapper(F('departs_at') + delay, output_field=models.DateTimeField())
-    window_end = query.depart_after + timedelta(hours=24)
     departures = (Departure.objects.filter(route_id__in=[choice[0].pk for choice in choices])
                   .exclude(status=Departure.Status.CANCELLED)
                   .annotate(effective_at=effective)
-                  .filter(effective_at__gte=query.depart_after, effective_at__lt=window_end,
+                  .filter(effective_at__gte=window_start, effective_at__lt=window_end,
                           capacity__gte=F('places_taken') + query.passengers)
                   .select_related('route__operator', 'route__policy'))
     by_route = {route.pk: (start, end, fare, first, last) for route, start, end, fare, first, last in choices}
@@ -176,9 +187,14 @@ def search_demo(query, sort='departure'):
         base = departure.departs_at.astimezone(_ZONE) + timedelta(minutes=departure.delay_minutes)
         leaves = base + timedelta(minutes=start.departure_offset_min)
         arrives = base + timedelta(minutes=end.arrival_offset_min)
-        if (not query.depart_after <= leaves < window_end or arrives <= leaves
+        if (not window_start <= leaves < window_end or leaves <= now or arrives <= leaves
+                or (arrive_by is not None and arrives > arrive_by)
                 or arrives - leaves > timedelta(hours=query.max_journey_hours)):
             continue
         leg = Leg(first, last, leaves, arrives, fare.price, fare.currency, departure=departure)
-        found.append(Itinerary([leg], query.passengers, buffers=[], connections=[]))
+        if wheelchair_required and not leg_accessible(leg):
+            continue
+        itinerary = Itinerary([leg], query.passengers, buffers=[], connections=[], wheelchair_required=wheelchair_required)
+        if max_price is None or itinerary.total_price <= max_price:
+            found.append(itinerary)
     return sorted(found, key=SORTS[sort])

@@ -5,7 +5,7 @@ import LegSummary from '../components/LegSummary'
 import ConnectionProtection from '../components/ConnectionProtection'
 import FollowLines from '../components/FollowLines'
 import { useItinerary } from '../hooks'
-import { duration, money } from '../format'
+import { clock, dayLabel, duration, money } from '../format'
 
 export default function Journey() {
   useLanguage()
@@ -19,7 +19,7 @@ export default function Journey() {
     <>
       <h1>{t("Journey details")}</h1>
       {wheelchairRequired && <p className="email-notice">{t("Require a fully step-free journey")}</p>}
-      {arriveBy && st.kind === 'ready' && <p>{t("Arrive by")} {arriveBy.replace('T', ' ')} ({st.data.timezone ?? 'Europe/Berlin'}). {t('Checked against the current timetable; not a punctuality guarantee.')}</p>}
+      {arriveBy && st.kind === 'ready' && <p>{t("Arrive by")} {dayLabel(arriveBy)}, {clock(arriveBy)} ({st.data.timezone === 'Asia/Almaty' ? `${t('Kazakhstan time')} · UTC+5` : st.data.timezone ?? 'Europe/Berlin'}). {t('Checked against the current timetable; not a punctuality guarantee.')}</p>}
       {st.kind === 'loading' && <p>{t("Loading journey…")}</p>}
       {st.kind === 'error' && (
         <div className="card" role="alert">

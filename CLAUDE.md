@@ -25,7 +25,7 @@ Env: `cp .env.example .env`; load it with `set -a && source .env && set +a` (Dja
 Lock departures `ORDER BY pk` with `select_for_update` before touching `places_taken`; booking row lock before departure locks; idempotency keys on checkout/pay; jobs must be idempotent.
 
 ## Recovery (Stage 6)
-`disruptions/recovery.py`: offers are non-reserving, accept = one all-or-nothing transaction (lock order booking → offer → departures by id). Rules in docs/business-rules.md. E2E dates use Europe/Berlin (`frontend/e2e/demo-day.ts`).
+`disruptions/recovery.py`: offers are non-reserving, accept = one all-or-nothing transaction (lock order booking → offer → departures by id). Rules in docs/business-rules.md. Legacy E2E dates use Europe/Berlin (`frontend/e2e/demo-day.ts`); Kazakhstan scenarios use `Asia/Almaty` (UTC+5).
 
 ## Production preparation (see docs/production-readiness.md)
 - Config is validated at startup (`config/settings.py`): `DOEDU_ENV` (development|test|staging|production) and `DOEDU_LAUNCH_MODE` (development|demo|commercial → refuses). Never relax these checks to make something start.
@@ -36,12 +36,15 @@ Lock departures `ORDER BY pk` with `select_for_update` before touching `places_t
 - Tools used for evidence live outside the repo (`~/.doedu-tools`: Postgres binaries, pip-tools/pip-audit/detect-secrets). CI ran at ac46440. Logical backup/restore ran locally on 2026-10-20 using Postgres.app 17.11 clients. Full Docker Compose remains unverified. Consult docs/local-improvements.md for current evidence.
 
 ## Rules of the codebase
-- Money: `Decimal`, explicit currency; never floats. Datetimes timezone-aware (UTC stored, `Europe/Berlin` display).
+- Money: `Decimal`, explicit currency; never floats. Datetimes timezone-aware (UTC stored; market-specific display: `Asia/Almaty` for KZ stops, `Europe/Berlin` for the legacy network). Currency alone never selects timezone. Carry Kazakhstan arrival deadlines with their explicit `+05:00` offset through the shared itinerary/checkout endpoints.
 - Capacity is whole-service per departure (`Departure.places_taken`); CHECK constraint prevents oversell.
 - Search results are *offers*, not bookings. Bookings must snapshot price, times and cancellation policy.
 - Permissions are enforced server-side (object ownership, operator boundary). UI hiding is not access control.
 - Config only through env vars; never commit secrets or `.env`.
 - Frontend uses the real API; no static stand-in data.
+
+## Kazakhstan plan/search preferences
+`accounts.0006_journeyplan_search_preferences` adds `time_mode`, `wheelchair_required` and nullable `max_price` to private plans; apply it with `safe_migrate`, never a demo reset. Defaults preserve old departure plans. Search/plan serializers share raw fields but computed `depart_after`/`arrive_by` must be removed before creating/updating a plan. `max_price` is a KZT whole-party search filter, not a locked checkout cap. Plan edits use `PUT` on the same ID; require save/cancel before starting another search so URL remounting cannot discard drafts. See docs/kazakhstan.md for arrive-by windows, executed-search URLs and current verification.
 
 ## Definition of done
 Frontend+backend work together · state persisted in PostgreSQL · permissions enforced · failure cases handled ·

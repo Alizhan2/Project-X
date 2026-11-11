@@ -22,6 +22,10 @@ class SearchInput(serializers.Serializer):
     time = serializers.TimeField(default=time(6, 0), input_formats=['%H:%M'])
     passengers = serializers.IntegerField(min_value=1, max_value=9, default=1)
     modes = serializers.ChoiceField(choices=('bus,train', 'bus', 'train'), default='bus,train')
+    time_mode = serializers.ChoiceField(choices=('departure', 'arrival'), default='departure')
+    wheelchair_required = serializers.BooleanField(default=False)
+    max_price = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0'),
+                                         required=False, allow_null=True, default=None)
 
     def validate(self, data):
         if data['origin'] == data['destination']:
@@ -29,10 +33,16 @@ class SearchInput(serializers.Serializer):
         local = datetime.combine(data['date'], data['time'], tzinfo=ZoneInfo(TIMEZONE))
         now = timezone.now()
         if local <= now:
-            raise serializers.ValidationError({'date': 'Choose a departure time in the future.'})
+            message = ('Choose an arrival deadline in the future.' if data['time_mode'] == 'arrival'
+                       else 'Choose a departure time in the future.')
+            raise serializers.ValidationError({'date': message})
         if local > now + timedelta(days=365):
             raise serializers.ValidationError({'date': 'Choose a date within the next year.'})
-        data['depart_after'] = local
+        if data['time_mode'] == 'arrival':
+            data['arrive_by'] = local
+            data['depart_after'] = max(now, local - timedelta(hours=24))
+        else:
+            data['depart_after'] = local
         return data
 
 
@@ -49,7 +59,7 @@ def catalog(request):
                      'booking_enabled': simulated})
 
 
-@extend_schema(parameters=[SearchInput, OpenApiParameter('sort', str, enum=['departure', 'price', 'duration'])], responses={200: dict, 400: dict, 503: dict})
+@extend_schema(parameters=[SearchInput, OpenApiParameter('sort', str, enum=['departure', 'latest_departure', 'price', 'duration'])], responses={200: dict, 400: dict, 503: dict})
 @throttle('search')
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -57,14 +67,19 @@ def search(request):
     data = SearchInput(data=request.query_params)
     data.is_valid(raise_exception=True)
     v = data.validated_data
+    default_sort = 'latest_departure' if v['time_mode'] == 'arrival' else 'departure'
+    sort = serializers.ChoiceField(choices=('departure', 'latest_departure', 'price', 'duration')).run_validation(
+        request.query_params.get('sort', default_sort))
     query = SearchQuery(v['origin'], v['destination'], v['depart_after'], v['passengers'], tuple(v['modes'].split(',')))
     if settings.SIMULATION_ENABLED:
         from apps.planning.serializers import serialize_itinerary
         from .demo import search_demo
-        sort = serializers.ChoiceField(choices=('departure', 'price', 'duration')).run_validation(request.query_params.get('sort', 'departure'))
-        results = search_demo(query, sort=sort)
+        results = search_demo(query, sort=sort, arrive_by=v.get('arrive_by'),
+                              wheelchair_required=v['wheelchair_required'], max_price=v['max_price'])
         return Response({'simulated': True, 'provider': 'kazakhstan_demo', 'currency': CURRENCY,
                          'timezone': TIMEZONE, 'booking_enabled': True, 'window_hours': 24,
+                         'time_mode': v['time_mode'],
+                         'arrive_by': v['arrive_by'].isoformat() if 'arrive_by' in v else None,
                          'count': len(results), 'results': [serialize_itinerary(itinerary) for itinerary in results]})
     try:
         offers = get_provider().search(query)
@@ -77,6 +92,9 @@ def search(request):
     valid = [o for o in offers if o.provider == '1tr' and o.origin == query.origin and o.destination == query.destination
              and o.passengers == query.passengers and o.mode in query.modes and o.currency == query.currency and o.departs_at >= query.depart_after
              and o.expires_at > now and o.checked_at <= now
+             and ('arrive_by' not in v or o.arrives_at <= v['arrive_by'])
+             and (v['max_price'] is None or o.total_price <= v['max_price'])
+             and not v['wheelchair_required']
              and o.arrives_at - o.departs_at <= timedelta(hours=query.max_journey_hours)]
     return Response({'currency': CURRENCY, 'timezone': TIMEZONE, 'booking_enabled': False,
                      'results': [{'provider': o.provider, 'offer_id': o.provider_offer_id,

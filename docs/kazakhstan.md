@@ -2,7 +2,7 @@
 
 The current work implements the owner's clarified scope: **a working Kazakhstan demonstration without external APIs**. The home page `/` (also `/kazakhstan`) searches generated bus/train services, reserves places and uses the existing simulated payment, refund and replacement lifecycle. Private plans and share links remain available. A saved plan alone does not reserve a place.
 
-The 90-city increment has passed combined local verification and all five [CI jobs at `44cdde6`](https://github.com/Alizhan2/Project-X/actions/runs/43055303104); public deployment remains pending. The last observed public release remains `e2e4b5a3c649`, which predates Kazakhstan booking; consult [HANDOFF](HANDOFF.md) and the [deployment record](render-free-test.md) before describing a public release as updated.
+The earlier 90-city increment passed combined local verification and all five [CI jobs at `44cdde6`](https://github.com/Alizhan2/Project-X/actions/runs/43055303104). The new search-preferences increment adds arrival deadlines, accessibility/price filters and search restoration. Its combined local checks and local migration-preservation check passed; current-revision CI remains pending. Public deployment is still awaiting the owner's manual Render update. The last observed public release remains `e2e4b5a3c649`, which predates Kazakhstan booking; consult [HANDOFF](HANDOFF.md) and the [deployment record](render-free-test.md) before describing a public release as updated.
 
 ## Geography and language
 
@@ -15,9 +15,14 @@ The 90-city increment has passed combined local verification and all five [CI jo
 
 Simulation-enabled launches use the internal `kazakhstan_demo` provider. Catalogue and search responses explicitly report that they are simulated; no supplier request is made.
 
-`GET /api/kazakhstan/catalog/` returns cities, geography provenance, KZT, `Asia/Almaty`, simulation/provider status and whether demo booking is enabled. `GET /api/kazakhstan/search/` validates different cities, a future date within one year, local time, 1–9 passengers and bus/train modes. It returns generated direct itineraries and supports departure, price and duration sorting.
+`GET /api/kazakhstan/catalog/` returns cities, geography provenance, KZT, `Asia/Almaty`, simulation/provider status and whether demo booking is enabled. `GET /api/kazakhstan/search/` validates different cities, a future date within one year, local time, 1–9 passengers and bus/train modes. It returns generated direct itineraries and accepts these additional search preferences:
 
-Generation is limited to the selected origin/destination pair and requested dates: the pair gets a two-day example timetable, and results cover the next 24 hours from the chosen departure time. This avoids prebuilding a complete national route mesh. Repeating a search reuses existing rows and preserves current operator fares, delays, cancellations, capacity and booked places. It does not restore a cancelled service or overwrite purchase snapshots.
+- `time_mode=departure` (default) treats the date/time as the earliest departure and searches the next 24 hours. `time_mode=arrival` treats them as an inclusive arrival deadline and searches departures in the preceding 24 hours, clipped to the current time. Previous-local-day departures may qualify. Departures that have already left and journeys arriving after the deadline are excluded; current delays are included.
+- Arrival mode defaults to `latest_departure` sorting. Both modes support `departure`, `latest_departure`, `price` and `duration` sorting.
+- `wheelchair_required=true` requires explicitly accessible vehicles and both stops. Unknown or false accessibility is excluded using the existing planner accessibility rule. This preference follows the selected journey through comparison and checkout, where current accessibility is checked again. Accessibility data remains illustrative.
+- Optional `max_price` is an inclusive maximum **total KZT price for the entire passenger party**, represented as a nonnegative decimal with up to ten integer digits and two decimal places. Omit it for no price filter; zero is a real zero-price limit. This is a search filter, not a locked spending cap. Existing price revalidation can show a changed fare before a passenger chooses whether to proceed.
+
+Generation is limited to the selected origin/destination pair and the local days needed for that search window. The pair gets a two-day example timetable, avoiding a prebuilt complete national route mesh. Repeating a search reuses existing rows and preserves current operator fares, delays, cancellations, capacity and booked places. Route/day generation markers prevent moved or deleted departure slots from being recreated; purchase snapshots remain unchanged.
 
 **Timetables, fares, durations, stops, operators and accessibility values are illustrative.** They are not calculations of road/rail distance or evidence that real transport serves a city pair. The directory represents real city names; the bus/rail stops and services used by this demo are fictional. Initial Kazakhstan search results are direct bus/train journeys. Existing transfer and multimodal acceptance scenarios remain in the legacy network.
 
@@ -29,6 +34,8 @@ KZT amounts remain `Decimal`; no legacy EUR price is converted. New KZ stop iden
 
 Search/booking/travel-plan/recovery/operator responses include market timezone metadata and explicit `+05:00` timestamp offsets for Kazakhstan. Naive recovery and operator inputs use the booking or selected route timezone. Payment/refund activity timestamps, departure notices and PDF times follow that market. Calendar exports retain UTC instants so calendar applications can display the correct local time. Existing stored snapshots and old Berlin journeys are preserved.
 
+Kazakhstan arrival search returns `arrive_by` with an explicit `+05:00` offset. The interface carries that exact instant through result selection, comparison, itinerary revalidation and checkout. Do not replace it with a naive timestamp: the shared legacy itinerary/checkout datetime fields otherwise use the legacy timezone. The deadline is checked against the current timetable before reserving; it is not a punctuality guarantee.
+
 ## Additive setup and operator access
 
 After applying migrations with `manage.py safe_migrate`, run:
@@ -37,7 +44,7 @@ After applying migrations with `manage.py safe_migrate`, run:
 python manage.py prepare_kazakhstan_demo
 ```
 
-The command adds missing **90 hubs, 180 fictional bus/rail stops and their transfer links, two operators and the example policy**. Services are created when a city pair/date is searched. No new migration is required by this increment. The command neither resets the database nor copies a user's local records to hosting.
+The command adds missing **90 hubs, 180 fictional bus/rail stops and their transfer links, two operators and the example policy**. Services are created when a city pair/date is searched. The earlier geography/generation increment required no new migration. The new search-preferences increment adds migration `accounts.0006_journeyplan_search_preferences`: saved plans gain `time_mode`, `wheelchair_required` and nullable `max_price`, with valid-mode/nonnegative-budget constraints. Existing plans default to departure mode, no accessibility requirement and no price limit; their original trip fields and notes are preserved. Apply it through `safe_migrate`; do not reset or reseed an existing database. Preparation neither resets records nor copies a user's local records to hosting.
 
 New operator accounts are scoped to their own transport operator:
 
@@ -52,11 +59,23 @@ The hosted launcher runs locked migrations, the explicitly enabled guarded legac
 
 ## Private plans and sharing
 
-Plans remain account-owned: create/list/edit/repeat/delete through `GET/POST /api/kazakhstan/plans/` and `PUT/DELETE /api/kazakhstan/plans/{id}/`. Up to 50 plans per account; saving requires a future date within one year. Past plans remain readable and deletable. Authentication, CSRF and ownership checks apply server-side.
+Plans remain account-owned: create/list/edit/repeat/delete through `GET/POST /api/kazakhstan/plans/` and `PUT/DELETE /api/kazakhstan/plans/{id}/`. They persist the time mode, accessibility preference and optional total-price limit alongside the original trip fields and private note. Up to 50 plans per account; saving requires a future date within one year. Past plans remain readable and deletable. Authentication, CSRF and ownership checks apply server-side. While editing a plan, searching is disabled until the traveller saves or cancels editing. Saving an edit updates the same plan through `PUT`; it does not create a duplicate or discard the private note.
 
-Share links contain only origin, destination, date, time, passengers and modes. They contain no private note, user ID or plan ID and do not expose saved plans. Filtering preserves the selected city until a traveller selects another. Invalid shared values fall back with a warning. Public links use the deployment origin; localhost links work only on that machine.
+Share links whitelist public trip fields: origin, destination, date, time, passengers, modes, time mode, accessibility requirement and optional total-price limit. Executed-search links additionally include `search=1` and a permitted sort value. They contain no private note, user ID or plan ID and do not expose saved plans. Old links without the executed-search marker remain prefill-only. Invalid shared values fall back with a warning and do not automatically execute a search. Public links use the deployment origin; localhost links work only on that machine.
 
-## Verification status for this increment
+Submitting a search records its public parameters in the address. Browser Back and reload restore those parameters and rerun the availability query, so returned results reflect current fares/capacity rather than a cached reservation. Comparisons reset when the search changes. City filtering preserves the selected city until a traveller selects another. Kazakhstan repeat-booking links start a new search on the next Kazakhstan calendar day at 06:00 and retain the accessibility requirement; they do not silently reuse an expired departure time.
+
+## Verification status
+
+For the current search-preferences increment, final local verification passed:
+
+- **372 backend tests**, **33 frontend unit tests**, frontend **build/lint**, **55 standard Playwright scenarios** and **2 separately enabled PWA scenarios**. The two PWA scenarios were skipped in the standard run and exercised in their separate run.
+- OpenAPI schema validation, migration dry-run consistency, secret scan and whitespace checks passed.
+- Migration `accounts.0006_journeyplan_search_preferences` was applied to the local user database after a private logical backup. Before/after checks preserved accounts/passwords/roles, memberships, original plan fields and notes, and bookings. The integrity check passed and the native API/worker were ready.
+- A 390px browser check confirmed no horizontal overflow, explicit `+05:00` deadline context, and restored results after Back/reload. The edit/save workflow retained the same plan ID through `PUT` and prevented draft loss; the Kazakhstan screen no longer briefly showed the unrelated provider state during configuration loading.
+- Current-revision CI and an observed public deployment remain pending. These local results do not establish either outcome.
+
+Historical evidence for the earlier 90-city increment at `44cdde6`:
 
 - Final combined local backend suite: **353 tests passed**, including the geography/generation/setup, market-timezone, booking/export, recovery/operator and followed-line cases.
 - Frontend: **29 unit tests**, **build** and **lint** passed.

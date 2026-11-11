@@ -16,13 +16,15 @@ class PlanInput(SearchInput):
     def validate(self, data):
         data = super().validate(data)
         data.pop('depart_after')
+        data.pop('arrive_by', None)
         return data
 
 
 class PlanOutput(serializers.ModelSerializer):
     class Meta:
         model = JourneyPlan
-        fields = ['id', 'origin', 'destination', 'date', 'time', 'passengers', 'modes', 'note', 'updated_at']
+        fields = ['id', 'origin', 'destination', 'date', 'time', 'passengers', 'modes',
+                  'time_mode', 'wheelchair_required', 'max_price', 'note', 'updated_at']
 
 
 @extend_schema(methods=['GET'], responses=PlanOutput(many=True))

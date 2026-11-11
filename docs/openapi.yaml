@@ -1267,6 +1267,13 @@ paths:
           * `kz-shemonaikha` - kz-shemonaikha
         required: true
       - in: query
+        name: max_price
+        schema:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+      - in: query
         name: modes
         schema:
           enum:
@@ -1482,6 +1489,7 @@ paths:
           enum:
           - departure
           - duration
+          - latest_departure
           - price
       - in: query
         name: time
@@ -1489,6 +1497,23 @@ paths:
           type: string
           format: time
           default: 06:00:00
+      - in: query
+        name: time_mode
+        schema:
+          enum:
+          - departure
+          - arrival
+          type: string
+          default: departure
+          minLength: 1
+        description: |-
+          * `departure` - departure
+          * `arrival` - arrival
+      - in: query
+        name: wheelchair_required
+        schema:
+          type: boolean
+          default: false
       tags:
       - kazakhstan
       security:
@@ -2513,6 +2538,18 @@ components:
           allOf:
           - $ref: '#/components/schemas/ModesEnum'
           default: bus,train
+        time_mode:
+          allOf:
+          - $ref: '#/components/schemas/PlanInputTimeModeEnum'
+          default: departure
+        wheelchair_required:
+          type: boolean
+          default: false
+        max_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
         note:
           type: string
           default: ''
@@ -2521,6 +2558,14 @@ components:
       - date
       - destination
       - origin
+    PlanInputTimeModeEnum:
+      enum:
+      - departure
+      - arrival
+      type: string
+      description: |-
+        * `departure` - departure
+        * `arrival` - arrival
     PlanOutput:
       type: object
       properties:
@@ -2546,6 +2591,15 @@ components:
         modes:
           type: string
           maxLength: 16
+        time_mode:
+          $ref: '#/components/schemas/PlanOutputTimeModeEnum'
+        wheelchair_required:
+          type: boolean
+        max_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
         note:
           type: string
           maxLength: 1000
@@ -2560,6 +2614,14 @@ components:
       - origin
       - time
       - updated_at
+    PlanOutputTimeModeEnum:
+      enum:
+      - departure
+      - arrival
+      type: string
+      description: |-
+        * `departure` - Departure
+        * `arrival` - Arrival
     RegisterIn:
       type: object
       properties:

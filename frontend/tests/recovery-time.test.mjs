@@ -19,4 +19,8 @@ test('Kazakhstan recovery fields and repeat links use the booking market', () =>
   assert.equal(url.searchParams.get('destination'), 'kz-astana')
   assert.equal(url.searchParams.get('passengers'), '2')
   assert.equal(url.searchParams.get('modes'), 'bus,train')
+  assert.equal(url.searchParams.get('time_mode'), 'departure')
+  assert.equal(url.searchParams.get('date'), new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Almaty' }))
+  const accessible = new URL(repeatSearchUrl('KZ-751000000-B', 'KZ-711000000-B', 2, true, 'kz-almaty', 'kz-astana'), 'https://doedu.test')
+  assert.equal(accessible.searchParams.get('wheelchair_required'), 'true')
 })

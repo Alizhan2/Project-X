@@ -35,7 +35,7 @@ export default function Kazakhstan() {
       <div className="kz-clock"><strong>{new Intl.DateTimeFormat(locales[language], { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now)}</strong><span>{t('Kazakhstan time')} · UTC+5</span><span>{t('Currency')}: ₸ · KZT</span></div>
     </header>
     <p className="muted">{t("Real cities · saved plans · KZT · Kazakhstan time")}</p>
-    <aside className="kz-notice"><h2>{t(catalog?.simulated ? 'Kazakhstan booking demo' : 'Real ticket sales are not yet available.')}</h2><p>{t(catalog?.simulated ? 'The cities are real. Routes, departure times, prices, seats, payments and confirmations are simulated. No real ticket is issued.' : 'We are preparing a connection to 1TR.kz. City names are real; schedules, prices and available seats have not been supplied yet.')}</p></aside>
+    {catalog && <aside className="kz-notice"><h2>{t(catalog.simulated ? 'Kazakhstan booking demo' : 'Real ticket sales are not yet available.')}</h2><p>{t(catalog.simulated ? 'The cities are real. Routes, departure times, prices, seats, payments and confirmations are simulated. No real ticket is issued.' : 'We are preparing a connection to 1TR.kz. City names are real; schedules, prices and available seats have not been supplied yet.')}</p></aside>}
     {loadError && <p role="alert">{t('Could not load the city directory. Reload the page to try again.')}</p>}
     {!catalog && !loadError && <p role="status">{t('Loading…')}</p>}
     {catalog && <>

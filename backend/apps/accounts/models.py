@@ -58,6 +58,9 @@ class JourneyPlan(models.Model):
     time = models.TimeField()
     passengers = models.PositiveSmallIntegerField(default=1)
     modes = models.CharField(max_length=16, default='bus,train')
+    time_mode = models.CharField(max_length=9, choices=[('departure', 'Departure'), ('arrival', 'Arrival')], default='departure')
+    wheelchair_required = models.BooleanField(default=False)
+    max_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     note = models.CharField(max_length=1000, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -67,4 +70,6 @@ class JourneyPlan(models.Model):
         constraints = [
             models.CheckConstraint(condition=~models.Q(origin=models.F('destination')), name='plan_different_cities'),
             models.CheckConstraint(condition=models.Q(passengers__gte=1, passengers__lte=9), name='plan_valid_party'),
+            models.CheckConstraint(condition=models.Q(time_mode__in=['departure', 'arrival']), name='plan_valid_time_mode'),
+            models.CheckConstraint(condition=models.Q(max_price__isnull=True) | models.Q(max_price__gte=0), name='plan_nonnegative_budget'),
         ]
