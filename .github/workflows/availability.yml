@@ -3,7 +3,7 @@ name: Hosted availability
 on:
   schedule:
     # shortcut: GitHub can delay schedules; use dedicated hosting for guaranteed availability.
-    - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
+    - cron: '3,8,13,18,23,28,33,38,43,48,53,58 * * * *'
   workflow_dispatch:
 
 permissions: {}
