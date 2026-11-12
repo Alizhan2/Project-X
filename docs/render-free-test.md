@@ -113,6 +113,8 @@ Render Billing showed **1.25 of 750 free instance-hours used** in My Workspace w
 
 References checked on 12 November — [Render Free](https://render.com/docs/free), [GitHub schedule behaviour](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule), [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
 
+At 08:46 UTC on 12 November, the workflow was active and its [manual probe](https://github.com/Alizhan2/Project-X/actions/runs/43181839313) had passed with HTTP 200 in 0.304 seconds, but GitHub had created no scheduled runs for about 88 minutes after the workflow was added. The service therefore still experienced idle sleep. Actions was enabled, the repository was not a fork, and `main` contained the workflow. The workflow was toggled off/on and its valid range/step cron was expanded into an equivalent explicit minute list to re-register scheduling, following [GitHub troubleshooting](https://docs.github.com/en/actions/how-tos/troubleshoot-workflows#scheduled-workflow-stopped-running). Automatic warming remains unverified until an actual `schedule` run succeeds; a manual success alone does not establish it.
+
 ## Free-tier boundaries
 
 The web service sleeps after about **15 minutes without inbound traffic**. Its cohosted worker sleeps with it, delaying proactive notices, watches and scheduled work until the service wakes. Lazy expiry checks still protect reservation/payment flows, but this is not an always-running worker. Cold starts can take about a minute or longer. The scheduled availability probe should normally keep it warm; confirm readiness before each test session.
