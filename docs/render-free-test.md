@@ -103,9 +103,19 @@ Recovery, payment and refund fixtures are shared, stateful and effectively singl
 - Verify the deployed commit, public secure session/CSRF flow, fresh worker heartbeat, restart persistence and the normal booking departure on Render itself. Keep moderated recovery checks separate from participant records.
 - Record results and limitations in [verification evidence](verification-report.md). Actual participant observations belong in the usability-study records.
 
+## Scheduled availability check
+
+On 12 November, `.github/workflows/availability.yml` was added for the public Project-X repository. GitHub requests the deployed Doedu readiness endpoint every five minutes, at minute 2, 7, 12 and so on. The same workflow can be started manually from Actions before a session. It uses a standard Ubuntu runner, HTTPS certificate validation, bounded timeouts and one retry, then verifies that the JSON reports ready web/database/migrations. A stale worker heartbeat produces a warning. Each run finishes after the probe, with a three-minute job limit and no repository token permissions.
+
+The inbound requests should normally keep Render's 15-minute idle timer from expiring. The check runs independently of the laptop. Standard GitHub-hosted runners are free for this public repository. GitHub can delay or drop schedules and disables public-repository schedules after 60 days without repository activity, so this remains a best-effort demo arrangement. Check the workflow's run history when assessing availability. Disable it through Actions → Hosted availability → Disable workflow when the study service is retired.
+
+Render Billing showed **1.25 of 750 free instance-hours used** in My Workspace when checked on 12 November. The allowance is shared by the workspace. Continuous operation consumes about 720 hours in a 30-day month or 744 in a 31-day month, plus any other active free services. The existing database expiry remains **11 December 2026 at 14:57 UTC**. The scheduled probe cannot extend it.
+
+References checked on 12 November — [Render Free](https://render.com/docs/free), [GitHub schedule behaviour](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule), [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
+
 ## Free-tier boundaries
 
-The web service sleeps after about **15 minutes without inbound traffic**. Its cohosted worker sleeps with it, delaying proactive notices, watches and scheduled work until the service wakes. Lazy expiry checks still protect reservation/payment flows, but this is not an always-running worker. Cold starts can take about a minute or longer. Warm the service before each test session.
+The web service sleeps after about **15 minutes without inbound traffic**. Its cohosted worker sleeps with it, delaying proactive notices, watches and scheduled work until the service wakes. Lazy expiry checks still protect reservation/payment flows, but this is not an always-running worker. Cold starts can take about a minute or longer. The scheduled availability probe should normally keep it warm; confirm readiness before each test session.
 
 Free PostgreSQL expires after **30 days** and has **no automatic backups**. Treat this as temporary hosting, record its actual expiry date after creation, and arrange a private export of needed study records before expiry. External database access is disabled by this Blueprint; plan an approved, restricted export rather than opening access to everyone. See [backup/restore](backup-restore.md) for the general procedure.
 
